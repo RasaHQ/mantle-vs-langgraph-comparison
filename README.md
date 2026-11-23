@@ -45,13 +45,15 @@ Both agents run the identical files.
 .venv-rasa/bin/python harness/run.py --help
 ```
 
-A full run takes about 1.5 hours and costs about $140 in OpenAI usage. Per set, measured on the agent plus the simulated customer and the judge:
+A full run took just under 2 hours and cost about $150 in OpenAI usage. Per set, counting the agent, the simulated customer and the judge:
 
 | Setup | Time per set | Cost per set |
 |---|---:|---:|
-| `mantle` | ~10 min | ~$13 |
-| `lg` | ~7 min | ~$11 |
-| `lg-high` | ~19 min | ~$23 |
+| `mantle` | ~10 min | ~$15 |
+| `lg` | ~7 min | ~$12 |
+| `lg-high` | ~20 min | ~$22 |
+
+On macOS, `run.sh` keeps the machine awake with `caffeinate` while it runs. Sleep freezes the timeouts and drops the open connections to OpenAI, which would ruin the conversations in flight. Closing the lid still sleeps the machine, so keep it open.
 
 ## How a set runs
 
@@ -75,15 +77,14 @@ All settings are in `SETUPS` at the top of `harness/run.py`.
 
 ## Scoring
 
-- A **run** (one conversation) passes when the judge passes every criterion and every assertion holds.
-- A **scenario** passes when more than half of its runs pass.
-- **Cost** is the agent's own LLM spend per conversation (`engine_tokens.cost` in each run's JSON). It excludes the simulated customer and the judge.
-- The **cost head-to-head** compares the two agents on the same scenarios, either all runs on every scenario or passing runs on the scenarios both passed.
-  - Per-setup "passing runs" averages cover different scenarios for each agent, so don't compare them across columns.
+A **run** is one pass over the suite: one conversation for each of the 31 scenarios. A full benchmark gives each setup 9 runs (3 sets of 3).
 
-Results vary from set to set. With 3 runs per scenario, the LangGraph `lg-high` setup has passed anywhere from 21 to 26 of 31 scenarios on the same code. That is why each setup runs 3 sets (9 runs per scenario).
+- A **conversation passes** when the judge passes every criterion and every assertion holds.
+- **Scenarios passed per run** counts the passing conversations in one run.
+- **Cost** is the agent's own LLM spend per conversation (`engine_tokens.cost` in each conversation's JSON). It excludes the simulated customer and the judge.
+- The **cost head-to-head** divides Mantle's cost per conversation by the other setup's in each run, on the same scenarios: all of them, or only those both passed in that run. Per-setup "passing only" costs cover different scenarios for each agent, so don't compare them across columns.
 
-The results table pools all runs of a setup. Next to each metric it gives the standard deviation across the 3 sets (±), so you can see how much the number moves between one set of runs and the next. For example, `23.7 ± 2.5` scenarios passing means the per-set counts average 23.7 with a sample standard deviation of 2.5.
+Every metric is computed per run, and the table shows the mean ± the sample standard deviation across the 9 runs. For example, `26.1/31 ± 1.5` means a run passes 26.1 scenarios on average, and a typical run lands within about 1.5 of that. Single runs vary a lot. With 3 runs per scenario, the `lg-high` setup has passed anywhere from 21 to 26 of 31 scenarios on the same code. That is why each setup gets 9 runs.
 
 ## Layout
 

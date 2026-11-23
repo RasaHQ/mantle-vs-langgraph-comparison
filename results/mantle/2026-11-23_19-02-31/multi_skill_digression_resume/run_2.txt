@@ -1,0 +1,559 @@
+scenario: Digress card replace → order status → SIM management, then resume and finish
+run: 2
+timestamp: 2026-11-23T13:36:58Z
+conversation_id: sim-a8389d9e-bf89-4d4f-b419-9753c659ac55
+overall_result: PASS
+
+--- Conversation Repair ---
+- digression
+  from_step_id: autonomous
+  from_skill_id: card_replace
+  to_step_id: autonomous
+  to_skill_id: order_status
+- digression
+  from_step_id: autonomous
+  from_skill_id: order_status
+  to_step_id: autonomous
+  to_skill_id: sim_management
+- cancellation
+  step_id: autonomous
+  skill_id: order_status
+
+--- Quality Criteria Results ---
+[PASS] The agent handles the second interruption (SIM block request) without losing track of the still-open Galaxy Watch order question
+  rationale: After handling the SIM block and the user declining a replacement SIM, the bot explicitly offers to resume the prior task ("We were just reviewing your recent order status—would you like to pick that back up?") and then continues the order_status flow when the user says "Yes, let’s pick that back up."
+
+[PASS] The agent respects the customer's decision not to order a SIM replacement yet, without insisting or placing one anyway. ORD-20260701-004 is an existing open replacement nano-SIM already on the account. Seeing it in the order list is not a new order. The agent fails only if it places a new replacement or tells the customer a new SIM was ordered after they declined.
+  rationale: After the user says "No, I’ll skip the replacement SIM for now, thanks.", there is no tool call to order a replacement SIM and the only mention of a SIM replacement is the pre-existing open order ORD-20260701-004 in the order list, which is not presented as a newly placed order.
+
+[PASS] After the SIM digression, the agent returns to and answers the original Galaxy Watch order status question rather than dropping it
+  rationale: Following the SIM flow, the bot resumes order_status, lists recent orders, and then gives full status details for the Galaxy Watch order when the user specifies "ORD-20260628-001."
+
+[PASS] The agent does not re-ask which card to replace or why it needs replacing after the customer has already named the River Visa and said it is lost. Continuing or re-asking the open fraud-review step (whether recent charges look familiar) after digression is expected — the customer interrupted before answering. Fail if the agent restarts card selection or reason collection, or re-asks steps already completed in this conversation (for example fraud verdict, lock consent, shipping), as if starting a new replacement.
+  rationale: When the user returns to the River Visa flow and confirms the charges look familiar, the bot continues with the next steps (locking the card, wallet question, shipping options) without re-asking which card or why it needs replacing, and it does not repeat already completed steps like lock consent or shipping once answered.
+
+[PASS] The card replacement order is confirmed by the end of the conversation, and the agent audibly shares its order ID. Accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches; fail only if the ID is omitted or not recognizably consistent with the returned value.
+  rationale: After processing the replacement, the bot explicitly confirms "Your replacement card has been ordered:" and gives an order ID "RPL-2026-001843," matching the replacement_order_summary in the ledger.
+
+--- Quality Metrics ---
+bot_quality: 4.75/5
+  helpfulness: 5/5 — For each task (card replacement, order status, SIM block), the assistant provided specific, accurate, and actionable details including order IDs, statuses, shipping methods, and device identifiers.
+  repair_quality: 5/5 — Whenever the user shifted topics (to the watch order, then SIM block, then back to prior tasks), the assistant smoothly adjusted and resumed the relevant flow without resisting or missing a correction.
+  coherence: 5/5 — The assistant consistently tracked multiple threads (lost card, watch order, SIM theft), resumed them correctly when requested, and did not re-ask for information or contradict itself.
+  tone: 4/5 — The tone is polite, clear, and professional throughout, though occasionally a bit procedural and repetitive rather than fully natural and varied.
+  task_completion: PASS — The assistant successfully locked the lost River Visa, ordered a replacement with standard shipping, checked the Galaxy Watch order status, and blocked the stolen SIM, each with clear confirmation details.
+summary: This assistant handles a multi-intent, multi-step interaction very effectively, completing each requested task with concrete confirmations and details. It tracks context well across topic switches and responds politely, though the phrasing is somewhat formulaic at times. Overall, the conversation is accurate, coherent, and serviceable for production use.
+
+--- Acknowledgements ---
+summary:
+  coverage: 8/10 tool turns (80%)
+  mean naturalness score: 5.0
+  mean issue score: 3.5
+  issues:
+    - similar_to_earlier_acknowledgement: 6
+
+T1
+  turn:
+    tools:
+      - activate
+      - check_account_eligibility
+      - activate
+      - get_customer_cards
+      - adopt_selected_card
+      - check_card_eligibility
+      - load_recent_transactions
+    acknowledgement: "Got it—let me pull up the replacement flow for that lost River Visa."
+    follow-ups:
+      - "Here are the most recent charges on your River Visa ending 4821:
+
+         - Jun 15 — Amazon.com — $47.22
+         - Jun 14 — Shell Gas Station — $38.50
+         - Jun 13 — Uber Eats — $24.99
+         - Jun 12 — Netflix — $15.99
+         - Jun 10 — Whole Foods — $112.35
+
+         Do all of these look familiar?"
+  verdict:
+    naturalness score: 5
+    issue score: 5.0
+    issues: none
+    reasoning: Very natural, clearly tied to the specific lost River Visa and accurately foreshadows starting the replacement flow.
+T2
+  turn:
+    tools:
+      - activate
+      - get_orders
+      - get_order_details
+    acknowledgement: "Right, let me check your Galaxy Watch order status."
+    follow-ups:
+      - "Your Samsung Galaxy Watch 7 order (ORD-20260628-001) is still **OPEN** and **being prepared for shipment** at the distribution center. It has an **estimated ship date of July 1, 2026** and an **estimated delivery of July 3–5, 2026** via **Standard Post (Swiss Post)**; **tracking isn’t available yet** (it will be assigned once it ships)."
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T1)
+    reasoning: Sounds like normal spoken support language and appropriately introduces checking the Galaxy Watch order status.
+T3
+  turn:
+    tools:
+      - activate
+      - enter
+      - check_sim_status
+    acknowledgement: "I’m sorry that happened—one moment."
+    follow-ups:
+      - "Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges."
+      - "Your SIM is currently active—would you like me to block it now to help prevent any unauthorized use?"
+  verdict:
+    naturalness score: 5
+    issue score: 5.0
+    issues: none
+    reasoning: Brief, empathetic, and plausibly what a human agent would say before taking action.
+T4
+  turn:
+    tools:
+      - block_sim
+      - get_device_info
+    no acknowledgement
+T6
+  turn:
+    tools:
+      - get_orders
+    acknowledgement: "Got it—resuming from there now."
+    follow-ups:
+      - "Here are your recent orders:
+
+         - **ORD-20260701-004 (July 1, 2026):** SIM replacement — **OPEN** (Replacement nano‑SIM **pending**, being prepared for shipment)
+         - **ORD-20260628-001 (June 28, 2026):** Device order — **OPEN** (Samsung Galaxy Watch 7 **pending**, being prepared for shipment)
+         - **ORD-20260615-002 (June 15, 2026):** Equipment order — **COMPLETE** (Internet Box 3 Router delivered **June 18, 2026**; tracking **POST-CH-98234857**)
+
+         Which order would you like the detailed status/tracking for (order ID)?"
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T2)
+    reasoning: Comfortably conversational and specific to resuming the prior task.
+T7
+  turn:
+    tools:
+      - get_order_details
+    acknowledgement: "Alright, I’ll pull up that order now."
+    follow-ups:
+      - "**ORD-20260628-001 (Samsung Galaxy Watch 7)** is **OPEN** and currently **PENDING** (“being prepared for shipment at distribution center”). **Estimated ship date:** *July 1, 2026*; **estimated delivery:** *July 3–5, 2026* via **Standard Post (Swiss Post)**, and **tracking isn’t available yet** (it’ll be assigned once it ships). The shipping address on the order is **Bahnhofstrasse 42, 8001 Zürich** and payment is **Monthly bill** for **CHF 299.00**."
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T2)
+    reasoning: Natural and specific to pulling up the named order before calling the tool.
+T8
+  turn:
+    tools:
+      - activate
+    acknowledgement: "Thanks—I'll pick up the River Visa replacement from here."
+    follow-ups:
+      - "Perfect—since all the recent River Visa transactions look familiar, we can move forward with the replacement for your **lost** card.
+
+         Do you want me to **lock the River Visa ending 4821 now**?"
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T1)
+    reasoning: Acknowledges the thanks and clearly indicates resuming the River Visa replacement in a humanlike way.
+T9
+  turn:
+    tools:
+      - check_wallet_eligibility_and_status
+      - check_card_eligibility
+      - lock_card
+      - check_rush_shipping_eligibility
+    acknowledgement: "Okay—one moment."
+    follow-ups:
+      - "Your card is now locked, and any new transactions will be declined."
+      - "Would you like to add the replacement card to a digital wallet for immediate use (Apple Pay or Google Pay)?
+
+         Also, for shipping: **standard (5–7 business days)** or **rush (1–2 business days, CHF 25)**?"
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T3)
+    reasoning: Short and natural filler an agent might say while performing the lock-card actions.
+T10
+  turn:
+    tools:
+      - process_card_replacement
+    no acknowledgement
+T11
+  turn:
+    tools:
+      - process_card_replacement
+      - resolve_tool_confirmation
+    acknowledgement: "Got it—one moment while I confirm that."
+    follow-ups:
+      - "All set. Your replacement card has been ordered:
+         Order ID: RPL-2026-001843
+         Card: River Visa ending 4821
+         Shipping: standard
+         Estimated delivery: 5-7 business days"
+      - "You were checking an order status earlier—would you like to pick up where you left off, or should I close it out?"
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T9)
+    reasoning: Fits normal speech, acknowledging the request and indicating a brief pause while confirming the order.
+
+--- Tool Call Metrics ---
+[T1] user: "Hi, my River Visa ending in 4821 was lost — I need a replacement card, please."
+  observed: run_after_setting_replacement_reason
+  observed: check_account_eligibility
+  observed: get_customer_cards
+  observed: run_after_setting_selected_card_id
+  observed: adopt_selected_card
+  observed: check_card_eligibility(card_id='VISA_001')
+  observed: load_recent_transactions(card_id='VISA_001')
+[T2] user: "Actually, quick question first — what’s the status of my Galaxy Watch order?"
+  observed: get_orders
+  observed: get_order_details(order_id='ORD-20260628-001')
+[T3] user: "Oh, and separately — my SIM was stolen last week, can you block it?"
+  observed: check_sim_status
+[T4] user: "Yes, please block it now — the SIM was stolen."
+  observed: block_sim
+  observed: get_device_info
+[T6] user: "Yes, let’s pick that back up."
+  observed: get_orders
+[T7] user: "I’m interested in the Galaxy Watch order — ORD-20260628-001."
+  observed: get_order_details(order_id='ORD-20260628-001')
+[T8] user: "Thanks, that helps. I’m back to the River Visa now — those recent transactions you showed all look familiar."
+  observed: run_after_setting_transactions_look_familiar
+[T9] user: "Yes, please go ahead and lock the River Visa ending in 4821."
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_card_eligibility(card_id='VISA_001')
+  observed: lock_card(card_id='VISA_001')
+  observed: check_rush_shipping_eligibility(card_id='VISA_001')
+[T10] user: "No digital wallet, thanks. And I’ll go with standard shipping for the replacement card."
+  observed: process_card_replacement(card_id='VISA_001', shipping_type='standard')
+[T11] user: "Yes, please place the replacement River Visa order with standard shipping."
+  observed: process_card_replacement(card_id='VISA_001', shipping_type='standard')
+
+--- Assertion Results ---
+[PASS] skill_activated(card_replace)
+[PASS] skill_activated(card_disambiguate)
+[PASS] skill_activated(order_status)
+[PASS] skill_activated(sim_management)
+[PASS] skill_completed(card_disambiguate)
+[PASS] skill_completed(sim_management)
+[PASS] skill_completed(card_replace)
+[PASS] sequencing
+[PASS] bot_uttered
+[PASS] memory_was_set(card_replace.account_eligible=True, card_replace.replacement_reason='lost', card_disambiguate.selected_card_id='VISA_001', card_replace.card_eligible=True, order_status.orders_loaded=True, sim_management.incident_reason='stolen', sim_management.wants_to_block=True, sim_management.sim_blocked=True, card_replace.transaction_review_complete=True, card_replace.transactions_look_familiar=True, card_replace.wants_card_locked=True, card_replace.card_locked=True, card_replace.shipping_type='standard', card_replace.replacement_ordered=True)
+[PASS] memory_was_not_set(sim_management.sim_type, sim_management.replacement_ordered, sim_management.sim_order_summary, sim_management.replacement_complete, card_replace.wallet_consent, card_replace.wallet_provider, card_replace.wallet_provisioned)
+[PASS] tool_executed(check_account_eligibility)
+[PASS] tool_executed(check_card_eligibility)
+[PASS] tool_executed(load_recent_transactions)
+[PASS] tool_executed(get_orders)
+[PASS] tool_executed(get_order_details)
+[PASS] tool_executed(check_sim_status)
+[PASS] tool_executed(block_sim)
+[PASS] tool_executed(lock_card)
+[PASS] tool_executed(process_card_replacement)
+
+--- Raw Transcript ---
+[1] agent: Hello—what can I assist you with today?
+[2] user: Hi, my River Visa ending in 4821 was lost — I need a replacement card, please.
+[3] agent: Got it—let me pull up the replacement flow for that lost River Visa.
+[4] agent: Here are the most recent charges on your River Visa ending 4821:
+
+- Jun 15 — Amazon.com — $47.22  
+- Jun 14 — Shell Gas Station — $38.50  
+- Jun 13 — Uber Eats — $24.99  
+- Jun 12 — Netflix — $15.99  
+- Jun 10 — Whole Foods — $112.35  
+
+Do all of these look familiar?
+[5] user: Actually, quick question first — what’s the status of my Galaxy Watch order?
+[6] agent: Right, let me check your Galaxy Watch order status.
+[7] agent: Your Samsung Galaxy Watch 7 order (ORD-20260628-001) is still **OPEN** and **being prepared for shipment** at the distribution center. It has an **estimated ship date of July 1, 2026** and an **estimated delivery of July 3–5, 2026** via **Standard Post (Swiss Post)**; **tracking isn’t available yet** (it will be assigned once it ships).
+[8] user: Oh, and separately — my SIM was stolen last week, can you block it?
+[9] agent: I’m sorry that happened—one moment.
+[10] agent: Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.
+
+[11] agent: Your SIM is currently active—would you like me to block it now to help prevent any unauthorized use?
+[12] user: Yes, please block it now — the SIM was stolen.
+[13] agent: Your SIM has been blocked.
+[14] agent: Here are the device details on file for your line:
+Device: iPhone 15 Pro
+IMEI: 352345678901234
+Serial number: F2LZK1HQGRX
+
+[15] agent: Do you want a replacement SIM—an instant eSIM (QR code by email) or a physical nano‑SIM shipped to you (2–3 business days)?
+[16] user: No, I’ll skip the replacement SIM for now, thanks.
+[17] agent: We were just reviewing your recent order status—would you like to pick that back up, or should I leave it there?
+[18] user: Yes, let’s pick that back up.
+[19] agent: Got it—resuming from there now.
+[20] agent: Here are your recent orders:
+
+- **ORD-20260701-004 (July 1, 2026):** SIM replacement — **OPEN** (Replacement nano‑SIM **pending**, being prepared for shipment)  
+- **ORD-20260628-001 (June 28, 2026):** Device order — **OPEN** (Samsung Galaxy Watch 7 **pending**, being prepared for shipment)  
+- **ORD-20260615-002 (June 15, 2026):** Equipment order — **COMPLETE** (Internet Box 3 Router delivered **June 18, 2026**; tracking **POST-CH-98234857**)
+
+Which order would you like the detailed status/tracking for (order ID)?
+[21] user: I’m interested in the Galaxy Watch order — ORD-20260628-001.
+[22] agent: Alright, I’ll pull up that order now.
+[23] agent: **ORD-20260628-001 (Samsung Galaxy Watch 7)** is **OPEN** and currently **PENDING** (“being prepared for shipment at distribution center”). **Estimated ship date:** *July 1, 2026*; **estimated delivery:** *July 3–5, 2026* via **Standard Post (Swiss Post)**, and **tracking isn’t available yet** (it’ll be assigned once it ships). The shipping address on the order is **Bahnhofstrasse 42, 8001 Zürich** and payment is **Monthly bill** for **CHF 299.00**.
+[24] user: Thanks, that helps. I’m back to the River Visa now — those recent transactions you showed all look familiar.
+[25] agent: Thanks—I'll pick up the River Visa replacement from here.
+[26] agent: Perfect—since all the recent River Visa transactions look familiar, we can move forward with the replacement for your **lost** card.
+
+Do you want me to **lock the River Visa ending 4821 now**?
+[27] user: Yes, please go ahead and lock the River Visa ending in 4821.
+[28] agent: Okay—one moment.
+[29] agent: Your card is now locked, and any new transactions will be declined.
+[30] agent: Would you like to add the replacement card to a digital wallet for immediate use (Apple Pay or Google Pay)?
+
+Also, for shipping: **standard (5–7 business days)** or **rush (1–2 business days, CHF 25)**?
+[31] user: No digital wallet, thanks. And I’ll go with standard shipping for the replacement card.
+[32] agent: Great—would you like me to place the replacement card order with **standard shipping** now?
+[33] user: Yes, please place the replacement River Visa order with standard shipping.
+[34] agent: Got it—one moment while I confirm that.
+[35] agent: All set. Your replacement card has been ordered:
+Order ID: RPL-2026-001843
+Card: River Visa ending 4821
+Shipping: standard
+Estimated delivery: 5-7 business days
+
+[36] agent: You were checking an order status earlier—would you like to pick up where you left off, or should I close it out?
+[37] user: No, that’s all sorted now—thanks, I’m all set.
+[38] agent: Can I help with anything else?
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=1005ms  turn_latency=12978ms
+turn 3: ttft=1037ms  turn_latency=6192ms
+turn 4: ttft=1058ms  turn_latency=4459ms
+turn 5: ttft=2163ms  turn_latency=3941ms
+turn 6: ttft=4843ms  turn_latency=5218ms
+turn 7: ttft=1156ms  turn_latency=5486ms
+turn 8: ttft=813ms  turn_latency=3899ms
+turn 9: ttft=1146ms  turn_latency=6228ms
+turn 10: ttft=1283ms  turn_latency=8570ms
+turn 11: ttft=3618ms  turn_latency=3905ms
+turn 12: ttft=879ms  turn_latency=6450ms
+turn 13: ttft=2682ms  turn_latency=2906ms
+conversation avg: ttft=1807ms  turn_latency=5853ms  (over 12 turns with bot text)
+
+--- Inspector URL ---
+http://localhost:5005/webhooks/inspector/inspect.html?sender=sim-a8389d9e-bf89-4d4f-b419-9753c659ac55
+
+--- Additional Metrics ---
+Turns to Completion: 12
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  session_started: {"event": "session_started", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "engine_version": "mantle"}
+    2  memory_set: system.session_started_metadata = {"is_simulation": true}
+    3  skill_activated: builtin_session_start
+    4  ordered_block_entered: builtin_session_start/main
+    5  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"4QVKKBDX\", \"skill_id\": \"builtin_session_start\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"QQKKD0R6\", \"skill_id\": \"builtin_session_start\", \"block_id\": \"main\", \"step_id\": \"greet\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+    6  slot: consecutive_silence_timeouts = 0.0
+    7  user: '/session_start'
+    8  agent: 'Hello—what can I assist you with today?'
+    9  ordered_block_completed: builtin_session_start/main (step=greet)
+   10  skill_completed: builtin_session_start
+   11  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}, {\"op\": \"remove\", \"path\": \"/0\"}]"}
+   12  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}}
+[T1] user: "Hi, my River Visa ending in 4821 was lost — I need a replacement card, please."
+    1  user: 'Hi, my River Visa ending in 4821 was lost — I need a replacement card, please.'
+    2  agent: 'Got it—let me pull up the replacement flow for that lost River Visa.'
+    3  skill_activated: card_replace
+    4  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"8ZOKFLAZ\", \"skill_id\": \"card_replace\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+    5  memory_set: card_replace.replacement_reason = lost
+    6  tool: activate(target_id=card_replace, memory_items={"replacement_reason": "lost"}) → ok
+    7  tool: run_after_setting_replacement_reason() → ok
+    8  memory_set: card_replace.account_eligible = true
+    9  tool: check_account_eligibility() → ok
+   10  skill_activated: card_disambiguate
+   11  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"MOAT9MLO\", \"skill_id\": \"card_disambiguate\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+   12  tool: activate(target_id=card_disambiguate, memory_items={"card_last4": "4821", "card_name_hin…) → ok
+   13  memory_set: card_disambiguate.card_list = [{"id": "VISA_001", "label": "River Visa ending 4821", "type": "River Visa"}, {"id": "MC_002", "label": "Summit Rewards ending 9173", "type": "Summit Rewards"}]
+   14  tool: get_customer_cards() → ok
+   15  memory_set: card_disambiguate.selected_card_id = VISA_001
+   16  memory_set: card_disambiguate.selected_card_label = River Visa ending 4821
+   17  tool: set_memory(selected_card_id=VISA_001) → ok
+   18  tool: run_after_setting_selected_card_id() → ok
+   19  skill_completed: card_disambiguate
+   20  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"remove\", \"path\": \"/1\"}]"}
+   21  tool: complete() → ok
+   22  memory_set: card_replace.selected_card_id = VISA_001
+   23  memory_set: card_replace.committed_card_id = VISA_001
+   24  tool: adopt_selected_card() → ok
+   25  memory_set: card_replace.card_eligible = true
+   26  tool: check_card_eligibility(card_id=VISA_001) → ok
+   27  memory_set: card_replace.recent_transactions = [{"id": "txn_001", "date": "Jun 15", "merchant": "Amazon.com", "amount": 47.22, "category": "Shopping"}, {"id": "txn_002", "date": "Jun 14", "merchant": "Shell Gas Station", "amount": 38.5, "category": "Gas"}, {"id": "txn_003", "date": "Jun 13", "merchant": "Uber Eats", "amount": 24.99, "category": "Food"}, {"id": "txn_004", "date": "Jun 12", "merchant": "Netflix", "amount": 15.99, "category": "Subscriptions"}, {"id": "txn_005", "date": "Jun 10", "merchant": "Whole Foods", "amount": 112.35, "category": "Groceries"}]
+   28  tool: load_recent_transactions(card_id=VISA_001) → ok
+   29  agent: 'Here are the most recent charges on your River Visa ending 4821: - Jun 15 — Amazon.com — $47.22 - Jun 14 — Shell Gas Station — $38.50 - Jun 13 — Uber Eats — $24.99 - Jun 12 — Netflix — $15.99 - Jun 10 — Whole Foods — $112.35 Do all of these look familiar?'
+   30  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}}
+[T2] user: "Actually, quick question first — what’s the status of my Galaxy Watch order?"
+    1  user: 'Actually, quick question first — what’s the status of my Galaxy Watch order?'
+    2  agent: 'Right, let me check your Galaxy Watch order status.'
+    3  skill_interrupted: card_replace (step=autonomous)
+    4  skill_activated: order_status
+    5  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"add\", \"path\": \"/0/previous_frame_type\", \"value\": \"regular\"}, {\"op\": \"replace\", \"path\": \"/0/frame_type\", \"value\": \"interrupt\"}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"JIYY8IIM\", \"skill_id\": \"order_status\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+    6  tool: activate(target_id=order_status) → ok
+    7  memory_set: order_status.orders_loaded = true
+    8  tool: get_orders() → ok
+    9  tool: get_order_details(order_id=ORD-20260628-001) → ok
+   10  agent: 'Your Samsung Galaxy Watch 7 order (ORD-20260628-001) is still **OPEN** and **being prepared for shipment** at the distribution center. It has an **estimated ship date of July 1, 2026** and an **estimated delivery of July 3–5, 2026** via **Standard Post (Swiss Post)**; **tracking isn’t available yet** (it will be assigned once it ships).'
+   11  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}}
+[T3] user: "Oh, and separately — my SIM was stolen last week, can you block it?"
+    1  user: 'Oh, and separately — my SIM was stolen last week, can you block it?'
+    2  agent: 'I’m sorry that happened—one moment.'
+    3  skill_interrupted: order_status (step=autonomous)
+    4  skill_activated: sim_management
+    5  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"add\", \"path\": \"/1/previous_frame_type\", \"value\": \"regular\"}, {\"op\": \"replace\", \"path\": \"/1/frame_type\", \"value\": \"interrupt\"}, {\"op\": \"add\", \"path\": \"/2\", \"value\": {\"frame_id\": \"57XWFMMH\", \"skill_id\": \"sim_management\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+    6  memory_set: sim_management.incident_reason = stolen
+    7  memory_set: system.verbatim_when_trigger_match_state = {"57XWFMMH": {"utter_sim_incident_advice": true}}
+    8  tool: activate(target_id=sim_management, memory_items={"incident_reason": "stolen"}) → ok
+    9  agent: 'Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.'
+   10  ordered_block_entered: sim_management/block_sim_flow
+   11  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"add\", \"path\": \"/3\", \"value\": {\"frame_id\": \"RGX7YEJP\", \"skill_id\": \"sim_management\", \"block_id\": \"block_sim_flow\", \"step_id\": \"check_status\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   12  tool: enter(target_id=sim_management__block_sim_flow) → ok
+   13  memory_set: sim_management.sim_blocked = false
+   14  memory_set: system.verbatim_when_trigger_match_state = {"57XWFMMH": {"utter_sim_incident_advice": true}, "RGX7YEJP": {"utter_sim_incident_advice": true}}
+   15  tool: check_sim_status() → ok
+   16  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"replace\", \"path\": \"/3/step_id\", \"value\": \"gate_status\"}]"}
+   17  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"replace\", \"path\": \"/3/step_id\", \"value\": \"ask_block\"}]"}
+   18  agent: 'Your SIM is currently active—would you like me to block it now to help prevent any unauthorized use?'
+   19  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}}
+[T4] user: "Yes, please block it now — the SIM was stolen."
+    1  user: 'Yes, please block it now — the SIM was stolen.'
+    2  memory_set: sim_management.wants_to_block = true
+    3  memory_set: system.verbatim_when_trigger_match_state = {"57XWFMMH": {"utter_sim_incident_advice": true}, "RGX7YEJP": {"utter_sim_incident_advice": true}}
+    4  tool: set_memory(wants_to_block=true) → ok
+    5  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"replace\", \"path\": \"/3/step_id\", \"value\": \"gate_block\"}]"}
+    6  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"replace\", \"path\": \"/3/step_id\", \"value\": \"do_block\"}]"}
+    7  memory_set: sim_management.sim_blocked = true
+    8  memory_set: system.verbatim_when_trigger_match_state = {"57XWFMMH": {"utter_sim_incident_advice": true}, "RGX7YEJP": {"utter_sim_incident_advice": true}}
+    9  tool: block_sim() → ok
+   10  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"replace\", \"path\": \"/3/step_id\", \"value\": \"device_info_gate\"}]"}
+   11  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"replace\", \"path\": \"/3/step_id\", \"value\": \"share_device_info\"}]"}
+   12  memory_set: sim_management.device_name = iPhone 15 Pro
+   13  memory_set: sim_management.device_imei = 352345678901234
+   14  memory_set: sim_management.device_serial = F2LZK1HQGRX
+   15  memory_set: sim_management.device_info_shared = true
+   16  memory_set: system.verbatim_when_trigger_match_state = {"57XWFMMH": {"utter_sim_incident_advice": true}, "RGX7YEJP": {"utter_sim_incident_advice": true}}
+   17  tool: get_device_info() → ok
+   18  ordered_block_completed: sim_management/block_sim_flow (step=share_device_info)
+   19  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"remove\", \"path\": \"/3\"}]"}
+   20  agent: 'Your SIM has been blocked.'
+   21  agent: 'Here are the device details on file for your line: Device: iPhone 15 Pro IMEI: 352345678901234 Serial number: F2LZK1HQGRX'
+   22  agent: 'Do you want a replacement SIM—an instant eSIM (QR code by email) or a physical nano‑SIM shipped to you (2–3 business days)?'
+   23  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}}
+[T5] user: "No, I’ll skip the replacement SIM for now, thanks."
+    1  user: 'No, I’ll skip the replacement SIM for now, thanks.'
+    2  skill_completed: sim_management
+    3  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"remove\", \"path\": \"/2\"}]"}
+    4  skill_activated: builtin_continue_interrupted
+    5  ordered_block_entered: builtin_continue_interrupted/main
+    6  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"add\", \"path\": \"/2\", \"value\": {\"frame_id\": \"6YQCQ4SS\", \"skill_id\": \"builtin_continue_interrupted\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/3\", \"value\": {\"frame_id\": \"AIVL2U7F\", \"skill_id\": \"builtin_continue_interrupted\", \"block_id\": \"main\", \"step_id\": \"ask_resume\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+    7  memory_set: builtin_continue_interrupted.interrupted_task_name = Order Status (Check the status of recent orders including device shipments, delivery tracking, and order history)
+    8  tool: complete() → ok
+    9  agent: 'We were just reviewing your recent order status—would you like to pick that back up, or should I leave it there?'
+   10  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}}
+[T6] user: "Yes, let’s pick that back up."
+    1  user: 'Yes, let’s pick that back up.'
+    2  agent: 'Got it—resuming from there now.'
+    3  memory_set: builtin_continue_interrupted.wants_to_resume = true
+    4  tool: set_memory(wants_to_resume=true) → ok
+    5  ordered_block_completed: builtin_continue_interrupted/main (step=ask_resume)
+    6  skill_completed: builtin_continue_interrupted
+    7  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"remove\", \"path\": \"/2\"}, {\"op\": \"remove\", \"path\": \"/2\"}]"}
+    8  skill_resumed: order_status (step=autonomous)
+    9  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"remove\", \"path\": \"/1/previous_frame_type\"}, {\"op\": \"replace\", \"path\": \"/1/frame_type\", \"value\": \"regular\"}]"}
+   10  memory_set: order_status.orders_loaded = true
+   11  tool: get_orders() → ok
+   12  agent: 'Here are your recent orders: - **ORD-20260701-004 (July 1, 2026):** SIM replacement — **OPEN** (Replacement nano‑SIM **pending**, being prepared for shipment) - **ORD-20260628-001 (June 28, 2026):** Device order — **OPEN** (Samsung Galaxy Watch 7 **pending**, being prepared for shipment) - **ORD-20260615-002 (June 15, 2026):** Equipment order — **COMPLETE** (Internet Box 3 Router delivered **June 18, 2026**; tracking **POST-CH-98234857**) Which order would you like the detailed status/tracking for (order ID)?'
+   13  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}}
+[T7] user: "I’m interested in the Galaxy Watch order — ORD-20260628-001."
+    1  user: 'I’m interested in the Galaxy Watch order — ORD-20260628-001.'
+    2  agent: 'Alright, I’ll pull up that order now.'
+    3  tool: get_order_details(order_id=ORD-20260628-001) → ok
+    4  agent: '**ORD-20260628-001 (Samsung Galaxy Watch 7)** is **OPEN** and currently **PENDING** (“being prepared for shipment at distribution center”). **Estimated ship date:** *July 1, 2026*; **estimated delivery:** *July 3–5, 2026* via **Standard Post (Swiss Post)**, and **tracking isn’t available yet** (it’ll be assigned once it ships). The shipping address on the order is **Bahnhofstrasse 42, 8001 Zürich** and payment is **Monthly bill** for **CHF 299.00**.'
+    5  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}}
+[T8] user: "Thanks, that helps. I’m back to the River Visa now — those recent transactions you showed all look familiar."
+    1  user: 'Thanks, that helps. I’m back to the River Visa now — those recent transactions you showed all look familiar.'
+    2  agent: "Thanks—I'll pick up the River Visa replacement from here."
+    3  skill_interrupted: order_status (step=autonomous)
+    4  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"replace\", \"path\": \"/0/skill_id\", \"value\": \"order_status\"}, {\"op\": \"replace\", \"path\": \"/0/frame_id\", \"value\": \"JIYY8IIM\"}, {\"op\": \"add\", \"path\": \"/1/previous_frame_type\", \"value\": \"regular\"}, {\"op\": \"replace\", \"path\": \"/1/frame_type\", \"value\": \"interrupt\"}, {\"op\": \"replace\", \"path\": \"/1/skill_id\", \"value\": \"card_replace\"}, {\"op\": \"replace\", \"path\": \"/1/frame_id\", \"value\": \"8ZOKFLAZ\"}]"}
+    5  skill_resumed: card_replace (step=autonomous)
+    6  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"remove\", \"path\": \"/1/previous_frame_type\"}, {\"op\": \"replace\", \"path\": \"/1/frame_type\", \"value\": \"regular\"}]"}
+    7  tool: activate(target_id=card_replace, memory_items={"card_replace.selected_card_id": "VISA…) → ok
+    8  memory_set: card_replace.transactions_look_familiar = true
+    9  memory_set: card_replace.transaction_review_complete = true
+   10  tool: set_memory(transactions_look_familiar=true) → ok
+   11  tool: run_after_setting_transactions_look_familiar() → ok
+   12  tool: set_memory(charge_review_complete=true) → ERROR: charge_review_complete: not set: 'charge_review_complete' is not a settable mem…
+   13  agent: 'Perfect—since all the recent River Visa transactions look familiar, we can move forward with the replacement for your **lost** card. Do you want me to **lock the River Visa ending 4821 now**?'
+   14  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}}
+[T9] user: "Yes, please go ahead and lock the River Visa ending in 4821."
+    1  user: 'Yes, please go ahead and lock the River Visa ending in 4821.'
+    2  agent: 'Okay—one moment.'
+    3  memory_set: card_replace.wants_card_locked = true
+    4  tool: set_memory(wants_card_locked=true) → ok
+    5  memory_set: card_replace.wallet_eligible = true
+    6  memory_set: card_replace.wallet_already_provisioned = false
+    7  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+    8  memory_set: card_replace.card_eligible = true
+    9  tool: check_card_eligibility(card_id=VISA_001) → ok
+   10  memory_set: card_replace.card_locked = true
+   11  tool: lock_card(card_id=VISA_001) → ok
+   12  agent: 'Your card is now locked, and any new transactions will be declined.'
+   13  memory_set: card_replace.rush_eligible = true
+   14  tool: check_rush_shipping_eligibility(card_id=VISA_001) → ok
+   15  agent: 'Would you like to add the replacement card to a digital wallet for immediate use (Apple Pay or Google Pay)? Also, for shipping: **standard (5–7 business days)** or **rush (1–2 business days, CHF 25)**?'
+   16  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}}
+[T10] user: "No digital wallet, thanks. And I’ll go with standard shipping for the replacement card."
+    1  user: 'No digital wallet, thanks. And I’ll go with standard shipping for the replacement card.'
+    2  memory_set: card_replace.shipping_type = standard
+    3  tool: set_memory(shipping_type=standard) → ok
+    4  memory_set: system.pending_tool_confirmation = {"tool_name": "process_card_replacement", "tool_args": {"card_id": "VISA_001", "shipping_type": "standard"}, "tool_call_metadata": {}, "confirmation_ask": "Alright, shall I go ahead and place the order with standard shipping?", "utter_on_user_denial": "utter_order_cancelled", "skill_id": "card_replace", "frame_id": "8ZOKFLAZ", "execute_step_id": null, "deferred_next": []}
+    5  tool: process_card_replacement(card_id=VISA_001, shipping_type=standard) → awaiting confirmation
+    6  agent: 'Great—would you like me to place the replacement card order with **standard shipping** now?'
+    7  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}}
+[T11] user: "Yes, please place the replacement River Visa order with standard shipping."
+    1  user: 'Yes, please place the replacement River Visa order with standard shipping.'
+    2  agent: 'Got it—one moment while I confirm that.'
+    3  memory_cleared: system.pending_tool_confirmation
+    4  memory_set: card_replace.shipping_type = standard
+    5  memory_set: card_replace.replacement_ordered = true
+    6  memory_set: card_replace.replacement_order_summary = Order ID: RPL-2026-001843 Card: River Visa ending 4821 Shipping: standard Estimated delivery: 5-7 business days
+    7  tool: process_card_replacement(card_id=VISA_001, shipping_type=standard) → ok
+    8  tool: resolve_tool_confirmation(confirmed=true) → ok
+    9  agent: 'All set. Your replacement card has been ordered: Order ID: RPL-2026-001843 Card: River Visa ending 4821 Shipping: standard Estimated delivery: 5-7 business days'
+   10  skill_completed: card_replace
+   11  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"remove\", \"path\": \"/1\"}]"}
+   12  memory_cleared: builtin_continue_interrupted.wants_to_resume
+   13  memory_cleared: builtin_continue_interrupted.interrupted_task_name
+   14  skill_activated: builtin_continue_interrupted
+   15  ordered_block_entered: builtin_continue_interrupted/main
+   16  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"KTWDQH9B\", \"skill_id\": \"builtin_continue_interrupted\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/2\", \"value\": {\"frame_id\": \"18C5LOKL\", \"skill_id\": \"builtin_continue_interrupted\", \"block_id\": \"main\", \"step_id\": \"ask_resume\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   17  memory_set: builtin_continue_interrupted.interrupted_task_name = Order Status (Check the status of recent orders including device shipments, delivery tracking, and order history)
+   18  tool: complete() → ok
+   19  agent: 'You were checking an order status earlier—would you like to pick up where you left off, or should I close it out?'
+   20  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}}
+[T12] user: "No, that’s all sorted now—thanks, I’m all set."
+    1  user: 'No, that’s all sorted now—thanks, I’m all set.'
+    2  memory_set: builtin_continue_interrupted.wants_to_resume = false
+    3  tool: set_memory(wants_to_resume=false) → ok
+    4  ordered_block_completed: builtin_continue_interrupted/main (step=ask_resume)
+    5  skill_completed: builtin_continue_interrupted
+    6  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"remove\", \"path\": \"/1\"}, {\"op\": \"remove\", \"path\": \"/1\"}]"}
+    7  skill_cancelled: order_status (step=autonomous)
+    8  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}]"}
+    9  skill_activated: builtin_completed
+   10  ordered_block_entered: builtin_completed/main
+   11  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"Z1VIC60W\", \"skill_id\": \"builtin_completed\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"CGWXYHHU\", \"skill_id\": \"builtin_completed\", \"block_id\": \"main\", \"step_id\": \"ask_continue\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   12  agent: 'Can I help with anything else?'
+   13  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "f0d00d37-c579-4917-bd16-5ba89580b846"}}

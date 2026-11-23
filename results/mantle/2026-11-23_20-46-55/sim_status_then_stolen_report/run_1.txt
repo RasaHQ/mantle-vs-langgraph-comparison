@@ -1,0 +1,239 @@
+scenario: Customer checks SIM replacement order status then realizes they need to report the old SIM stolen
+run: 1
+timestamp: 2026-11-23T15:23:26Z
+conversation_id: sim-0a52d262-ddf4-4bdc-9d4d-d864589f82d8
+overall_result: PASS
+
+--- Conversation Repair ---
+- digression
+  from_step_id: autonomous
+  from_skill_id: order_status
+  to_step_id: autonomous
+  to_skill_id: sim_management
+
+--- Quality Criteria Results ---
+[PASS] The agent answers the replacement SIM order question with concrete shipping status or delivery information rather than only saying it found the order
+  rationale: The bot states the order is "status OPEN" and that the "Replacement nano‑SIM is pending and being prepared for shipment," which is concrete shipping status information.
+
+[PASS] The agent moves from the order status question to blocking the SIM without treating them as two unrelated conversations or making the customer start over
+  rationale: After giving order status, the bot immediately checks SIM status and asks "Would you like me to block it now" without restarting or treating it as a new, unrelated flow.
+
+[PASS] After blocking the old SIM, the agent explicitly confirms the block to the customer
+  rationale: Once the user agrees to block, the bot says "Your SIM has been blocked now," which is an explicit confirmation.
+
+[PASS] The agent answers whether blocking affects the replacement that is already being shipped. Saying that this in-transit physical replacement is unaffected is allowed. Mentioning ANTARCTICA_SIM_FREEZE is allowed (it is real KB content) but not required. Fail only if the agent invents a different policy, or claims the freeze applies to this customer's in-transit physical replacement.
+  rationale: In response to the question, the bot states "blocking the old SIM does not affect the physical replacement SIM that’s already been ordered and is being shipped," directly answering that it is unaffected.
+
+[PASS] The agent gives stolen-specific handling once the customer says the SIM was taken, rather than lost-device advice
+  rationale: After the user says the SIM was stolen, the bot advises "Report the theft to the police" and to check for unauthorized charges, which is theft-specific handling rather than generic lost-device guidance.
+
+[PASS] The agent does not re-ask for information already provided (e.g., the customer already said it was stolen, and the replacement SIM order is already identified)
+  rationale: The bot never re-asks whether the SIM was stolen or about the replacement order details; it proceeds directly to blocking and follow-up questions.
+
+[PASS] When sharing device info, the agent gives the customer concrete IMEI and serial values, not a vague acknowledgment that details were retrieved. Pass if the spoken identifiers are consistent with IMEI 352345678901234 and serial F2LZK1HQGRX. Do not fail for voice-transcript (ASR) misspellings of spoken letters or digits (H/Z confusion, extra syllables, digit grouping). Fail only if it omits one of them, invents different identifiers, or never speaks the values.
+  rationale: The bot provides both identifiers explicitly: "IMEI: 352345678901234" and "Serial number: F2LZK1HQGRX," matching the expected values.
+
+--- Quality Metrics ---
+bot_quality: 4.5/5
+  helpfulness: 5/5 — It correctly located the order, blocked the SIM on request, shared relevant device details, and clearly answered whether blocking would affect the replacement SIM, covering all user needs.
+  repair_quality: 5/5 — There were no user pushbacks or corrections; the user’s requests evolved but were always clearly understood and addressed without disfluency issues.
+  coherence: 4/5 — The assistant maintained context about the SIM, order, and theft, but ended with an unnecessary follow-up question after the user had already closed the conversation, which was a minor state-tracking slip.
+  tone: 4/5 — The tone was polite, clear, and professional throughout, though occasionally a bit formulaic and repetitive in the closing turns.
+  task_completion: PASS — The assistant blocked the old SIM as requested, provided device details, confirmed the replacement SIM shipment would not be affected, and the user explicitly said that was all they needed.
+summary: The assistant effectively handled the user’s SIM-related issues: it checked the replacement order, blocked the stolen SIM, provided device details, and clarified that the replacement shipment would not be affected. Its responses were accurate and directly responsive, with a consistent professional tone. The only notable issue was a slightly incoherent extra follow-up after the user had already indicated the conversation was finished.
+
+--- Acknowledgements ---
+summary:
+  coverage: 2/3 tool turns (67%)
+  mean naturalness score: 5.0
+  mean issue score: 5.0
+  issues: none
+
+T1
+  turn:
+    tools:
+      - activate
+      - get_orders
+    acknowledgement: "Right, let me check that order status."
+    follow-ups:
+      - "I found your SIM replacement order: **ORD-20260701-004 (July 1, 2026)** — status **OPEN**, and the **Replacement nano‑SIM** is **pending** and **being prepared for shipment**.
+
+         You also have another open order (**ORD-20260628-001**, Samsung Galaxy Watch 7) that’s also **being prepared for shipment**."
+  verdict:
+    naturalness score: 5
+    issue score: 5.0
+    issues: none
+    reasoning: Friendly, specific to checking the order status, and something a human agent might naturally say.
+T2
+  turn:
+    tools:
+      - activate
+      - enter
+      - check_sim_status
+    acknowledgement: "I'm sorry to hear that—one moment."
+    follow-ups:
+      - "Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges."
+      - "Your SIM is currently active. Would you like me to block it now to help prevent any unauthorized use?"
+  verdict:
+    naturalness score: 5
+    issue score: 5.0
+    issues: none
+    reasoning: Expresses empathy and a brief pause naturally before proceeding, matching typical support speech.
+T3
+  turn:
+    tools:
+      - block_sim
+      - get_device_info
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "Hi, I ordered a replacement SIM a few days ago—can you tell me the status of that order?"
+  observed: get_orders
+[T2] user: "Okay, good, sounds like it’s on its way. I just realized I never actually reported the old SIM as stolen though—can you block it for me?"
+  observed: check_sim_status
+[T3] user: "Yes, please block it now."
+  observed: block_sim
+  observed: get_device_info
+[T4] user: "Thanks for blocking it. Will blocking the old SIM affect the replacement that’s already being shipped?"
+  observed: search_knowledge(query='blocking SIM affect replacement SIM order shipped does blocking old SIM cancel or impact replacement SIM activation')
+
+--- Assertion Results ---
+[PASS] skill_activated(order_status)
+[PASS] skill_activated(sim_management)
+[PASS] sequencing
+[PASS] memory_was_set(order_status.orders_loaded=True, sim_management.incident_reason='stolen', sim_management.wants_to_block=True, sim_management.sim_blocked=True)
+[PASS] memory_was_not_set(sim_management.replacement_ordered, sim_management.replacement_complete, sim_management.sim_type, sim_management.sim_order_summary)
+[PASS] tool_executed(get_orders)
+[PASS] tool_executed(check_sim_status)
+[PASS] tool_executed(block_sim)
+[PASS] tool_executed(get_device_info)
+
+--- Raw Transcript ---
+[1] agent: Hello! What can I assist you with today?
+[2] user: Hi, I ordered a replacement SIM a few days ago—can you tell me the status of that order?
+[3] agent: Right, let me check that order status.
+[4] agent: I found your SIM replacement order: **ORD-20260701-004 (July 1, 2026)** — status **OPEN**, and the **Replacement nano‑SIM** is **pending** and **being prepared for shipment**.  
+
+You also have another open order (**ORD-20260628-001**, Samsung Galaxy Watch 7) that’s also **being prepared for shipment**.
+[5] user: Okay, good, sounds like it’s on its way. I just realized I never actually reported the old SIM as stolen though—can you block it for me?
+[6] agent: I'm sorry to hear that—one moment.
+[7] agent: Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.
+
+[8] agent: Your SIM is currently active. Would you like me to block it now to help prevent any unauthorized use?
+[9] user: Yes, please block it now.
+[10] agent: Your SIM has been blocked now.
+[11] agent: Here are the device details on file for your line:
+Device: iPhone 15 Pro
+IMEI: 352345678901234
+Serial number: F2LZK1HQGRX
+
+[12] agent: Do you want a replacement SIM as well—**a physical nano‑SIM shipped (2–3 business days)** or an **eSIM via email instantly**?
+[13] user: Thanks for blocking it. Will blocking the old SIM affect the replacement that’s already being shipped?
+[14] agent: No—**blocking the old SIM does not affect the physical replacement SIM that’s already been ordered and is being shipped**, and the shipment will continue.  
+
+Also, once a SIM is blocked, **your mobile number is reserved for 90 days** so it can be moved onto the replacement SIM.
+[15] agent: Would you like to pick up where we left off with your SIM issue, or should I leave it there?
+[16] user: Got it, thanks—that’s all I needed today.
+[17] agent: Goodbye, and take care.
+[18] agent: We were in the middle of helping with your lost/stolen SIM—do you want to continue from where we paused, or should I stop here?
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=1117ms  turn_latency=5188ms
+turn 3: ttft=1006ms  turn_latency=4308ms
+turn 4: ttft=2066ms  turn_latency=4108ms
+turn 5: ttft=2887ms  turn_latency=5116ms
+turn 6: ttft=1134ms  turn_latency=2686ms
+conversation avg: ttft=1642ms  turn_latency=4281ms  (over 5 turns with bot text)
+
+--- Inspector URL ---
+http://localhost:5005/webhooks/inspector/inspect.html?sender=sim-0a52d262-ddf4-4bdc-9d4d-d864589f82d8
+
+--- Additional Metrics ---
+Turns to Completion: 5
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  session_started: {"event": "session_started", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "engine_version": "mantle"}
+    2  memory_set: system.session_started_metadata = {"is_simulation": true}
+    3  skill_activated: builtin_session_start
+    4  ordered_block_entered: builtin_session_start/main
+    5  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"QL3J9ZI0\", \"skill_id\": \"builtin_session_start\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"CMQQG618\", \"skill_id\": \"builtin_session_start\", \"block_id\": \"main\", \"step_id\": \"greet\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+    6  slot: consecutive_silence_timeouts = 0.0
+    7  user: '/session_start'
+    8  agent: 'Hello! What can I assist you with today?'
+    9  ordered_block_completed: builtin_session_start/main (step=greet)
+   10  skill_completed: builtin_session_start
+   11  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}, {\"op\": \"remove\", \"path\": \"/0\"}]"}
+   12  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}}
+[T1] user: "Hi, I ordered a replacement SIM a few days ago—can you tell me the status of that order?"
+    1  user: 'Hi, I ordered a replacement SIM a few days ago—can you tell me the status of that order?'
+    2  agent: 'Right, let me check that order status.'
+    3  skill_activated: order_status
+    4  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"9FUKZ1HY\", \"skill_id\": \"order_status\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+    5  tool: activate(target_id=order_status) → ok
+    6  memory_set: order_status.orders_loaded = true
+    7  tool: get_orders() → ok
+    8  agent: 'I found your SIM replacement order: **ORD-20260701-004 (July 1, 2026)** — status **OPEN**, and the **Replacement nano‑SIM** is **pending** and **being prepared for shipment**. You also have another open order (**ORD-20260628-001**, Samsung Galaxy Watch 7) that’s also **being prepared for shipment**.'
+    9  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}}
+[T2] user: "Okay, good, sounds like it’s on its way. I just realized I never actually reported the old SIM as stolen though—can you block it for me?"
+    1  user: 'Okay, good, sounds like it’s on its way. I just realized I never actually reported the old SIM as stolen though—can you block it for me?'
+    2  agent: "I'm sorry to hear that—one moment."
+    3  skill_interrupted: order_status (step=autonomous)
+    4  skill_activated: sim_management
+    5  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"add\", \"path\": \"/0/previous_frame_type\", \"value\": \"regular\"}, {\"op\": \"replace\", \"path\": \"/0/frame_type\", \"value\": \"interrupt\"}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"UGHSSC9M\", \"skill_id\": \"sim_management\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+    6  memory_set: sim_management.incident_reason = stolen
+    7  memory_set: system.verbatim_when_trigger_match_state = {"UGHSSC9M": {"utter_sim_incident_advice": true}}
+    8  tool: activate(target_id=sim_management, memory_items={"incident_reason": "stolen"}) → ok
+    9  agent: 'Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.'
+   10  ordered_block_entered: sim_management/block_sim_flow
+   11  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"add\", \"path\": \"/2\", \"value\": {\"frame_id\": \"6H50DQBV\", \"skill_id\": \"sim_management\", \"block_id\": \"block_sim_flow\", \"step_id\": \"check_status\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   12  tool: enter(target_id=sim_management__block_sim_flow) → ok
+   13  memory_set: sim_management.sim_blocked = false
+   14  memory_set: system.verbatim_when_trigger_match_state = {"UGHSSC9M": {"utter_sim_incident_advice": true}, "6H50DQBV": {"utter_sim_incident_advice": true}}
+   15  tool: check_sim_status() → ok
+   16  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"replace\", \"path\": \"/2/step_id\", \"value\": \"gate_status\"}]"}
+   17  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"replace\", \"path\": \"/2/step_id\", \"value\": \"ask_block\"}]"}
+   18  agent: 'Your SIM is currently active. Would you like me to block it now to help prevent any unauthorized use?'
+   19  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}}
+[T3] user: "Yes, please block it now."
+    1  user: 'Yes, please block it now.'
+    2  memory_set: sim_management.wants_to_block = true
+    3  memory_set: system.verbatim_when_trigger_match_state = {"UGHSSC9M": {"utter_sim_incident_advice": true}, "6H50DQBV": {"utter_sim_incident_advice": true}}
+    4  tool: set_memory(wants_to_block=true) → ok
+    5  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"replace\", \"path\": \"/2/step_id\", \"value\": \"gate_block\"}]"}
+    6  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"replace\", \"path\": \"/2/step_id\", \"value\": \"do_block\"}]"}
+    7  memory_set: sim_management.sim_blocked = true
+    8  memory_set: system.verbatim_when_trigger_match_state = {"UGHSSC9M": {"utter_sim_incident_advice": true}, "6H50DQBV": {"utter_sim_incident_advice": true}}
+    9  tool: block_sim() → ok
+   10  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"replace\", \"path\": \"/2/step_id\", \"value\": \"device_info_gate\"}]"}
+   11  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"replace\", \"path\": \"/2/step_id\", \"value\": \"share_device_info\"}]"}
+   12  memory_set: sim_management.device_name = iPhone 15 Pro
+   13  memory_set: sim_management.device_imei = 352345678901234
+   14  memory_set: sim_management.device_serial = F2LZK1HQGRX
+   15  memory_set: sim_management.device_info_shared = true
+   16  memory_set: system.verbatim_when_trigger_match_state = {"UGHSSC9M": {"utter_sim_incident_advice": true}, "6H50DQBV": {"utter_sim_incident_advice": true}}
+   17  tool: get_device_info() → ok
+   18  ordered_block_completed: sim_management/block_sim_flow (step=share_device_info)
+   19  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"remove\", \"path\": \"/2\"}]"}
+   20  agent: 'Your SIM has been blocked now.'
+   21  agent: 'Here are the device details on file for your line: Device: iPhone 15 Pro IMEI: 352345678901234 Serial number: F2LZK1HQGRX'
+   22  agent: 'Do you want a replacement SIM as well—**a physical nano‑SIM shipped (2–3 business days)** or an **eSIM via email instantly**?'
+   23  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}}
+[T4] user: "Thanks for blocking it. Will blocking the old SIM affect the replacement that’s already being shipped?"
+    1  user: 'Thanks for blocking it. Will blocking the old SIM affect the replacement that’s already being shipped?'
+    2  tool: search_knowledge(query=blocking SIM affect replacement SIM ord…) → ok
+    3  agent: 'No—**blocking the old SIM does not affect the physical replacement SIM that’s already been ordered and is being shipped**, and the shipment will continue. Also, once a SIM is blocked, **your mobile number is reserved for 90 days** so it can be moved onto the replacement SIM.'
+    4  skill_interrupted: sim_management (step=autonomous)
+    5  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"add\", \"path\": \"/1/previous_frame_type\", \"value\": \"regular\"}, {\"op\": \"replace\", \"path\": \"/1/frame_type\", \"value\": \"interrupt\"}]"}
+    6  skill_activated: builtin_continue_interrupted
+    7  ordered_block_entered: builtin_continue_interrupted/main
+    8  stack: {"event": "stack", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}, "update": "[{\"op\": \"add\", \"path\": \"/2\", \"value\": {\"frame_id\": \"RWQVWNPV\", \"skill_id\": \"builtin_continue_interrupted\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/3\", \"value\": {\"frame_id\": \"N719VLKI\", \"skill_id\": \"builtin_continue_interrupted\", \"block_id\": \"main\", \"step_id\": \"ask_resume\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+    9  memory_set: builtin_continue_interrupted.interrupted_task_name = SIM Management (Handle a lost or stolen SIM card or mobile device. Block the SIM, help the customer explore replacement options (physical SIM vs eSIM), order a replacement, and provide device info (IMEI) for police or insurance)
+   10  agent: 'Would you like to pick up where we left off with your SIM issue, or should I leave it there?'
+   11  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}}
+[T5] user: "Got it, thanks—that’s all I needed today."
+    1  user: 'Got it, thanks—that’s all I needed today.'
+    2  agent: 'Goodbye, and take care.'
+    3  agent: 'We were in the middle of helping with your lost/stolen SIM—do you want to continue from where we paused, or should I stop here?'
+    4  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "2a4f1190421e45539449aed4caa41bd9", "model_name": "20261123-204702-achromatic-hardcover.tar.gz", "assistant_id": "mantle-combined", "session_id": "5b4a896a-1cec-4afa-8402-26a0392a8158"}}

@@ -34,7 +34,7 @@ import subprocess
 import sys
 import time
 import urllib.request
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from importlib import metadata
 from pathlib import Path
@@ -355,7 +355,7 @@ def run_set(setup: Setup, runs: int, only: Optional[list[str]], results_dir: Pat
         stage(project, only)
         route_harness_logs(log_dir / "harness.log")
         asyncio.run(evaluate(setup, project, server_url, timestamp, runs))
-        shutil.copytree(project / "eval" / "results" / timestamp, out_dir)
+        shutil.copytree(project / "eval" / "results" / timestamp, out_dir, ignore=shutil.ignore_patterns(".summary.lock"))
     finally:
         for proc in reversed(procs):
             stop(proc)
@@ -387,6 +387,9 @@ def main() -> None:
     parser.add_argument("--runs", type=int, default=3, help="runs per scenario in each set (default 3)")
     parser.add_argument("--scenario", action="append", help="run only this scenario (repeatable)")
     parser.add_argument("--results-dir", type=Path, default=REPO / "results", help="default: results/")
+    parser.add_argument(
+        "--parallelism", type=int, help="override conversations in flight at once for every setup run"
+    )
     args = parser.parse_args()
     results_dir = args.results_dir.resolve()
     prepare_environment()
@@ -395,7 +398,10 @@ def main() -> None:
     for i in range(1, args.sets + 1):
         for name in args.setups:
             log(f"=== {name}: set {i}/{args.sets}")
-            run_set(SETUPS[name], args.runs, args.scenario, results_dir)
+            setup = SETUPS[name]
+            if args.parallelism:
+                setup = replace(setup, parallelism=args.parallelism)
+            run_set(setup, args.runs, args.scenario, results_dir)
     subprocess.run([sys.executable, str(REPO / "harness" / "compare.py"), str(results_dir)], check=True)
 
 

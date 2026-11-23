@@ -16,4 +16,9 @@ fi
 case "${1:-}" in
   ""|-*) set -- mantle lg lg-high "$@" ;;
 esac
+# On macOS, keep the machine awake: sleep freezes the timeouts and drops the
+# open connections to OpenAI, which wrecks the conversations in flight.
+if command -v caffeinate >/dev/null; then
+  exec caffeinate -i .venv-rasa/bin/python harness/run.py "$@"
+fi
 exec .venv-rasa/bin/python harness/run.py "$@"

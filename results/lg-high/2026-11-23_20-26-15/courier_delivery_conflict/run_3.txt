@@ -1,0 +1,362 @@
+scenario: Courier says delivered, agent system says not yet shipped
+run: 3
+timestamp: 2026-11-23T14:56:21Z
+conversation_id: sim-7920a99d-0368-4895-9cbc-5f93acd04c48
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent distinguishes the status available in its own system from the customer's conflicting courier evidence
+  rationale: Multiple replies explicitly contrast Acme’s order record ("still 'being prepared for shipment' and has no tracking number attached") with Swiss Post’s SMS/tracking that says the parcel was delivered.
+
+[PASS] The agent does not invent a location, delivery event, or certainty that its data doesn't support
+  rationale: The bot repeatedly says it cannot confirm shipment or where the parcel is (e.g., "we can’t see where it ‘really’ is" and "we can’t confirm that it has shipped or been delivered") and never specifies a location or concrete delivery event beyond what Swiss Post reports in general terms.
+
+[PASS] The agent explains the discrepancy clearly rather than silently picking one source as fact
+  rationale: The bot explains that Acme’s system and Swiss Post tracking are "two separate 'sources of truth'" and details how they answer different questions, instead of privileging one as definitively correct.
+
+[PASS] The agent offers an appropriate next step or escalation for a potentially missing or misreported delivery
+  rationale: The assistant gives detailed steps to open a "delivered but not received" case with Swiss Post, asks the user to obtain a case/reference number and proof-of-delivery, and explains to return with that for further checking on Acme’s side.
+
+[PASS] The agent does not guarantee a delivery time or recovery outcome it cannot verify
+  rationale: The assistant avoids any promises of when or whether the watch will be delivered or recovered, instead framing actions as investigations and checks ("we can’t confirm"; "Swiss Post investigation remains the correct next step").
+
+--- Quality Metrics ---
+bot_quality: 3.5/5
+  helpfulness: 4/5 — The assistant gave clear, actionable guidance on verifying the SMS, checking tracking, opening a Swiss Post investigation, and using the case details with Acme, though it could have been slightly more explicit about what Acme can do once tracking is attached (e.g., refunds/replacements).
+  repair_quality: 3/5 — When the user twice clarified they wanted to continue with the order/Swiss Post issue, the assistant briefly switched context to an unrelated 'replacing your card' thread before returning to the correct topic after the user reiterated, indicating a missed but subsequently corrected repair opportunity.
+  coherence: 3/5 — The assistant was generally consistent about the order status and tracking, but the sudden mention of 'replacing your card' shows a clear context-tracking error mid-conversation.
+  tone: 4/5 — The tone is polite, empathetic, and clear throughout, though occasionally a bit procedural and formal rather than fully natural and conversational.
+  task_completion: PASS — The user wanted to know what to rely on and what to do about the conflicting delivery info; the assistant clearly explained the two sources of truth, provided concrete steps to open a Swiss Post case, and told the user what to do with the case details on the merchant side.
+summary: The assistant provided mostly clear and actionable guidance on handling conflicting shipping information, including concrete scripts and next steps with the courier and merchant. It maintained a polite, structured tone, but briefly lost context by referencing an unrelated card-replacement flow, which hurt coherence and repair quality slightly. Overall, it helped the user understand what to rely on and what to do next, despite that momentary lapse.
+
+--- Acknowledgements ---
+summary:
+  coverage: 0/8 tool turns (0%)
+  mean naturalness score: None
+  mean issue score: None
+  issues: none
+
+T1
+  turn:
+    tools:
+      - transfer_to_order_status
+      - get_orders
+      - get_order_details
+      - finish_task
+    no acknowledgement
+T2
+  turn:
+    tools:
+      - transfer_to_order_status
+      - get_orders
+      - get_order_details
+    no acknowledgement
+T3
+  turn:
+    tools:
+      - transfer_to_order_status
+      - get_order_details
+      - finish_task
+      - transfer_to_card_replace
+    no acknowledgement
+T4
+  turn:
+    tools:
+      - transfer_to_order_status
+      - finish_task
+      - transfer_to_card_replace
+      - transfer_back
+      - transfer_to_card_replace
+      - transfer_back
+      - transfer_to_card_replace
+      - transfer_back
+      - transfer_to_card_replace
+      - transfer_back
+      - transfer_to_card_replace
+    no acknowledgement
+T5
+  turn:
+    tools:
+      - transfer_to_order_status
+      - get_orders
+    no acknowledgement
+T6
+  turn:
+    tools:
+      - transfer_to_order_status
+      - finish_task
+    no acknowledgement
+T8
+  turn:
+    tools:
+      - transfer_to_order_status
+      - finish_task
+      - transfer_to_card_replace
+    no acknowledgement
+T9
+  turn:
+    tools:
+      - transfer_to_card_replace
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "Hi, I want to check the status of my Galaxy Watch order, please."
+  observed: transfer_to_order_status
+  observed: get_orders
+  observed: get_order_details(order_id='ORD-20260628-001')
+  observed: finish_task
+[T2] user: "That’s odd, because I just got an SMS from the courier saying the parcel was delivered today, but I haven’t received anything. So where is it really?"
+  observed: transfer_to_order_status
+  observed: get_orders
+  observed: get_order_details(order_id='ORD-20260628-001')
+  observed: search_knowledge(query='courier SMS says delivered but order status still preparing for shipment no tracking what to do missing delivery device order')
+  observed: search_knowledge(query='order stuck OPEN being prepared for shipment past estimated delivery what can advisor do')
+[T3] user: "The SMS says it’s from Swiss Post with this tracking number: 99.00.123456.78900001. But your system says it hasn’t even shipped yet, so what am I supposed to believe? What should I actually do next..."
+  observed: transfer_to_order_status
+  observed: get_order_details(order_id='ORD-20260701-004')
+  observed: search_knowledge(query='device order still OPEN being prepared for shipment months later escalation process customer support what can we do in chat')
+  observed: finish_task
+  observed: transfer_to_card_replace
+[T4] user: "I checked on Swiss Post and it shows as delivered to my address, with my name, earlier this afternoon. So if they say it’s delivered and your system says it hasn’t shipped, what am I actually suppo..."
+  observed: transfer_to_order_status
+  observed: search_knowledge(query='package marked delivered but not received process Acme device order no tracking attached how to escalate replacement refund')
+  observed: finish_task
+  observed: transfer_to_card_replace
+  observed: transfer_back
+  observed: transfer_to_card_replace
+  observed: transfer_back
+  observed: transfer_to_card_replace
+  observed: transfer_back
+  observed: transfer_to_card_replace
+  observed: transfer_back
+  observed: transfer_to_card_replace
+[T5] user: "Not yet. So where is it really, then? I just want a clear answer on what I should rely on and what I’m supposed to do next if Swiss Post insists it’s delivered but your system still says it hasn’t ..."
+  observed: transfer_to_order_status
+  observed: get_orders
+[T6] user: "Let’s open the Swiss Post case now, please. What exactly should I tell them when I contact them?"
+  observed: transfer_to_order_status
+  observed: finish_task
+[T8] user: "Okay, I’ll contact Swiss Post with that. Once I have their case/reference number and delivery details, what do I do with it on your side?"
+  observed: transfer_to_order_status
+  observed: finish_task
+  observed: transfer_to_card_replace
+  observed: search_knowledge(query='What to do when customer returns with Swiss Post delivered-but-not-received case reference for a parcel but Acme order has no tracking attached yet')
+[T9] user: "Got it, thanks. I’ll contact Swiss Post now and then come back here with the case number and their delivery details once I have them."
+  observed: transfer_to_card_replace
+
+--- Assertion Results ---
+[PASS] skill_activated(order_status)
+[PASS] skill_completed(order_status)
+[PASS] memory_was_set(order_status.orders_loaded=True)
+[PASS] memory_was_not_set(card_replace.replacement_ordered, sim_management.replacement_ordered, sim_management.sim_blocked)
+[PASS] tool_executed(get_orders)
+[PASS] tool_executed(get_order_details)
+
+--- Raw Transcript ---
+[1] agent: Hi! How can I help you today?
+[2] user: Hi, I want to check the status of my Galaxy Watch order, please.
+[3] agent: Your **Samsung Galaxy Watch 7** order (**ORD-20260628-001**, placed **June 28, 2026**) is currently **pending** and **being prepared for shipment at the distribution center**.
+
+- **Estimated ship date:** **July 1, 2026**  
+- **Estimated delivery:** **July 3–5, 2026**  
+- **Tracking:** **Not yet available** (it will be assigned once the order ships)  
+- **Shipping method:** **Standard Post (Swiss Post)**
+[4] user: That’s odd, because I just got an SMS from the courier saying the parcel was delivered today, but I haven’t received anything. So where is it really?
+[5] agent: I can see why that’s confusing. In our order record for your **Samsung Galaxy Watch 7 (ORD-20260628-001)** it’s still **“being prepared for shipment”** and **no tracking number is attached yet**—so from our side, I can’t confirm a delivery or tell you where the parcel is.
+
+What to do next:
+- **Don’t open any links** in the SMS.
+- If the SMS includes a **tracking number**, enter it directly on the courier’s **official website/app**.
+- If the courier tracking shows **“delivered”** but you don’t have it, you’ll need to open a **“delivered but not received”** case with the courier and get a **case/reference number**.
+
+If you paste the **courier name** and the **tracking number** from the SMS (just the number), I’ll check whether it matches anything we have on your Acme orders.
+[6] user: The SMS says it’s from Swiss Post with this tracking number: 99.00.123456.78900001. But your system says it hasn’t even shipped yet, so what am I supposed to believe? What should I actually do next if they say it’s delivered and you say it isn’t?
+[7] agent: Our records and the courier SMS can both exist at the same time because they’re **not currently linkable**:
+
+- In Acme’s system, your **Galaxy Watch 7 order (ORD-20260628-001)** is still **“being prepared for shipment”** and has **no tracking number attached yet**.
+- So I **can’t confirm** that **Swiss Post tracking `99.00.123456.78900001`** belongs to that watch order (or even to an Acme shipment) based on what we see right now.
+
+What you should do next (in this order):
+1. **Do not tap any links** in the SMS.
+2. Go to **Swiss Post’s official site/app** and **enter the tracking number manually**: `99.00.123456.78900001`.
+3. If Swiss Post shows **Delivered** but you don’t have the parcel:
+   - Check any **safe-place/drop location**, **mailroom/reception**, and **neighbors** (common for “delivered” scans).
+   - Then open a **“delivered but not received”** investigation with **Swiss Post** and ask for a **case/reference number** (and, if available, proof-of-delivery details).
+4. Come back and share **what Swiss Post shows for sender/recipient** and the **Swiss Post case/reference number**. Then we can compare it against what’s on your Acme orders as soon as any tracking is attached on our side.
+
+When you look up that tracking number on the official Swiss Post site/app, **what does it show for the sender and delivery details**?
+[8] user: I checked on Swiss Post and it shows as delivered to my address, with my name, earlier this afternoon. So if they say it’s delivered and your system says it hasn’t shipped, what am I actually supposed to go by here?
+[9] agent: Right now you have two separate “sources of truth,” and they answer two different questions:
+
+- **What Acme can confirm about your Galaxy Watch order (ORD-20260628-001):** our order record still shows **OPEN / being prepared for shipment** and **no tracking number is attached yet**. So we **can’t confirm** that it has shipped or been delivered.
+- **What Swiss Post can confirm about tracking `99.00.123456.78900001`:** Swiss Post is saying *that specific parcel* was **delivered to your name/address** today. We still **can’t prove in our system** that this tracking number is the Galaxy Watch order.
+
+**What you should do next**
+1. Since Swiss Post shows “delivered” but you don’t have it, open a **“delivered but not received”** case with **Swiss Post** for tracking `99.00.123456.78900001` and request the **case/reference number** (and any proof-of-delivery details they can provide—e.g., where it was left / who accepted it).
+2. Once you have that **case/reference number**, share it here—because until our Acme order has a tracking number attached, we can’t trace or match the shipment from our side.
+
+Do you already have a **Swiss Post case/reference number** for that tracking number?
+[10] user: Not yet. So where is it really, then? I just want a clear answer on what I should rely on and what I’m supposed to do next if Swiss Post insists it’s delivered but your system still says it hasn’t even shipped.
+[11] agent: We *can’t see where it “really” is* from our side right now, because **your Acme Galaxy Watch order (ORD-20260628-001) still shows “being prepared for shipment” and has no tracking number attached**. That means we can’t verify that it left our warehouse or link it to any Swiss Post parcel yet.
+
+At the same time, **the Swiss Post tracking number you checked is its own record**—it shows *that tracked parcel* was delivered to your name/address today. What we *can’t* do at the moment is prove that parcel is **the Galaxy Watch** (or any Acme shipment) until our order record has tracking attached or Swiss Post confirms the sender details via an investigation.
+
+### What to rely on
+- **For your Acme order:** rely on **Acme’s order status** (currently *not shipped / no tracking on the order*).
+- **For that tracking number:** rely on **Swiss Post’s tracking and investigation results** for what happened to *that parcel*.
+
+### What to do next (clear steps)
+1. **Open a “delivered but not received” case with Swiss Post** for tracking **99.00.123456.78900001** and get a **case/reference number**.
+2. Ask Swiss Post for **proof-of-delivery details** (e.g., where it was left / who accepted it, and any delivery scan details they can provide).
+3. While Swiss Post investigates, check common handoff points: **mailroom/reception/concierge**, **parcel locker**, and **neighbors**.
+4. Once you have the **Swiss Post case/reference number**, share it here. Separately, if/when **tracking gets attached to ORD-20260628-001**, we can compare it to the number you received.
+
+If you tell me which option you prefer, I’ll guide you through it: **opening the Swiss Post case now**, or **waiting to see if Acme attaches tracking to the order** (since right now we don’t have any tracking to match).
+[12] user: Let’s open the Swiss Post case now, please. What exactly should I tell them when I contact them?
+[13] agent: We were still in the middle of replacing your card. Would you like to continue with that, or drop it?
+[14] user: Yes, please continue with the order issue and opening the Swiss Post case. What exactly should I say to them?
+[15] agent: Here’s exactly what to tell Swiss Post to open a **“delivered but not received”** case, and what to ask for.
+
+### What to tell them (copy/paste script)
+“Hi — I’m calling about a parcel with Swiss Post tracking number **99.00.123456.78900001**.  
+Tracking shows it was **delivered today** to **my name and address**, but I **did not receive it** and I can’t find it (no parcel in my mailbox/at my door).  
+Please open a **‘delivered but not received’** investigation and help locate it.”
+
+### Key details to provide (if they ask)
+- Tracking number: **99.00.123456.78900001**
+- Your **full name** and **delivery address** (as shown on the tracking page)
+- Approx. **delivery time** shown in tracking (“earlier this afternoon” / exact time if listed)
+- Whether anyone could have accepted it (e.g., **no one at home**, **no signature taken**, etc.—whatever is true)
+
+### What to ask Swiss Post for (important)
+1. **Case/reference number** for the investigation (ask them to repeat it).
+2. **Proof-of-delivery details**, such as:
+   - Where it was left (e.g., mailbox, front door, “safe place,” reception)
+   - **Who accepted it** (name/signature) if applicable
+   - Any **delivery photo** (if available)
+   - Delivery scan details (sometimes they can see **GPS/scan location** or the delivery route info)
+3. Whether it was **delivered to a neighbor** or **redirected to a pickup point** by mistake.
+
+### After you contact them
+Reply here with the **Swiss Post case/reference number** (and anything they say about where it was left / who accepted it), and I’ll help you with the next steps from the Acme side based on what they report.
+[16] user: Okay, I’ll contact Swiss Post with that. Once I have their case/reference number and delivery details, what do I do with it on your side?
+[17] agent: Once Swiss Post gives you a **case/reference number** and the **delivery details**, use it on our side like this:
+
+1. **Bring it back to us (in this chat)** along with:
+   - the **Swiss Post tracking number** (same one),
+   - the **Swiss Post case/reference number**, and
+   - whatever they provide as **proof-of-delivery details** (e.g., where it was left, who accepted it/signature, photo if any).
+
+2. **What we can do here:** I can **re-check your Acme order (ORD-20260628-001)** to see whether a **tracking number has been attached** and whether it **matches** the Swiss Post tracking you have.
+
+3. **If our order still shows “not shipped / no tracking”:** we still **can’t confirm** that parcel is the Galaxy Watch order from our system, so the **Swiss Post investigation remains the correct next step** until either:
+   - Swiss Post confirms the **sender**, or
+   - our order updates with a tracking number we can match.
+
+If Swiss Post gives you a **written outcome** (misdelivery/lost/located), keep it—share the key details with us when you return.
+[18] user: Got it, thanks. I’ll contact Swiss Post now and then come back here with the case number and their delivery details once I have them.
+[19] agent: Sounds good—come back anytime with the Swiss Post case number and delivery details. Goodbye.
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=—  turn_latency=13038ms
+turn 3: ttft=—  turn_latency=48418ms
+turn 4: ttft=—  turn_latency=68217ms
+turn 5: ttft=—  turn_latency=127761ms
+turn 6: ttft=—  turn_latency=43407ms
+turn 7: ttft=—  turn_latency=10296ms
+turn 8: ttft=—  turn_latency=14493ms
+turn 9: ttft=—  turn_latency=56710ms
+turn 10: ttft=—  turn_latency=4313ms
+conversation avg: turn_latency=42961ms  (over 0 turns with bot text, 9 turns timed)
+
+--- Inspector URL ---
+http://127.0.0.1:5007/webhooks/inspector/inspect.html?sender=sim-7920a99d-0368-4895-9cbc-5f93acd04c48
+
+--- Additional Metrics ---
+Turns to Completion: 9
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  action: action_session_start
+    2  session_started: {"event": "session_started"}
+    3  agent: 'Hi! How can I help you today?'
+[T1] user: "Hi, I want to check the status of my Galaxy Watch order, please."
+    1  user: 'Hi, I want to check the status of my Galaxy Watch order, please.'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: get_orders() → ok
+    5  memory_set: order_status.orders_loaded = true
+    6  tool: get_order_details(order_id=ORD-20260628-001) → ok
+    7  tool: finish_task() → ok
+    8  skill_completed: order_status
+    9  agent: 'Your **Samsung Galaxy Watch 7** order (**ORD-20260628-001**, placed **June 28, 2026**) is currently **pending** and **being prepared for shipment at the distribution center**. - **Estimated ship date:** **July 1, 2026** - **Estimated delivery:** **July 3–5, 2026** - **Tracking:** **Not yet available** (it will be assigned once the order ships) - **Shipping method:** **Standard Post (Swiss Post)**'
+[T2] user: "That’s odd, because I just got an SMS from the courier saying the parcel was delivered today, but I haven’t received anything. So where is it really?"
+    1  user: 'That’s odd, because I just got an SMS from the courier saying the parcel was delivered today, but I haven’t received anything. So where is it really?'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: get_orders() → ok
+    5  tool: get_order_details(order_id=ORD-20260628-001) → ok
+    6  tool: search_knowledge(query=courier SMS says delivered but order st…) → ok
+    7  tool: search_knowledge(query=order stuck OPEN being prepared for shi…) → ok
+    8  agent: 'I can see why that’s confusing. In our order record for your **Samsung Galaxy Watch 7 (ORD-20260628-001)** it’s still **“being prepared for shipment”** and **no tracking number is attached yet**—so from our side, I can’t confirm a delivery or tell you where the parcel is. What to do next: - **Don’t open any links** in the SMS. - If the SMS includes a **tracking number**, enter it directly on the courier’s **official website/app**. - If the courier tracking shows **“delivered”** but you don’t have it, you’ll need to open a **“delivered but not received”** case with the courier and get a **case/reference number**. If you paste the **courier name** and the **tracking number** from the SMS (just the number), I’ll check whether it matches anything we have on your Acme orders.'
+[T3] user: "The SMS says it’s from Swiss Post with this tracking number: 99.00.123456.78900001. But your system says it hasn’t even shipped yet, so what am I supposed to believe? What should I actually do next i…"
+    1  user: 'The SMS says it’s from Swiss Post with this tracking number: 99.00.123456.78900001. But your system says it hasn’t even shipped yet, so what am I supposed to believe? What should I actually do next if they say it’s delivered and you say it isn’t?'
+    2  tool: transfer_to_order_status() → ok
+    3  tool: get_order_details(order_id=ORD-20260701-004) → ok
+    4  tool: search_knowledge(query=device order still OPEN being prepared …) → ok
+    5  tool: finish_task() → ok
+    6  skill_completed: order_status
+    7  tool: transfer_to_card_replace() → ok
+    8  skill_activated: card_replace
+    9  agent: 'Our records and the courier SMS can both exist at the same time because they’re **not currently linkable**: - In Acme’s system, your **Galaxy Watch 7 order (ORD-20260628-001)** is still **“being prepared for shipment”** and has **no tracking number attached yet**. - So I **can’t confirm** that **Swiss Post tracking `99.00.123456.78900001`** belongs to that watch order (or even to an Acme shipment) based on what we see right now. What you should do next (in this order): 1. **Do not tap any links** in the SMS. 2. Go to **Swiss Post’s official site/app** and **enter the tracking number manually**: `99.00.123456.78900001`. 3. If Swiss Post shows **Delivered** but you don’t have the parcel: - Check any **safe-place/drop location**, **mailroom/reception**, and **neighbors** (common for “delivered” scans). - Then open a **“delivered but not received”** investigation with **Swiss Post** and ask for a **case/reference number** (and, if available, proof-of-delivery details). 4. Come back and share **what Swiss Post shows for sender/recipient** and the **Swiss Post case/reference number**. Then we can compare it against what’s on your Acme orders as soon as any tracking is attached on our side. When you look up that tracking number on the official Swiss Post site/app, **what does it show for the sender and delivery details**?'
+[T4] user: "I checked on Swiss Post and it shows as delivered to my address, with my name, earlier this afternoon. So if they say it’s delivered and your system says it hasn’t shipped, what am I actually suppose…"
+    1  user: 'I checked on Swiss Post and it shows as delivered to my address, with my name, earlier this afternoon. So if they say it’s delivered and your system says it hasn’t shipped, what am I actually supposed to go by here?'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: search_knowledge(query=package marked delivered but not receiv…) → ok
+    5  tool: finish_task() → ok
+    6  skill_completed: order_status
+    7  tool: transfer_to_card_replace() → ok
+    8  tool: transfer_back() → ok
+    9  tool: transfer_to_card_replace() → ok
+   10  tool: transfer_back() → ok
+   11  tool: transfer_to_card_replace() → ok
+   12  tool: transfer_back() → ok
+   13  tool: transfer_to_card_replace() → ok
+   14  tool: transfer_back() → ok
+   15  tool: transfer_to_card_replace() → ok
+   16  agent: 'Right now you have two separate “sources of truth,” and they answer two different questions: - **What Acme can confirm about your Galaxy Watch order (ORD-20260628-001):** our order record still shows **OPEN / being prepared for shipment** and **no tracking number is attached yet**. So we **can’t confirm** that it has shipped or been delivered. - **What Swiss Post can confirm about tracking `99.00.123456.78900001`:** Swiss Post is saying *that specific parcel* was **delivered to your name/address** today. We still **can’t prove in our system** that this tracking number is the Galaxy Watch order. **What you should do next** 1. Since Swiss Post shows “delivered” but you don’t have it, open a **“delivered but not received”** case with **Swiss Post** for tracking `99.00.123456.78900001` and request the **case/reference number** (and any proof-of-delivery details they can provide—e.g., where it was left / who accepted it). 2. Once you have that **case/reference number**, share it here—because until our Acme order has a tracking number attached, we can’t trace or match the shipment from our side. Do you already have a **Swiss Post case/reference number** for that tracking number?'
+[T5] user: "Not yet. So where is it really, then? I just want a clear answer on what I should rely on and what I’m supposed to do next if Swiss Post insists it’s delivered but your system still says it hasn’t ev…"
+    1  user: 'Not yet. So where is it really, then? I just want a clear answer on what I should rely on and what I’m supposed to do next if Swiss Post insists it’s delivered but your system still says it hasn’t even shipped.'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: get_orders() → ok
+    5  agent: 'We *can’t see where it “really” is* from our side right now, because **your Acme Galaxy Watch order (ORD-20260628-001) still shows “being prepared for shipment” and has no tracking number attached**. That means we can’t verify that it left our warehouse or link it to any Swiss Post parcel yet. At the same time, **the Swiss Post tracking number you checked is its own record**—it shows *that tracked parcel* was delivered to your name/address today. What we *can’t* do at the moment is prove that parcel is **the Galaxy Watch** (or any Acme shipment) until our order record has tracking attached or Swiss Post confirms the sender details via an investigation. ### What to rely on - **For your Acme order:** rely on **Acme’s order status** (currently *not shipped / no tracking on the order*). - **For that tracking number:** rely on **Swiss Post’s tracking and investigation results** for what happened to *that parcel*. ### What to do next (clear steps) 1. **Open a “delivered but not received” case with Swiss Post** for tracking **99.00.123456.78900001** and get a **case/reference number**. 2. Ask Swiss Post for **proof-of-delivery details** (e.g., where it was left / who accepted it, and any delivery scan details they can provide). 3. While Swiss Post investigates, check common handoff points: **mailroom/reception/concierge**, **parcel locker**, and **neighbors**. 4. Once you have the **Swiss Post case/reference number**, share it here. Separately, if/when **tracking gets attached to ORD-20260628-001**, we can compare it to the number you received. If you tell me which option you prefer, I’ll guide you through it: **opening the Swiss Post case now**, or **waiting to see if Acme attaches tracking to the order** (since right now we don’t have any tracking to match).'
+[T6] user: "Let’s open the Swiss Post case now, please. What exactly should I tell them when I contact them?"
+    1  user: 'Let’s open the Swiss Post case now, please. What exactly should I tell them when I contact them?'
+    2  tool: transfer_to_order_status() → ok
+    3  tool: finish_task() → ok
+    4  skill_completed: order_status
+    5  skill_activated: default_continue_interrupted
+    6  skill_completed: default_continue_interrupted
+    7  agent: 'We were still in the middle of replacing your card. Would you like to continue with that, or drop it?'
+[T7] user: "Yes, please continue with the order issue and opening the Swiss Post case. What exactly should I say to them?"
+    1  user: 'Yes, please continue with the order issue and opening the Swiss Post case. What exactly should I say to them?'
+    2  agent: 'Here’s exactly what to tell Swiss Post to open a **“delivered but not received”** case, and what to ask for. ### What to tell them (copy/paste script) “Hi — I’m calling about a parcel with Swiss Post tracking number **99.00.123456.78900001**. Tracking shows it was **delivered today** to **my name and address**, but I **did not receive it** and I can’t find it (no parcel in my mailbox/at my door). Please open a **‘delivered but not received’** investigation and help locate it.” ### Key details to provide (if they ask) - Tracking number: **99.00.123456.78900001** - Your **full name** and **delivery address** (as shown on the tracking page) - Approx. **delivery time** shown in tracking (“earlier this afternoon” / exact time if listed) - Whether anyone could have accepted it (e.g., **no one at home**, **no signature taken**, etc.—whatever is true) ### What to ask Swiss Post for (important) 1. **Case/reference number** for the investigation (ask them to repeat it). 2. **Proof-of-delivery details**, such as: - Where it was left (e.g., mailbox, front door, “safe place,” reception) - **Who accepted it** (name/signature) if applicable - Any **delivery photo** (if available) - Delivery scan details (sometimes they can see **GPS/scan location** or the delivery route info) 3. Whether it was **delivered to a neighbor** or **redirected to a pickup point** by mistake. ### After you contact them Reply here with the **Swiss Post case/reference number** (and anything they say about where it was left / who accepted it), and I’ll help you with the next steps from the Acme side based on what they report.'
+[T8] user: "Okay, I’ll contact Swiss Post with that. Once I have their case/reference number and delivery details, what do I do with it on your side?"
+    1  user: 'Okay, I’ll contact Swiss Post with that. Once I have their case/reference number and delivery details, what do I do with it on your side?'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: finish_task() → ok
+    5  skill_completed: order_status
+    6  tool: transfer_to_card_replace() → ok
+    7  tool: search_knowledge(query=What to do when customer returns with S…) → ok
+    8  agent: 'Once Swiss Post gives you a **case/reference number** and the **delivery details**, use it on our side like this: 1. **Bring it back to us (in this chat)** along with: - the **Swiss Post tracking number** (same one), - the **Swiss Post case/reference number**, and - whatever they provide as **proof-of-delivery details** (e.g., where it was left, who accepted it/signature, photo if any). 2. **What we can do here:** I can **re-check your Acme order (ORD-20260628-001)** to see whether a **tracking number has been attached** and whether it **matches** the Swiss Post tracking you have. 3. **If our order still shows “not shipped / no tracking”:** we still **can’t confirm** that parcel is the Galaxy Watch order from our system, so the **Swiss Post investigation remains the correct next step** until either: - Swiss Post confirms the **sender**, or - our order updates with a tracking number we can match. If Swiss Post gives you a **written outcome** (misdelivery/lost/located), keep it—share the key details with us when you return.'
+[T9] user: "Got it, thanks. I’ll contact Swiss Post now and then come back here with the case number and their delivery details once I have them."
+    1  user: 'Got it, thanks. I’ll contact Swiss Post now and then come back here with the case number and their delivery details once I have them.'
+    2  tool: transfer_to_card_replace() → ok
+    3  agent: 'Sounds good—come back anytime with the Swiss Post case number and delivery details. Goodbye.'

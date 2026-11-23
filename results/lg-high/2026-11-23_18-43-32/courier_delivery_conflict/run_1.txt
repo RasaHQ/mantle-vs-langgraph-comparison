@@ -1,0 +1,238 @@
+scenario: Courier says delivered, agent system says not yet shipped
+run: 1
+timestamp: 2026-11-23T13:13:35Z
+conversation_id: sim-f1dfca26-7499-4297-8aef-4ea0bdb30503
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent distinguishes the status available in its own system from the customer's conflicting courier evidence
+  rationale: The bot clearly contrasts its own order record ("still showing 'being prepared for shipment' and there's no tracking number attached yet") with the user's SMS stating the parcel was delivered, repeatedly emphasizing it can only confirm its internal status.
+
+[PASS] The agent does not invent a location, delivery event, or certainty that its data doesn't support
+  rationale: The bot explicitly says it "can’t confirm a delivery or tell you where the parcel is right now" and never states any specific delivery location or event beyond what its system shows.
+
+[PASS] The agent explains the discrepancy clearly rather than silently picking one source as fact
+  rationale: It explains that its system shows the order as not shipped with no tracking and instructs the user to treat the courier SMS as unverified until checked, explicitly addressing why the two sources differ and how to reconcile them.
+
+[PASS] The agent offers an appropriate next step or escalation for a potentially missing or misreported delivery
+  rationale: The bot gives clear stepwise instructions: check the tracking on the courier’s official site, and if it shows Delivered but not received, open a "delivered but not received" case with the courier and bring back the case/reference number.
+
+[PASS] The agent does not guarantee a delivery time or recovery outcome it cannot verify
+  rationale: Although it gives estimated ship/delivery dates initially, it never guarantees when or whether the watch will be delivered or recovered, and stresses that it cannot confirm a delivery or say where the watch is.
+
+--- Quality Metrics ---
+bot_quality: 3.75/5
+  helpfulness: 4/5 — It accurately reported the order status and gave clear, actionable guidance about treating the SMS as unverified and working with the courier, though the odd interjection about replacing a card created a brief distracting moment.
+  repair_quality: 5/5 — When the user asked for clarification and confirmation, the assistant restated the key points clearly and aligned with the user’s summary without resistance or repeated misunderstanding.
+  coherence: 2/5 — The assistant abruptly mentioned 'replacing your card'—a new, unrelated context that contradicted the ongoing order-status discussion—indicating a state-tracking failure mid-conversation.
+  tone: 4/5 — The tone is polite, clear, and professional throughout, with only minor stiffness but nothing that significantly harms readability.
+  task_completion: PASS — The assistant clearly confirmed the order status multiple times and gave concrete next steps for handling the courier SMS, which the user accepted and said was all they needed.
+summary: The assistant provided accurate order-status information and clear, step-by-step instructions on how to handle the suspicious delivery SMS, which the user found sufficient. It handled clarification and confirmation requests well but briefly introduced an unrelated topic about replacing a card, showing a lapse in conversational coherence. Overall tone was professional and easy to follow.
+
+--- Acknowledgements ---
+summary:
+  coverage: 0/5 tool turns (0%)
+  mean naturalness score: None
+  mean issue score: None
+  issues: none
+
+T1
+  turn:
+    tools:
+      - transfer_to_order_status
+      - get_orders
+      - get_order_details
+      - finish_task
+    no acknowledgement
+T2
+  turn:
+    tools:
+      - transfer_to_order_status
+      - get_orders
+      - get_order_details
+      - finish_task
+      - transfer_to_bill_inquiry
+      - finish_task
+      - transfer_to_card_advisory
+    no acknowledgement
+T3
+  turn:
+    tools:
+      - transfer_to_order_status
+      - finish_task
+      - transfer_to_card_replace
+      - transfer_back
+      - transfer_to_card_advisory
+    no acknowledgement
+T4
+  turn:
+    tools:
+      - transfer_to_order_status
+      - finish_task
+    no acknowledgement
+T6
+  turn:
+    tools:
+      - transfer_to_card_replace
+      - transfer_back
+      - transfer_to_card_replace
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "Hi, I want to check the status of my Galaxy Watch order, please."
+  observed: transfer_to_order_status
+  observed: get_orders
+  observed: get_order_details(order_id='ORD-20260628-001')
+  observed: finish_task
+[T2] user: "That’s odd, because I just got an SMS from the courier saying the parcel was delivered today, but I never received anything. So where is it really?"
+  observed: transfer_to_order_status
+  observed: get_orders
+  observed: get_order_details(order_id='ORD-20260628-001')
+  observed: search_knowledge(query='SMS from courier says delivered but Acme order status still pending no tracking assigned what to do delivery dispute galaxy watch not received')
+  observed: finish_task
+  observed: transfer_to_bill_inquiry
+  observed: finish_task
+  observed: transfer_to_card_advisory
+[T3] user: "So if your system says it hasn’t even shipped but the courier says delivered, what should I do next if they don’t match? I really need a clear answer here."
+  observed: transfer_to_order_status
+  observed: finish_task
+  observed: transfer_to_card_replace
+  observed: transfer_back
+  observed: transfer_to_card_advisory
+[T4] user: "Okay, so to be sure: you’re saying my watch order with you definitely hasn’t shipped yet, and I should treat that SMS as unverified and check the tracking on the courier’s official site first, then..."
+  observed: transfer_to_order_status
+  observed: finish_task
+[T6] user: "Got it. I’ll do that with the courier now and come back with the tracking and case number if there’s an issue. Thanks, that’s all I needed."
+  observed: transfer_to_card_replace
+  observed: transfer_back
+  observed: transfer_to_card_replace
+
+--- Assertion Results ---
+[PASS] skill_activated(order_status)
+[PASS] skill_completed(order_status)
+[PASS] memory_was_set(order_status.orders_loaded=True)
+[PASS] memory_was_not_set(card_replace.replacement_ordered, sim_management.replacement_ordered, sim_management.sim_blocked)
+[PASS] tool_executed(get_orders)
+[PASS] tool_executed(get_order_details)
+
+--- Raw Transcript ---
+[1] agent: Hi! How can I help you today?
+[2] user: Hi, I want to check the status of my Galaxy Watch order, please.
+[3] agent: Your **Samsung Galaxy Watch 7** order (**ORD-20260628-001**, placed **June 28, 2026**) is still **pending** and is **being prepared for shipment at the distribution center**.
+
+- **Estimated ship date:** **July 1, 2026**  
+- **Estimated delivery:** **July 3–5, 2026**  
+- **Shipping method:** Standard Post (Swiss Post)  
+- **Tracking:** Not yet available (it will be assigned once it ships)
+[4] user: That’s odd, because I just got an SMS from the courier saying the parcel was delivered today, but I never received anything. So where is it really?
+[5] agent: In our Acme order record for your **Samsung Galaxy Watch 7 (ORD-20260628-001)**, it’s still showing **“being prepared for shipment”** and **there’s no tracking number attached yet**. So from our side, it **hasn’t shipped**, and I can’t confirm a delivery or tell you where the parcel is right now.
+
+What to do next (so you can pinpoint what that SMS refers to):
+1. **Don’t open any links** in the SMS.
+2. If the SMS includes a **tracking number**, enter it directly on the courier’s **official website/app** (for this order, the shipping method on file is **Swiss Post standard**).
+3. If the courier’s site shows **Delivered** but you don’t have the parcel, please **open a “delivered but not received” case with the courier** and ask for a **case/reference number**.
+4. Then come back with the **tracking number + the courier case/reference number**, and we’ll take it from there (right now we can’t trace it on our side because no tracking is linked to the order yet).
+[6] user: So if your system says it hasn’t even shipped but the courier says delivered, what should I do next if they don’t match? I really need a clear answer here.
+[7] agent: If they don’t match, the clear next step is: **treat the courier SMS as unverified until the courier can confirm what shipment it refers to**, because **your Acme order still shows “not shipped” and has no tracking number attached**.
+
+Do this in order:
+
+1. **Don’t click any links** in the SMS.  
+2. **Use the courier’s official site/app** and enter the **tracking number from the SMS** (if there is one).  
+3. If the courier’s tracking shows **Delivered** but you don’t have it, **open a “delivered but not received” case with the courier** and get a **case/reference number** (they can confirm the sender and delivery details).  
+4. After that, come back to us with the **tracking number + courier case/reference number**. Until a tracking number is linked to the Acme order, we **can’t trace or confirm delivery** from our side or say where the watch is.
+
+If the SMS **doesn’t include a tracking number**, then there’s nothing concrete to match it to yet—at that point you’ll need to **wait until tracking is assigned** on the order, or contact the courier to identify the parcel referenced by the SMS.
+[8] user: Okay, so to be sure: you’re saying my watch order with you definitely hasn’t shipped yet, and I should treat that SMS as unverified and check the tracking on the courier’s official site first, then open a “delivered but not received” case with them if it shows as delivered, right?
+[9] agent: We were still in the middle of replacing your card. Would you like to continue with that, or drop it?
+[10] user: Yes, continue with the order, please. And just confirm once more: from your side the watch definitely hasn’t shipped yet, right?
+[11] agent: Yes — with one important wording nuance:
+
+- **In our Acme order record** for your watch (**ORD-20260628-001**), it **still shows “being prepared for shipment” and there’s no tracking number yet**, so **we don’t have it marked as shipped or delivered** on our side.
+- So **treat the SMS as unverified for this order** until the courier can confirm what shipment it’s about.
+
+Next steps you listed are exactly right:
+1) **Check the tracking on the courier’s official site/app** (don’t use links in the SMS).  
+2) If that tracking shows **Delivered** but you don’t have it, **open a “delivered but not received” case** with the courier and get a **reference number**.
+[12] user: Got it. I’ll do that with the courier now and come back with the tracking and case number if there’s an issue. Thanks, that’s all I needed.
+[13] agent: Goodbye.
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=—  turn_latency=9005ms
+turn 3: ttft=—  turn_latency=86392ms
+turn 4: ttft=—  turn_latency=38589ms
+turn 5: ttft=—  turn_latency=5046ms
+turn 6: ttft=—  turn_latency=4728ms
+turn 7: ttft=—  turn_latency=11237ms
+conversation avg: turn_latency=25833ms  (over 0 turns with bot text, 6 turns timed)
+
+--- Inspector URL ---
+http://127.0.0.1:5007/webhooks/inspector/inspect.html?sender=sim-f1dfca26-7499-4297-8aef-4ea0bdb30503
+
+--- Additional Metrics ---
+Turns to Completion: 6
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  action: action_session_start
+    2  session_started: {"event": "session_started"}
+    3  agent: 'Hi! How can I help you today?'
+[T1] user: "Hi, I want to check the status of my Galaxy Watch order, please."
+    1  user: 'Hi, I want to check the status of my Galaxy Watch order, please.'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: get_orders() → ok
+    5  memory_set: order_status.orders_loaded = true
+    6  tool: get_order_details(order_id=ORD-20260628-001) → ok
+    7  tool: finish_task() → ok
+    8  skill_completed: order_status
+    9  agent: 'Your **Samsung Galaxy Watch 7** order (**ORD-20260628-001**, placed **June 28, 2026**) is still **pending** and is **being prepared for shipment at the distribution center**. - **Estimated ship date:** **July 1, 2026** - **Estimated delivery:** **July 3–5, 2026** - **Shipping method:** Standard Post (Swiss Post) - **Tracking:** Not yet available (it will be assigned once it ships)'
+[T2] user: "That’s odd, because I just got an SMS from the courier saying the parcel was delivered today, but I never received anything. So where is it really?"
+    1  user: 'That’s odd, because I just got an SMS from the courier saying the parcel was delivered today, but I never received anything. So where is it really?'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: get_orders() → ok
+    5  tool: get_order_details(order_id=ORD-20260628-001) → ok
+    6  tool: search_knowledge(query=SMS from courier says delivered but Acm…) → ok
+    7  tool: finish_task() → ok
+    8  skill_completed: order_status
+    9  tool: transfer_to_bill_inquiry() → ok
+   10  skill_activated: bill_inquiry
+   11  tool: finish_task() → ok
+   12  skill_completed: bill_inquiry
+   13  tool: transfer_to_card_advisory() → ok
+   14  skill_activated: card_advisory
+   15  agent: 'In our Acme order record for your **Samsung Galaxy Watch 7 (ORD-20260628-001)**, it’s still showing **“being prepared for shipment”** and **there’s no tracking number attached yet**. So from our side, it **hasn’t shipped**, and I can’t confirm a delivery or tell you where the parcel is right now. What to do next (so you can pinpoint what that SMS refers to): 1. **Don’t open any links** in the SMS. 2. If the SMS includes a **tracking number**, enter it directly on the courier’s **official website/app** (for this order, the shipping method on file is **Swiss Post standard**). 3. If the courier’s site shows **Delivered** but you don’t have the parcel, please **open a “delivered but not received” case with the courier** and ask for a **case/reference number**. 4. Then come back with the **tracking number + the courier case/reference number**, and we’ll take it from there (right now we can’t trace it on our side because no tracking is linked to the order yet).'
+[T3] user: "So if your system says it hasn’t even shipped but the courier says delivered, what should I do next if they don’t match? I really need a clear answer here."
+    1  user: 'So if your system says it hasn’t even shipped but the courier says delivered, what should I do next if they don’t match? I really need a clear answer here.'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: finish_task() → ok
+    5  skill_completed: order_status
+    6  tool: transfer_to_card_replace() → ok
+    7  skill_activated: card_replace
+    8  tool: transfer_back() → ok
+    9  tool: transfer_to_card_advisory() → ok
+   10  agent: 'If they don’t match, the clear next step is: **treat the courier SMS as unverified until the courier can confirm what shipment it refers to**, because **your Acme order still shows “not shipped” and has no tracking number attached**. Do this in order: 1. **Don’t click any links** in the SMS. 2. **Use the courier’s official site/app** and enter the **tracking number from the SMS** (if there is one). 3. If the courier’s tracking shows **Delivered** but you don’t have it, **open a “delivered but not received” case with the courier** and get a **case/reference number** (they can confirm the sender and delivery details). 4. After that, come back to us with the **tracking number + courier case/reference number**. Until a tracking number is linked to the Acme order, we **can’t trace or confirm delivery** from our side or say where the watch is. If the SMS **doesn’t include a tracking number**, then there’s nothing concrete to match it to yet—at that point you’ll need to **wait until tracking is assigned** on the order, or contact the courier to identify the parcel referenced by the SMS.'
+[T4] user: "Okay, so to be sure: you’re saying my watch order with you definitely hasn’t shipped yet, and I should treat that SMS as unverified and check the tracking on the courier’s official site first, then o…"
+    1  user: 'Okay, so to be sure: you’re saying my watch order with you definitely hasn’t shipped yet, and I should treat that SMS as unverified and check the tracking on the courier’s official site first, then open a “delivered but not received” case with them if it shows as delivered, right?'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: finish_task() → ok
+    5  skill_completed: order_status
+    6  skill_activated: default_continue_interrupted
+    7  skill_completed: default_continue_interrupted
+    8  agent: 'We were still in the middle of replacing your card. Would you like to continue with that, or drop it?'
+[T5] user: "Yes, continue with the order, please. And just confirm once more: from your side the watch definitely hasn’t shipped yet, right?"
+    1  user: 'Yes, continue with the order, please. And just confirm once more: from your side the watch definitely hasn’t shipped yet, right?'
+    2  agent: 'Yes — with one important wording nuance: - **In our Acme order record** for your watch (**ORD-20260628-001**), it **still shows “being prepared for shipment” and there’s no tracking number yet**, so **we don’t have it marked as shipped or delivered** on our side. - So **treat the SMS as unverified for this order** until the courier can confirm what shipment it’s about. Next steps you listed are exactly right: 1) **Check the tracking on the courier’s official site/app** (don’t use links in the SMS). 2) If that tracking shows **Delivered** but you don’t have it, **open a “delivered but not received” case** with the courier and get a **reference number**.'
+[T6] user: "Got it. I’ll do that with the courier now and come back with the tracking and case number if there’s an issue. Thanks, that’s all I needed."
+    1  user: 'Got it. I’ll do that with the courier now and come back with the tracking and case number if there’s an issue. Thanks, that’s all I needed.'
+    2  tool: transfer_to_card_replace() → ok
+    3  tool: transfer_back() → ok
+    4  tool: transfer_to_card_replace() → ok
+    5  agent: 'Goodbye.'

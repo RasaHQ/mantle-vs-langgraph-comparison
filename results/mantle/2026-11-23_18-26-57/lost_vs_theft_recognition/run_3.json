@@ -1,0 +1,425 @@
+{
+  "scenario_name": "Customer says lost but describes a theft and the agent should treat it as stolen",
+  "scenario_slug": "lost_vs_theft_recognition",
+  "scenario_type": null,
+  "run_index": 3,
+  "timestamp": "2026-11-23T13:01:16Z",
+  "conversation_id": "sim-6a909923-7d0e-488c-953f-d590212e179d",
+  "error": null,
+  "error_is_harness": false,
+  "metrics_error": null,
+  "judge_summary": "The assistant efficiently handled a phone theft support flow, correctly blocking the SIM, providing necessary device information, and setting up a replacement eSIM that the user confirmed receiving. It maintained coherent context and an appropriate, professional tone throughout, though its style was a bit procedural and scripted. Overall, it delivered solid, production-quality assistance with no major issues.",
+  "latency": {
+    "measured_via": "direct",
+    "per_turn": [
+      {
+        "turn": 1,
+        "ttft_ms": null,
+        "turn_latency_ms": null,
+        "gaps_ms": []
+      },
+      {
+        "turn": 2,
+        "ttft_ms": 844.1142089995992,
+        "turn_latency_ms": 4374.476750001122,
+        "gaps_ms": []
+      },
+      {
+        "turn": 3,
+        "ttft_ms": 1193.9009159996203,
+        "turn_latency_ms": 4228.908375000174,
+        "gaps_ms": []
+      },
+      {
+        "turn": 4,
+        "ttft_ms": 951.8706250000832,
+        "turn_latency_ms": 4523.729708000246,
+        "gaps_ms": []
+      },
+      {
+        "turn": 5,
+        "ttft_ms": 2202.3790829989593,
+        "turn_latency_ms": 9002.511499998946,
+        "gaps_ms": []
+      },
+      {
+        "turn": 6,
+        "ttft_ms": 1258.5786250001547,
+        "turn_latency_ms": 1258.5786250001547,
+        "gaps_ms": []
+      }
+    ],
+    "avg_ttft_ms": 1290.1686915996834,
+    "avg_turn_latency_ms": 4677.6409916001285,
+    "avg_gap_ms": null
+  },
+  "transcript": [
+    {
+      "user": "",
+      "bot": [
+        "Hello! What can I assist you with today?"
+      ]
+    },
+    {
+      "user": "I lost my phone. Someone grabbed it out of my hand on the street and ran off.",
+      "bot": [
+        "I\u2019m sorry that happened\u2014one moment.",
+        "Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.\n",
+        "Your SIM is currently active. Would you like me to block it now to stop anyone from using it without your permission?"
+      ]
+    },
+    {
+      "user": "Yes, please block the SIM right away.",
+      "bot": [
+        "Got it\u2014one moment.",
+        "Your SIM has been blocked.",
+        "Here are the device details on file for your line:\nDevice: iPhone 15 Pro\nIMEI: 352345678901234\nSerial number: F2LZK1HQGRX\n",
+        "Do you want a replacement SIM\u2014an eSIM (instant via email) or a physical nano\u2011SIM (ships in 2\u20133 business days)?"
+      ]
+    },
+    {
+      "user": "Thanks, an eSIM please.",
+      "bot": [
+        "Okay\u2014give me a moment.",
+        "I can place an order for an eSIM replacement for you\u2014would you like me to proceed?"
+      ]
+    },
+    {
+      "user": "Yes, please go ahead and order the eSIM replacement.",
+      "bot": [
+        "Your replacement SIM order is confirmed.\n\n- Order ID: ORD-20260702-005  \n- Confirmation: SIM-RPL-2026-00201  \n- SIM type: eSIM (QR code)  \n- Delivery: Instant via email (QR code)\n\nNext, please check your email for the eSIM QR code and scan it on your device.",
+        "Is there anything else you need help with?"
+      ]
+    },
+    {
+      "user": "Got it, I see the email with the QR code. That\u2019s all I needed, thanks.",
+      "bot": [
+        "Were you satisfied with the assistance you received today?"
+      ]
+    }
+  ],
+  "task_completion": true,
+  "task_completion_reasoning": "The assistant blocked the SIM, provided device details, and successfully ordered and confirmed delivery of an eSIM replacement, which the user acknowledged receiving.",
+  "eval_passed": true,
+  "criteria": [
+    {
+      "index": 0,
+      "criterion": "The agent gives stolen-specific advice (police report, watching for unauthorised charges) rather than lost-device advice such as checking Find My Device",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "At T1 the bot says: \"Report the theft to the police\" and \"Check your account for any unauthorized charges\" and gives no lost-device advice like Find My Device."
+    },
+    {
+      "index": 1,
+      "criterion": "After blocking the SIM, the agent explicitly confirms to the customer that the SIM is blocked before continuing",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "After the block_sim tool call at T2, the bot responds: \"Your SIM has been blocked.\" before providing device details or moving on."
+    },
+    {
+      "index": 2,
+      "criterion": "Before ordering the replacement eSIM, the agent asks whether the customer wants to place the order and receives their agreement",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "The bot asks, \"I can place an order for an eSIM replacement for you\u2014would you like me to proceed?\" and the user replies, \"Yes, please go ahead and order the eSIM replacement.\" before the order is placed."
+    },
+    {
+      "index": 3,
+      "criterion": "After ordering the replacement eSIM, the agent confirms it, audibly shares its order ID or confirmation number, and explains that the QR code arrives by email. Judge the spoken identifier by whether it is recognizably consistent with the returned value; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the identifier is omitted, materially differs from the returned value, or is not spoken.",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "After order_replacement_sim() \u2192 ok at T4, the bot says \"Your replacement SIM order is confirmed\" then lists \"Order ID: ORD-20260702-005\" and \"Confirmation: SIM-RPL-2026-00201\" and explains \"Delivery: Instant via email (QR code)\" and tells the user to check email for the QR code."
+    },
+    {
+      "index": 4,
+      "criterion": "The agent does not ask the customer to clarify whether the phone was lost or stolen, because the description already makes it clear. Confirming an already-chosen eSIM order is expected.",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "The agent never asks whether the phone was lost or stolen and instead immediately treats it as theft (\"Report the theft to the police\"), with only an allowed confirmation about proceeding with the eSIM order."
+    },
+    {
+      "index": 5,
+      "criterion": "When sharing device info, the agent gives the customer concrete IMEI and serial values, not a vague acknowledgment that details were retrieved. Pass if the spoken identifiers are consistent with IMEI 352345678901234 and serial F2LZK1HQGRX. Do not fail for voice-transcript (ASR) misspellings of spoken letters or digits (H/Z confusion, extra syllables, digit grouping). Fail only if it omits one of them, invents different identifiers, or never speaks the values.",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "The bot explicitly shares: \"IMEI: 352345678901234\" and \"Serial number: F2LZK1HQGRX\" which match the device info from get_device_info()."
+    }
+  ],
+  "criteria_summary": {
+    "passed": 6,
+    "total": 6,
+    "all_passed": true
+  },
+  "assertions": [
+    {
+      "index": 0,
+      "assertion": "skill_activated(sim_management)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 1,
+      "assertion": "skill_completed(sim_management)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 2,
+      "assertion": "sequencing",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 3,
+      "assertion": "memory_was_set(sim_management.incident_reason='stolen', sim_management.wants_to_block=True, sim_management.sim_blocked=True, sim_management.sim_type='esim', sim_management.replacement_ordered=True, sim_management.sim_order_summary)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 4,
+      "assertion": "memory_was_not_set(sim_management.replacement_complete)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 5,
+      "assertion": "tool_executed(check_sim_status)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 6,
+      "assertion": "tool_executed(block_sim)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 7,
+      "assertion": "tool_executed(order_replacement_sim)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 8,
+      "assertion": "tool_executed(get_device_info)",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "assertions_summary": {
+    "passed": 9,
+    "total": 9,
+    "all_passed": true
+  },
+  "scale_metrics": {
+    "helpfulness": 5,
+    "repair_quality": 5,
+    "coherence": 5,
+    "tone": 4
+  },
+  "scale_metrics_reasoning": {
+    "helpfulness": "It fully handled the theft scenario end-to-end\u2014blocking the SIM, giving device details for the police report, and arranging the eSIM with clear next steps.",
+    "repair_quality": "There were no user corrections or signs of misunderstanding, so no repair was needed.",
+    "coherence": "The assistant consistently tracked the situation and user choices (theft, SIM block, eSIM vs physical SIM) without contradiction or re-asking.",
+    "tone": "The tone was polite, clear, and professional, though somewhat formulaic and system-like in transitions between steps."
+  },
+  "acknowledgements": {
+    "turns": [
+      {
+        "turn_number": 1,
+        "tools": [
+          "activate",
+          "enter",
+          "check_sim_status"
+        ],
+        "acknowledgement": "I\u2019m sorry that happened\u2014one moment.",
+        "follow_up": [
+          "Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.",
+          "Your SIM is currently active. Would you like me to block it now to stop anyone from using it without your permission?"
+        ]
+      },
+      {
+        "turn_number": 2,
+        "tools": [
+          "block_sim",
+          "get_device_info"
+        ],
+        "acknowledgement": "Got it\u2014one moment.",
+        "follow_up": [
+          "Your SIM has been blocked.",
+          "Here are the device details on file for your line:\nDevice: iPhone 15 Pro\nIMEI: 352345678901234\nSerial number: F2LZK1HQGRX",
+          "Do you want a replacement SIM\u2014an eSIM (instant via email) or a physical nano\u2011SIM (ships in 2\u20133 business days)?"
+        ]
+      },
+      {
+        "turn_number": 3,
+        "tools": [
+          "order_replacement_sim"
+        ],
+        "acknowledgement": "Okay\u2014give me a moment.",
+        "follow_up": [
+          "I can place an order for an eSIM replacement for you\u2014would you like me to proceed?"
+        ]
+      },
+      {
+        "turn_number": 4,
+        "tools": [
+          "order_replacement_sim",
+          "resolve_tool_confirmation"
+        ],
+        "acknowledgement": null,
+        "follow_up": [
+          "Your replacement SIM order is confirmed.\n\n- Order ID: ORD-20260702-005  \n- Confirmation: SIM-RPL-2026-00201  \n- SIM type: eSIM (QR code)  \n- Delivery: Instant via email (QR code)\n\nNext, please check your email for the eSIM QR code and scan it on your device.",
+          "Is there anything else you need help with?"
+        ]
+      }
+    ],
+    "verdicts": [
+      {
+        "turn_number": 1,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": null,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "Empathetic and brief (\u201cI\u2019m sorry that happened\u2014one moment.\u201d) and appropriately signals a short pause before checking something.",
+        "issue_score": 5.0
+      },
+      {
+        "turn_number": 2,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": 1,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "\u201cGot it\u2014one moment.\u201d is a natural, concise acknowledgement that fits smoothly before performing the requested SIM block.",
+        "issue_score": 3.0
+      },
+      {
+        "turn_number": 3,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": 2,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "\u201cOkay\u2014give me a moment.\u201d sounds like natural spoken support language and suitably precedes the tool action.",
+        "issue_score": 3.0
+      }
+    ],
+    "error": null,
+    "coverage": [
+      0.75,
+      3,
+      4
+    ],
+    "issue_counts": {
+      "hard_contradiction": 0,
+      "soft_contradiction": 0,
+      "commits_to_tool_outcome": 0,
+      "repeated_in_same_bot_turn": 0,
+      "similar_to_earlier_acknowledgement": 2,
+      "stock_opener": 0
+    },
+    "mean_issue_score": 3.67,
+    "mean_naturalness_score": 5.0
+  },
+  "engine_tokens": {
+    "status": "complete",
+    "session_id": "sim-6a909923-7d0e-488c-953f-d590212e179d",
+    "prompt": 41729,
+    "completion": 570,
+    "cached": 3584,
+    "cache_write": 0,
+    "total": 42299,
+    "generations": 16,
+    "cost": 0.07536095,
+    "cost_status": "complete",
+    "price_source": {
+      "provider": "litellm",
+      "version": "1.105.3"
+    },
+    "by_call_type": {
+      "rephrase": [
+        {
+          "model": "gpt-5.2",
+          "prompt": 4991,
+          "completion": 159,
+          "cached": 0,
+          "cache_write": 0,
+          "total": 5150,
+          "generations": 6,
+          "cost": 0.01096025
+        }
+      ],
+      "main_orchestrator": [
+        {
+          "model": "gpt-5.2",
+          "prompt": 35551,
+          "completion": 230,
+          "cached": 3584,
+          "cache_write": 0,
+          "total": 35781,
+          "generations": 9,
+          "cost": 0.05978945000000001
+        }
+      ],
+      "completion_judge": [
+        {
+          "model": "gpt-5.2-2025-12-11",
+          "prompt": 1187,
+          "completion": 181,
+          "cached": 0,
+          "cache_write": 0,
+          "total": 1368,
+          "generations": 1,
+          "cost": 0.00461125
+        }
+      ]
+    },
+    "fetched_at": "2026-11-23T13:01:47.715197+00:00"
+  },
+  "evaluation_tokens": {
+    "simulator": [
+      {
+        "model": "gpt-5.1-2025-11-13",
+        "prompt": 5318,
+        "completion": 178,
+        "cached": 1024,
+        "cache_write": 0,
+        "total": 5496,
+        "generations": 5,
+        "cost": 0.007275500000000001
+      }
+    ],
+    "judge": [
+      {
+        "model": "gpt-5.1-2025-11-13",
+        "prompt": 8161,
+        "completion": 1543,
+        "cached": 0,
+        "cache_write": 0,
+        "total": 9704,
+        "generations": 3,
+        "cost": 0.02563125
+      }
+    ],
+    "cost": 0.03290675,
+    "cost_status": "complete",
+    "price_source": {
+      "provider": "litellm",
+      "version": "1.105.3"
+    }
+  }
+}

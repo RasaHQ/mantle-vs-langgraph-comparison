@@ -1,0 +1,222 @@
+scenario: Courier says delivered, agent system says not yet shipped
+run: 1
+timestamp: 2026-11-23T15:27:12Z
+conversation_id: sim-abab5a2a-b25b-4b86-adec-fbe6a97889ba
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent distinguishes the status available in its own system from the customer's conflicting courier evidence
+  rationale: The bot repeatedly contrasts its own status ("our order record still shows it as 'being prepared for shipment' and there's no tracking number assigned yet") with the courier SMS claiming delivery, explicitly noting it cannot confirm delivery from its side.
+
+[PASS] The agent does not invent a location, delivery event, or certainty that its data doesn't support
+  rationale: The bot explicitly states it cannot see where the parcel is and does not specify any delivery location or event beyond what it can see in its system (only 'being prepared for shipment' and 'no tracking number').
+
+[PASS] The agent explains the discrepancy clearly rather than silently picking one source as fact
+  rationale: The bot lists possible reasons for the mismatch (wrong parcel, incorrect/mistaken message, or unlinked record) and explains that reconciling requires the tracking number, instead of declaring either the system or courier definitively correct.
+
+[PASS] The agent offers an appropriate next step or escalation for a potentially missing or misreported delivery
+  rationale: It gives detailed next steps: avoid SMS links, extract and check the tracking on Swiss Post, open a 'delivered but not received' case if needed, and return with the tracking and case reference for further help.
+
+[PASS] The agent does not guarantee a delivery time or recovery outcome it cannot verify
+  rationale: The bot never promises a delivery or recovery outcome; it only describes current status and procedural next steps without guaranteeing resolution or timing.
+
+--- Quality Metrics ---
+bot_quality: 4.75/5
+  helpfulness: 4/5 — The assistant accurately reported the internal order status, explained the discrepancy, and gave clear, actionable steps, though it could have added minor extras like offering to proactively monitor or log an internal note.
+  repair_quality: 5/5 — When the user pressed for a clearer next step, the assistant adjusted to provide a structured, numbered action plan that matched the clarified request.
+  coherence: 5/5 — The assistant consistently tracked the order ID, status, and user’s evolving need, never contradicted itself, and kept the guidance aligned with the same order and situation.
+  tone: 5/5 — The tone is calm, empathetic, and professional throughout, with clear formatting and phrasing that are easy to read and appropriately reassuring for a potentially stressful situation.
+  task_completion: PASS — The user wanted clarity on their order status and step‑by‑step guidance for resolving the courier conflict, which the assistant provided and the user explicitly confirmed was sufficient before ending the conversation.
+summary: The assistant gives accurate internal status information and a clear, step‑by‑step plan to reconcile the conflict with the courier, which the user accepts as sufficient. It maintains strong context tracking and a calm, empathetic tone. The main area for improvement would be offering small proactive touches, such as documenting the issue or monitoring the order internally.
+
+--- Acknowledgements ---
+summary:
+  coverage: 0/5 tool turns (0%)
+  mean naturalness score: None
+  mean issue score: None
+  issues: none
+
+T1
+  turn:
+    tools:
+      - transfer_to_order_status
+      - get_orders
+      - get_order_details
+      - finish_task
+    no acknowledgement
+T2
+  turn:
+    tools:
+      - transfer_to_order_status
+      - get_order_details
+    no acknowledgement
+T3
+  turn:
+    tools:
+      - transfer_to_order_status
+      - get_order_details
+    no acknowledgement
+T4
+  turn:
+    tools:
+      - transfer_to_order_status
+    no acknowledgement
+T5
+  turn:
+    tools:
+      - transfer_to_order_status
+      - get_order_details
+      - finish_task
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "Hi, I want to check the status of my Galaxy Watch order, please."
+  observed: transfer_to_order_status
+  observed: get_orders
+  observed: get_order_details(order_id='ORD-20260628-001')
+  observed: finish_task
+[T2] user: "That’s odd, I just got an SMS from the courier saying the parcel was delivered today, but I never received anything."
+  observed: transfer_to_order_status
+  observed: get_order_details(order_id='ORD-20260628-001')
+  observed: search_knowledge(query='courier SMS says delivered but order tracking not available being prepared for shipment what should customer do Acme device order not received delivered scam SMS')
+[T3] user: "So where is it really then? Your system says it’s not shipped, but the courier says it’s delivered."
+  observed: transfer_to_order_status
+  observed: get_order_details(order_id='ORD-20260628-001')
+[T4] user: "I really need a clear answer though. If your system and Swiss Post disagree, what exactly should I do next, step by step?"
+  observed: transfer_to_order_status
+[T5] user: "Okay, I’ll do that. Yes, please continue checking this order on your side while I verify the tracking with Swiss Post."
+  observed: transfer_to_order_status
+  observed: get_order_details(order_id='ORD-20260628-001')
+  observed: finish_task
+
+--- Assertion Results ---
+[PASS] skill_activated(order_status)
+[PASS] skill_completed(order_status)
+[PASS] memory_was_set(order_status.orders_loaded=True)
+[PASS] memory_was_not_set(card_replace.replacement_ordered, sim_management.replacement_ordered, sim_management.sim_blocked)
+[PASS] tool_executed(get_orders)
+[PASS] tool_executed(get_order_details)
+
+--- Raw Transcript ---
+[1] agent: Hi! How can I help you today?
+[2] user: Hi, I want to check the status of my Galaxy Watch order, please.
+[3] agent: Your **Samsung Galaxy Watch 7** order (**ORD-20260628-001**, placed **June 28, 2026**) is currently **PENDING** — **being prepared for shipment** at the distribution center.
+
+- **Estimated ship date:** **July 1, 2026**  
+- **Estimated delivery:** **July 3–5, 2026**  
+- **Tracking:** Not yet available (it’ll appear once it ships)  
+- **Shipping method:** Standard Post (Swiss Post)  
+- **Shipping address:** Bahnhofstrasse 42, 8001 Zürich
+[4] user: That’s odd, I just got an SMS from the courier saying the parcel was delivered today, but I never received anything.
+[5] agent: I can see why that’s worrying. For your **Galaxy Watch order (ORD-20260628-001)**, our order record still shows it as **“being prepared for shipment”** and **there’s no tracking number assigned yet**, so we can’t confirm a delivery from our side.
+
+What to do next:
+1. **Don’t open any links** in that SMS.
+2. If the SMS includes a **tracking number**, please check it **directly on Swiss Post’s website/app** (not via the message link).
+3. If Swiss Post shows **“delivered”** but you don’t have the parcel, you’ll need to **open a “delivered but not received” case with Swiss Post**.  
+
+If you paste the **tracking number from the SMS** (and any delivery reference it shows), I can help you compare it with what we have on the order (right now: none).
+[6] user: So where is it really then? Your system says it’s not shipped, but the courier says it’s delivered.
+[7] agent: Right now, I can’t see “where it really is” because **our system shows the Galaxy Watch order (ORD-20260628-001) has not shipped yet and has no tracking number**—so we don’t have carrier scan events to locate it.
+
+When there’s a mismatch like this, one of these is usually true:
+- The courier SMS is about **a different parcel** (wrong tracking/recipient), or
+- The message is **incorrect/mistaken** (including mis-scan or misleading notification), or
+- The courier has a record, but **it isn’t linked to this order** yet (we can’t match it without a tracking number).
+
+The only way to reconcile it is via the **tracking number from the SMS**:
+- If you share the **tracking number** (just the number/text—don’t click links), I can confirm whether **we have any tracking attached** to your order (currently: none).
+- If Swiss Post’s site shows **Delivered**, you’ll need to **open a “delivered but not received” case with Swiss Post** and get a case reference, since we can’t trace an untracked order from our side.
+
+If you paste the tracking number from the SMS, I’ll take a look at what we can confirm here.
+[8] user: I really need a clear answer though. If your system and Swiss Post disagree, what exactly should I do next, step by step?
+[9] agent: Do this next, in this order:
+
+1) **Treat the order as “not shipped” for now**
+- For **ORD-20260628-001**, our system still shows **Being prepared for shipment** and **no tracking number yet**, so we cannot confirm any delivery against this order.
+
+2) **Do not tap any link in the SMS**
+- Only use the carrier’s official site/app.
+
+3) **Find the tracking number in the SMS**
+- Copy the **tracking number** (and any delivery notice details like “delivered to letterbox / neighbor / pickup point”, if shown).
+
+4) **Check the tracking number on Swiss Post directly**
+- Enter it on the **Swiss Post website/app**.
+- Note exactly what it says (status, date/time, and any “delivered to” details).
+
+5) **If Swiss Post shows “Delivered” but you didn’t receive it**
+- Open a **“delivered but not received”** case with Swiss Post.
+- Keep the **case/reference number** they give you.
+
+6) **Come back here with the tracking number (and case reference if you opened one)**
+- Since your Acme order currently has **no tracking**, the only way to reconcile the conflict is to match it to a valid tracking ID and its delivery scan info.
+
+If you paste the **tracking number text from the SMS** here (no link), I’ll confirm what we can verify from our side for your order.
+[10] user: Okay, I’ll do that. Yes, please continue checking this order on your side while I verify the tracking with Swiss Post.
+[11] agent: On our side, there’s nothing new to pull through yet: **ORD-20260628-001** is still **OPEN → PENDING (being prepared for shipment)** and **tracking is still not available** (none assigned).
+
+Once you’ve checked with Swiss Post, come back with the **tracking number from the SMS** (and if you open a case, the **case reference**) and we’ll take the next step from there.
+[12] user: Alright, I’ll contact Swiss Post and open a “delivered but not received” case if their tracking says it’s delivered, then I’ll come back with the tracking and case number. Thanks, that’s all I needed for now.
+[13] agent: Good plan. Goodbye.
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=—  turn_latency=9686ms
+turn 3: ttft=—  turn_latency=8478ms
+turn 4: ttft=—  turn_latency=10576ms
+turn 5: ttft=—  turn_latency=8163ms
+turn 6: ttft=—  turn_latency=6338ms
+turn 7: ttft=—  turn_latency=1154ms
+conversation avg: turn_latency=7399ms  (over 0 turns with bot text, 6 turns timed)
+
+--- Inspector URL ---
+http://127.0.0.1:5007/webhooks/inspector/inspect.html?sender=sim-abab5a2a-b25b-4b86-adec-fbe6a97889ba
+
+--- Additional Metrics ---
+Turns to Completion: 6
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  action: action_session_start
+    2  session_started: {"event": "session_started"}
+    3  agent: 'Hi! How can I help you today?'
+[T1] user: "Hi, I want to check the status of my Galaxy Watch order, please."
+    1  user: 'Hi, I want to check the status of my Galaxy Watch order, please.'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: get_orders() → ok
+    5  memory_set: order_status.orders_loaded = true
+    6  tool: get_order_details(order_id=ORD-20260628-001) → ok
+    7  tool: finish_task() → ok
+    8  skill_completed: order_status
+    9  agent: 'Your **Samsung Galaxy Watch 7** order (**ORD-20260628-001**, placed **June 28, 2026**) is currently **PENDING** — **being prepared for shipment** at the distribution center. - **Estimated ship date:** **July 1, 2026** - **Estimated delivery:** **July 3–5, 2026** - **Tracking:** Not yet available (it’ll appear once it ships) - **Shipping method:** Standard Post (Swiss Post) - **Shipping address:** Bahnhofstrasse 42, 8001 Zürich'
+[T2] user: "That’s odd, I just got an SMS from the courier saying the parcel was delivered today, but I never received anything."
+    1  user: 'That’s odd, I just got an SMS from the courier saying the parcel was delivered today, but I never received anything.'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: get_order_details(order_id=ORD-20260628-001) → ok
+    5  tool: search_knowledge(query=courier SMS says delivered but order tr…) → ok
+    6  agent: 'I can see why that’s worrying. For your **Galaxy Watch order (ORD-20260628-001)**, our order record still shows it as **“being prepared for shipment”** and **there’s no tracking number assigned yet**, so we can’t confirm a delivery from our side. What to do next: 1. **Don’t open any links** in that SMS. 2. If the SMS includes a **tracking number**, please check it **directly on Swiss Post’s website/app** (not via the message link). 3. If Swiss Post shows **“delivered”** but you don’t have the parcel, you’ll need to **open a “delivered but not received” case with Swiss Post**. If you paste the **tracking number from the SMS** (and any delivery reference it shows), I can help you compare it with what we have on the order (right now: none).'
+[T3] user: "So where is it really then? Your system says it’s not shipped, but the courier says it’s delivered."
+    1  user: 'So where is it really then? Your system says it’s not shipped, but the courier says it’s delivered.'
+    2  tool: transfer_to_order_status() → ok
+    3  tool: get_order_details(order_id=ORD-20260628-001) → ok
+    4  agent: 'Right now, I can’t see “where it really is” because **our system shows the Galaxy Watch order (ORD-20260628-001) has not shipped yet and has no tracking number**—so we don’t have carrier scan events to locate it. When there’s a mismatch like this, one of these is usually true: - The courier SMS is about **a different parcel** (wrong tracking/recipient), or - The message is **incorrect/mistaken** (including mis-scan or misleading notification), or - The courier has a record, but **it isn’t linked to this order** yet (we can’t match it without a tracking number). The only way to reconcile it is via the **tracking number from the SMS**: - If you share the **tracking number** (just the number/text—don’t click links), I can confirm whether **we have any tracking attached** to your order (currently: none). - If Swiss Post’s site shows **Delivered**, you’ll need to **open a “delivered but not received” case with Swiss Post** and get a case reference, since we can’t trace an untracked order from our side. If you paste the tracking number from the SMS, I’ll take a look at what we can confirm here.'
+[T4] user: "I really need a clear answer though. If your system and Swiss Post disagree, what exactly should I do next, step by step?"
+    1  user: 'I really need a clear answer though. If your system and Swiss Post disagree, what exactly should I do next, step by step?'
+    2  tool: transfer_to_order_status() → ok
+    3  agent: 'Do this next, in this order: 1) **Treat the order as “not shipped” for now** - For **ORD-20260628-001**, our system still shows **Being prepared for shipment** and **no tracking number yet**, so we cannot confirm any delivery against this order. 2) **Do not tap any link in the SMS** - Only use the carrier’s official site/app. 3) **Find the tracking number in the SMS** - Copy the **tracking number** (and any delivery notice details like “delivered to letterbox / neighbor / pickup point”, if shown). 4) **Check the tracking number on Swiss Post directly** - Enter it on the **Swiss Post website/app**. - Note exactly what it says (status, date/time, and any “delivered to” details). 5) **If Swiss Post shows “Delivered” but you didn’t receive it** - Open a **“delivered but not received”** case with Swiss Post. - Keep the **case/reference number** they give you. 6) **Come back here with the tracking number (and case reference if you opened one)** - Since your Acme order currently has **no tracking**, the only way to reconcile the conflict is to match it to a valid tracking ID and its delivery scan info. If you paste the **tracking number text from the SMS** here (no link), I’ll confirm what we can verify from our side for your order.'
+[T5] user: "Okay, I’ll do that. Yes, please continue checking this order on your side while I verify the tracking with Swiss Post."
+    1  user: 'Okay, I’ll do that. Yes, please continue checking this order on your side while I verify the tracking with Swiss Post.'
+    2  tool: transfer_to_order_status() → ok
+    3  tool: get_order_details(order_id=ORD-20260628-001) → ok
+    4  tool: finish_task() → ok
+    5  skill_completed: order_status
+    6  agent: 'On our side, there’s nothing new to pull through yet: **ORD-20260628-001** is still **OPEN → PENDING (being prepared for shipment)** and **tracking is still not available** (none assigned). Once you’ve checked with Swiss Post, come back with the **tracking number from the SMS** (and if you open a case, the **case reference**) and we’ll take the next step from there.'
+[T6] user: "Alright, I’ll contact Swiss Post and open a “delivered but not received” case if their tracking says it’s delivered, then I’ll come back with the tracking and case number. Thanks, that’s all I needed…"
+    1  user: 'Alright, I’ll contact Swiss Post and open a “delivered but not received” case if their tracking says it’s delivered, then I’ll come back with the tracking and case number. Thanks, that’s all I needed for now.'
+    2  agent: 'Good plan. Goodbye.'

@@ -1,0 +1,238 @@
+scenario: Found card mid-flow — cancel pending actions
+run: 1
+timestamp: 2026-11-23T15:27:56Z
+conversation_id: sim-7d24e99f-5548-4c44-8aac-97ad77bfd390
+overall_result: PASS
+
+--- Conversation Repair ---
+- cancellation
+  skill_id: card_replace
+- cancellation
+  skill_id: card_replace
+
+--- Quality Criteria Results ---
+[PASS] The agent accurately states whether any action had already completed rather than guessing
+  rationale: When asked "Did you already do anything to the card?", the bot correctly states that the card was already locked and no replacement or wallet provisioning was done, which matches the ledger showing only lock_card() was executed and no replacement or wallet tools were called.
+
+[PASS] When the customer asks what can be reversed, the agent does not offer to unlock the card and does not say the lock can be undone from this chat. Saying it cannot unlock the card, or that it has no way to undo the lock, passes.
+  rationale: In response to "What can and can’t be reversed now that the card is locked?", the agent explicitly says "I can’t unlock the card here" and explains that only a human agent can lift the lock, without offering to unlock it in this chat.
+
+[PASS] The agent does not perform any duplicate or compensating action the user did not request
+  rationale: After the user says "Don't order a replacement, don't do anything else", the ledger shows only cancel_task() and transfers, with no replacement or unlock tools or other compensating actions run, and the agent confirms it did not order a replacement or add the card to wallets.
+
+--- Quality Metrics ---
+bot_quality: 4.5/5
+  helpfulness: 4/5 — The assistant accurately described the card’s status and reversibility of actions, but could have added more detail about how locking affects future transactions (e.g., recurring charges, refunds) for greater completeness.
+  repair_quality: 5/5 — When the user said they had found the card and requested no further action, the assistant explicitly confirmed it would not proceed and clearly summarized what had and had not been done.
+  coherence: 5/5 — The assistant consistently tracked that the River Visa ending in 4821 was locked, that no replacement or wallet setup had been done, and maintained this state correctly across turns.
+  tone: 4/5 — The tone was polite, clear, and professional throughout, though somewhat terse and transactional at the very end with a simple 'Goodbye!' instead of a slightly warmer closing.
+  task_completion: PASS — The user wanted to know what had been done to the card and what could be reversed, and the assistant clearly explained that the card was locked, no replacement or wallet setup had occurred, and how unlocking could be done via support.
+summary: The assistant handled the lost-card flow coherently, correctly locking the card, then clearly explaining what had been done and what could still be reversed when the user found the card. It responded well to the user’s correction, avoided unnecessary actions, and provided an accurate path to unlock via support. The interaction could be slightly more thorough about practical effects of the card lock and end with a somewhat warmer closing, but overall the conversation quality is solid.
+
+--- Acknowledgements ---
+summary:
+  coverage: 0/5 tool turns (0%)
+  mean naturalness score: None
+  mean issue score: None
+  issues: none
+
+T1
+  turn:
+    tools:
+      - transfer_to_card_replace
+      - check_account_eligibility
+      - record_reason
+      - choose_card
+      - get_customer_cards
+      - select_card
+      - check_card_eligibility
+      - load_recent_transactions
+    no acknowledgement
+T2
+  turn:
+    tools:
+      - transfer_to_card_replace
+      - record_transactions_verdict
+      - record_lock_consent
+      - lock_card
+      - check_wallet_eligibility_and_status
+      - check_rush_shipping_eligibility
+    no acknowledgement
+T3
+  turn:
+    tools:
+      - transfer_to_card_replace
+      - cancel_task
+      - transfer_to_card_replace
+    no acknowledgement
+T4
+  turn:
+    tools:
+      - transfer_to_card_replace
+    no acknowledgement
+T5
+  turn:
+    tools:
+      - transfer_to_card_replace
+      - cancel_task
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "Hi, I think my River Visa card ending in 4821 is lost."
+  observed: transfer_to_card_replace
+  observed: check_account_eligibility
+  observed: record_reason(reason='lost')
+  observed: choose_card
+  observed: get_customer_cards
+  observed: select_card(card_id='VISA_001')
+  observed: check_card_eligibility(card_id='VISA_001')
+  observed: load_recent_transactions(card_id='VISA_001')
+[T2] user: "Yeah, those all look familiar."
+  observed: transfer_to_card_replace
+  observed: record_transactions_verdict(all_familiar=true)
+  observed: record_lock_consent(wants_lock=true)
+  observed: lock_card(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_rush_shipping_eligibility(card_id='VISA_001')
+[T3] user: "Wait — I just found it under the seat. Don't order a replacement, don't do anything else. Did you already do anything to the card?"
+  observed: transfer_to_card_replace
+  observed: cancel_task
+  observed: transfer_to_card_replace
+[T4] user: "Okay, thanks for clarifying. What can and can’t be reversed now that the card is locked?"
+  observed: transfer_to_card_replace
+  observed: search_knowledge(query='card lock reversibility unlock locked card what happens to transactions recurring payments digital wallet after card locked Acme Bank')
+[T5] user: "I do want to use it again, but I’ll contact support myself to get it unlocked. Thanks, that’s all I needed."
+  observed: transfer_to_card_replace
+  observed: cancel_task
+
+--- Assertion Results ---
+[PASS] skill_activated(card_replace)
+[PASS] skill_activated(card_disambiguate)
+[PASS] skill_completed(card_disambiguate)
+[PASS] skill_cancelled(card_replace)
+[PASS] sequencing
+[PASS] memory_was_set(card_replace.account_eligible=True, card_replace.replacement_reason='lost', card_disambiguate.selected_card_id='VISA_001', card_disambiguate.selected_card_label='River Visa ending 4821', card_replace.card_eligible=True, card_replace.transaction_review_complete=True, card_replace.transactions_look_familiar=True, card_replace.wants_card_locked=True, card_replace.card_locked=True)
+[PASS] memory_was_not_set(card_replace.wallet_consent, card_replace.wallet_provider, card_replace.wallet_provisioned, card_replace.shipping_type, card_replace.replacement_ordered)
+[PASS] tool_executed(check_card_eligibility)
+[PASS] tool_executed(load_recent_transactions)
+[PASS] tool_executed(lock_card)
+
+--- Raw Transcript ---
+[1] agent: Hi! How can I help you today?
+[2] user: Hi, I think my River Visa card ending in 4821 is lost.
+[3] agent: Got it — I can help with your **lost River Visa ending 4821**.
+
+Here are the most recent charges on that card:
+- **Jun 15** — Amazon.com — **$47.22** (txn_001)  
+- **Jun 14** — Shell Gas Station — **$38.50** (txn_002)  
+- **Jun 13** — Uber Eats — **$24.99** (txn_003)  
+- **Jun 12** — Netflix — **$15.99** (txn_004)  
+- **Jun 10** — Whole Foods — **$112.35** (txn_005)
+
+Do **all** of these look familiar to you?
+[4] user: Yeah, those all look familiar.
+[5] agent: Your card has been locked. No further transactions will be authorized.
+[6] agent: Thanks — since everything looks familiar, I’ve **locked your River Visa ending 4821** to prevent any new charges.
+
+You’re also eligible to add it to a digital wallet. Would you like to set it up with **Apple Pay or Google Pay**?
+
+For the replacement card shipping, **rush (1–2 business days) is available for $25**, or **standard (5–7 business days) is free**. Which would you like?
+[7] user: Wait — I just found it under the seat. Don't order a replacement, don't do anything else. Did you already do anything to the card?
+[8] agent: I won’t order a replacement or do anything further.
+
+Yes — **the card was already locked** (your River Visa ending 4821). No replacement order was placed, and I did not add it to Apple Pay/Google Pay.
+[9] user: Okay, thanks for clarifying. What can and can’t be reversed now that the card is locked?
+[10] agent: Once a card is **locked**, here’s what can and can’t be reversed:
+
+**What can’t be reversed in this chat**
+- **I can’t unlock the card here**, and I can’t “undo” the lock from this chat session.
+
+**What can be reversed (but not here)**
+- The lock **can be reviewed and lifted by a human agent**. You’ll need to **contact our call center/support team** to complete the unlock.
+
+**What else is (or isn’t) affected**
+- Since **no replacement was ordered**, there’s **nothing to reverse** on the replacement side.
+- I also **didn’t add it to Apple Pay/Google Pay**, so there’s nothing to reverse there either.
+
+If you tell me whether you want to use the card again right away, I can point you to the correct next step to get it unlocked (via the call center).
+[11] user: I do want to use it again, but I’ll contact support myself to get it unlocked. Thanks, that’s all I needed.
+[12] agent: Goodbye!
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=—  turn_latency=13701ms
+turn 3: ttft=—  turn_latency=13431ms
+turn 4: ttft=—  turn_latency=5442ms
+turn 5: ttft=—  turn_latency=7853ms
+turn 6: ttft=—  turn_latency=3550ms
+conversation avg: turn_latency=8796ms  (over 0 turns with bot text, 5 turns timed)
+
+--- Inspector URL ---
+http://127.0.0.1:5007/webhooks/inspector/inspect.html?sender=sim-7d24e99f-5548-4c44-8aac-97ad77bfd390
+
+--- Additional Metrics ---
+Turns to Completion: 5
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  action: action_session_start
+    2  session_started: {"event": "session_started"}
+    3  agent: 'Hi! How can I help you today?'
+[T1] user: "Hi, I think my River Visa card ending in 4821 is lost."
+    1  user: 'Hi, I think my River Visa card ending in 4821 is lost.'
+    2  tool: transfer_to_card_replace() → ok
+    3  skill_activated: card_replace
+    4  tool: check_account_eligibility() → ok
+    5  memory_set: card_replace.account_eligible = true
+    6  tool: record_reason(reason=lost) → ok
+    7  memory_set: card_replace.replacement_reason = lost
+    8  tool: choose_card() → ok
+    9  skill_activated: card_disambiguate
+   10  tool: get_customer_cards() → ok
+   11  memory_set: card_disambiguate.card_list = [{"id": "VISA_001", "label": "River Visa ending 4821", "type": "River Visa"}, {"id": "MC_002", "label": "Summit Rewards ending 9173", "type": "Summit Rewards"}]
+   12  tool: select_card(card_id=VISA_001) → ok
+   13  memory_set: card_disambiguate.selected_card_id = VISA_001
+   14  memory_set: card_disambiguate.selected_card_label = River Visa ending 4821
+   15  memory_set: card_replace.selected_card_id = VISA_001
+   16  skill_completed: card_disambiguate
+   17  tool: check_card_eligibility(card_id=VISA_001) → ok
+   18  memory_set: card_replace.card_eligible = true
+   19  tool: load_recent_transactions(card_id=VISA_001) → ok
+   20  memory_set: card_replace.recent_transactions = [{"id": "txn_001", "date": "Jun 15", "merchant": "Amazon.com", "amount": 47.22, "category": "Shopping"}, {"id": "txn_002", "date": "Jun 14", "merchant": "Shell Gas Station", "amount": 38.5, "category": "Gas"}, {"id": "txn_003", "date": "Jun 13", "merchant": "Uber Eats", "amount": 24.99, "category": "Food"}, {"id": "txn_004", "date": "Jun 12", "merchant": "Netflix", "amount": 15.99, "category": "Subscriptions"}, {"id": "txn_005", "date": "Jun 10", "merchant": "Whole Foods", "amount": 112.35, "category": "Groceries"}]
+   21  agent: 'Got it — I can help with your **lost River Visa ending 4821**. Here are the most recent charges on that card: - **Jun 15** — Amazon.com — **$47.22** (txn_001) - **Jun 14** — Shell Gas Station — **$38.50** (txn_002) - **Jun 13** — Uber Eats — **$24.99** (txn_003) - **Jun 12** — Netflix — **$15.99** (txn_004) - **Jun 10** — Whole Foods — **$112.35** (txn_005) Do **all** of these look familiar to you?'
+[T2] user: "Yeah, those all look familiar."
+    1  user: 'Yeah, those all look familiar.'
+    2  tool: transfer_to_card_replace() → ok
+    3  tool: record_transactions_verdict(all_familiar=true) → ok
+    4  memory_set: card_replace.transactions_look_familiar = true
+    5  memory_set: card_replace.transaction_review_complete = true
+    6  tool: record_lock_consent(wants_lock=true) → ok
+    7  memory_set: card_replace.wants_card_locked = true
+    8  tool: lock_card(card_id=VISA_001) → ok
+    9  memory_set: card_replace.card_locked = true
+   10  agent: 'Your card has been locked. No further transactions will be authorized.'
+   11  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   12  memory_set: card_replace.wallet_eligible = true
+   13  memory_set: card_replace.wallet_already_provisioned = false
+   14  tool: check_rush_shipping_eligibility(card_id=VISA_001) → ok
+   15  memory_set: card_replace.rush_eligible = true
+   16  agent: 'Thanks — since everything looks familiar, I’ve **locked your River Visa ending 4821** to prevent any new charges. You’re also eligible to add it to a digital wallet. Would you like to set it up with **Apple Pay or Google Pay**? For the replacement card shipping, **rush (1–2 business days) is available for $25**, or **standard (5–7 business days) is free**. Which would you like?'
+[T3] user: "Wait — I just found it under the seat. Don't order a replacement, don't do anything else. Did you already do anything to the card?"
+    1  user: "Wait — I just found it under the seat. Don't order a replacement, don't do anything else. Did you already do anything to the card?"
+    2  tool: transfer_to_card_replace() → ok
+    3  tool: cancel_task() → ok
+    4  skill_cancelled: card_replace
+    5  tool: transfer_to_card_replace() → ok
+    6  skill_activated: card_replace
+    7  agent: 'I won’t order a replacement or do anything further. Yes — **the card was already locked** (your River Visa ending 4821). No replacement order was placed, and I did not add it to Apple Pay/Google Pay.'
+[T4] user: "Okay, thanks for clarifying. What can and can’t be reversed now that the card is locked?"
+    1  user: 'Okay, thanks for clarifying. What can and can’t be reversed now that the card is locked?'
+    2  tool: transfer_to_card_replace() → ok
+    3  tool: search_knowledge(query=card lock reversibility unlock locked c…) → ok
+    4  agent: 'Once a card is **locked**, here’s what can and can’t be reversed: **What can’t be reversed in this chat** - **I can’t unlock the card here**, and I can’t “undo” the lock from this chat session. **What can be reversed (but not here)** - The lock **can be reviewed and lifted by a human agent**. You’ll need to **contact our call center/support team** to complete the unlock. **What else is (or isn’t) affected** - Since **no replacement was ordered**, there’s **nothing to reverse** on the replacement side. - I also **didn’t add it to Apple Pay/Google Pay**, so there’s nothing to reverse there either. If you tell me whether you want to use the card again right away, I can point you to the correct next step to get it unlocked (via the call center).'
+[T5] user: "I do want to use it again, but I’ll contact support myself to get it unlocked. Thanks, that’s all I needed."
+    1  user: 'I do want to use it again, but I’ll contact support myself to get it unlocked. Thanks, that’s all I needed.'
+    2  tool: transfer_to_card_replace() → ok
+    3  tool: cancel_task() → ok
+    4  skill_cancelled: card_replace
+    5  agent: 'Goodbye!'

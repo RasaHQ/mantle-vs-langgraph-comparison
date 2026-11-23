@@ -1,0 +1,97 @@
+scenario: Current mobile bill inquiry
+run: 1
+timestamp: 2026-11-23T15:34:24Z
+conversation_id: sim-6f9f2357-f3dd-430e-b339-7123c69c7e2e
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent reports that the current June 2026 mobile bill is $142.50
+  rationale: The bot explicitly states: 'Your current phone bill (June 2026) is **$142.50**'.
+
+[PASS] The agent reports that the bill is due on July 15, 2026
+  rationale: The bot explicitly states the bill 'is **due July 15, 2026**'.
+
+[PASS] The agent does not invent bill values or ask irrelevant questions about bank accounts, cards, orders, shipments, or SIM replacement
+  rationale: The bill amount and due date are supported by a successful get_current_bill() call, and nowhere in the transcript does the bot ask about bank accounts, cards, orders, shipments, or SIM replacement.
+
+--- Quality Metrics ---
+bot_quality: 5.0/5
+  helpfulness: 5/5 — It gave a clear, specific bill amount, due date, and even extra relevant details (status and AutoPay) that are accurate and actionable.
+  repair_quality: 5/5 — There were no signs of misunderstanding or user pushback, so no repair was needed or mishandled.
+  coherence: 5/5 — The brief conversation stayed fully consistent across turns and ended appropriately once the user said they were done.
+  tone: 5/5 — The tone was polite, concise, and natural for a simple transactional exchange.
+  task_completion: PASS — The assistant directly answered the user's question about the bill amount and due date, and the user confirmed that this solved their need.
+summary: This was a clean, successful transactional interaction: the assistant directly answered the user's question with precise billing information and the user confirmed it was sufficient. There were no coherence or repair issues, and the tone was appropriately brief and courteous. Overall, the assistant behaved at a high production quality level for this simple use case.
+
+--- Acknowledgements ---
+summary:
+  coverage: 0/2 tool turns (0%)
+  mean naturalness score: None
+  mean issue score: None
+  issues: none
+
+T1
+  turn:
+    tools:
+      - transfer_to_bill_inquiry
+      - get_current_bill
+    no acknowledgement
+T2
+  turn:
+    tools:
+      - transfer_to_bill_inquiry
+      - finish_task
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "How much is my current phone bill, and when is it due?"
+  observed: transfer_to_bill_inquiry
+  observed: get_current_bill
+[T2] user: "Thanks, that’s all I needed."
+  observed: transfer_to_bill_inquiry
+  observed: finish_task
+
+--- Assertion Results ---
+[PASS] skill_activated(bill_inquiry)
+[PASS] skill_completed(bill_inquiry)
+[PASS] tool_executed(get_current_bill)
+
+--- Raw Transcript ---
+[1] agent: Hi! How can I help you today?
+[2] user: How much is my current phone bill, and when is it due?
+[3] agent: Your current phone bill (June 2026) is **$142.50**, and it’s **due July 15, 2026**. The bill status is **Pending**, and **AutoPay is on**.
+[4] user: Thanks, that’s all I needed.
+[5] agent: Goodbye!
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=—  turn_latency=5379ms
+turn 3: ttft=—  turn_latency=4795ms
+conversation avg: turn_latency=5087ms  (over 0 turns with bot text, 2 turns timed)
+
+--- Inspector URL ---
+http://127.0.0.1:5007/webhooks/inspector/inspect.html?sender=sim-6f9f2357-f3dd-430e-b339-7123c69c7e2e
+
+--- Additional Metrics ---
+Turns to Completion: 2
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  action: action_session_start
+    2  session_started: {"event": "session_started"}
+    3  agent: 'Hi! How can I help you today?'
+[T1] user: "How much is my current phone bill, and when is it due?"
+    1  user: 'How much is my current phone bill, and when is it due?'
+    2  tool: transfer_to_bill_inquiry() → ok
+    3  skill_activated: bill_inquiry
+    4  tool: get_current_bill() → ok
+    5  agent: 'Your current phone bill (June 2026) is **$142.50**, and it’s **due July 15, 2026**. The bill status is **Pending**, and **AutoPay is on**.'
+[T2] user: "Thanks, that’s all I needed."
+    1  user: 'Thanks, that’s all I needed.'
+    2  tool: transfer_to_bill_inquiry() → ok
+    3  tool: finish_task() → ok
+    4  skill_completed: bill_inquiry
+    5  agent: 'Goodbye!'

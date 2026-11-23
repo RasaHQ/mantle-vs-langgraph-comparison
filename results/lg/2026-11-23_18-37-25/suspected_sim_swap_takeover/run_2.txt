@@ -1,0 +1,158 @@
+scenario: Suspected SIM swap / account takeover
+run: 2
+timestamp: 2026-11-23T13:11:22Z
+conversation_id: sim-d3fed380-0661-4585-bbd1-034403407c09
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent classifies the incident as stolen and the customer hears the matching stolen-SIM advice before the SIM is blocked
+  rationale: In T1 the tool `record_incident(reason=stolen)` is called, and before the SIM is blocked the bot tells the user to report the theft to the police and check for unauthorized charges, which is stolen-SIM style advice given prior to the explicit block at T2.
+
+[PASS] The agent prioritizes security containment (blocking the SIM) over pushing the customer toward ordering a replacement before the security concern is addressed
+  rationale: The SIM is blocked in T2 after user consent (`tool: block_sim() → ok`), and only after confirming 'Your SIM is now blocked.' does the bot offer to arrange a replacement SIM, so containment clearly precedes any replacement discussion.
+
+[PASS] The agent does not reveal account-specific information before the SIM is blocked. Sharing device IMEI or serial after the block is expected.
+  rationale: No account-specific details are given before the block; device info (iPhone 15 Pro, IMEI, serial) is only shared after 'Your SIM is now blocked.' and after `sim_management.sim_blocked = true` is set in T2.
+
+[PASS] The agent avoids actions that could make recovery harder without explaining their impact
+  rationale: The only impactful security action is blocking the SIM, which the bot explicitly frames as 'to prevent any unauthorized use' both when offering ('Do you want me to block it now to prevent any unauthorized use?') and when confirming ('I’ve secured your mobile service by **blocking your SIM**'), so its impact is explained and no other risky unexplained actions are taken.
+
+[PASS] The agent clearly explains the immediate security steps it completed or could not complete
+  rationale: After `block_sim() → ok`, the bot explicitly states 'Your SIM is now blocked.' and later reiterates 'I’ve secured your mobile service by **blocking your SIM**', clearly describing the completed security action.
+
+--- Quality Metrics ---
+bot_quality: 4.5/5
+  helpfulness: 4/5 — The assistant promptly blocked the SIM, flagged the situation as a likely SIM swap, offered replacement options, and provided device details, though it could have given more explicit security guidance (e.g., account/PIN/password checks).
+  repair_quality: 5/5 — There were no user corrections or pushback; the user accepted the assistant’s actions and then declined the replacement SIM without any misunderstanding to repair.
+  coherence: 5/5 — The assistant consistently tracked the user’s intent to block the SIM, then shifted coherently to offering a replacement, and respected the user’s final statement that they didn’t want a replacement now.
+  tone: 4/5 — The tone is polite, clear, and professional, though some phrasing is a bit terse or generic (e.g., the initial police-report instruction and abrupt 'Goodbye!').
+  task_completion: PASS — The user wanted their SIM blocked immediately to secure the account, and the assistant explicitly confirmed that the SIM was now blocked and provided device details.
+summary: The assistant successfully understood and fulfilled the user’s key need to immediately block their SIM and secure their line, while also offering reasonable next steps and providing device details. Context tracking was consistent and the tone was generally appropriate, but additional proactive security guidance and a slightly warmer closing could improve overall quality.
+
+--- Acknowledgements ---
+summary:
+  coverage: 0/3 tool turns (0%)
+  mean naturalness score: None
+  mean issue score: None
+  issues: none
+
+T1
+  turn:
+    tools:
+      - transfer_to_sim_management
+      - record_incident
+      - start_block_sim
+      - check_sim_status
+    no acknowledgement
+T2
+  turn:
+    tools:
+      - record_block_consent
+      - block_sim
+      - get_device_info
+    no acknowledgement
+T3
+  turn:
+    tools:
+      - transfer_to_sim_management
+      - finish_task
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "I think someone may have moved my number to another SIM. I still have my phone right here, but it suddenly lost service a few minutes ago. Can you secure my account immediately?"
+  observed: transfer_to_sim_management
+  observed: record_incident(reason='stolen')
+  observed: start_block_sim
+  observed: check_sim_status
+[T2] user: "Yes, please block this SIM right now to stop any unauthorized use."
+  observed: record_block_consent(wants_to_block=true)
+  observed: block_sim
+  observed: get_device_info
+[T3] user: "Thanks for blocking it. I don’t want a replacement SIM right now, I’ll sort that out later. That’s all I needed."
+  observed: transfer_to_sim_management
+  observed: finish_task
+
+--- Assertion Results ---
+[PASS] skill_activated(sim_management)
+[PASS] skill_completed(sim_management)
+[PASS] sequencing
+[PASS] bot_uttered
+[PASS] memory_was_set(sim_management.incident_reason='stolen', sim_management.wants_to_block=True, sim_management.sim_blocked=True)
+[PASS] memory_was_not_set(sim_management.replacement_ordered, sim_management.replacement_complete, sim_management.sim_type, sim_management.sim_order_summary)
+[PASS] tool_executed(check_sim_status)
+[PASS] tool_executed(block_sim)
+
+--- Raw Transcript ---
+[1] agent: Hi! How can I help you today?
+[2] user: I think someone may have moved my number to another SIM. I still have my phone right here, but it suddenly lost service a few minutes ago. Can you secure my account immediately?
+[3] agent: Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.
+[4] agent: This SIM is active. Do you want me to block it now to prevent any unauthorized use?
+[5] user: Yes, please block this SIM right now to stop any unauthorized use.
+[6] agent: Your SIM is now blocked.
+[7] agent: Here are the device details on file for your line:
+Device: iPhone 15 Pro
+IMEI: 352345678901234
+Serial number: F2LZK1HQGRX
+[8] agent: I’ve secured your mobile service by **blocking your SIM**.  
+
+Since you still have the phone and service suddenly dropped, this can be consistent with an **unauthorized SIM swap**. If you’d like, I can arrange a **replacement SIM** now:
+
+- **Physical nano‑SIM** (posted; activates when inserted), or  
+- **eSIM** (QR code by email; you’ll need Wi‑Fi to download)
+
+Which would you prefer: **nano‑SIM** or **eSIM**?
+[9] user: Thanks for blocking it. I don’t want a replacement SIM right now, I’ll sort that out later. That’s all I needed.
+[10] agent: Goodbye!
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=—  turn_latency=3334ms
+turn 3: ttft=—  turn_latency=2898ms
+turn 4: ttft=—  turn_latency=3210ms
+conversation avg: turn_latency=3147ms  (over 0 turns with bot text, 3 turns timed)
+
+--- Inspector URL ---
+http://127.0.0.1:5007/webhooks/inspector/inspect.html?sender=sim-d3fed380-0661-4585-bbd1-034403407c09
+
+--- Additional Metrics ---
+Turns to Completion: 3
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  action: action_session_start
+    2  session_started: {"event": "session_started"}
+    3  agent: 'Hi! How can I help you today?'
+[T1] user: "I think someone may have moved my number to another SIM. I still have my phone right here, but it suddenly lost service a few minutes ago. Can you secure my account immediately?"
+    1  user: 'I think someone may have moved my number to another SIM. I still have my phone right here, but it suddenly lost service a few minutes ago. Can you secure my account immediately?'
+    2  tool: transfer_to_sim_management() → ok
+    3  skill_activated: sim_management
+    4  tool: record_incident(reason=stolen) → ok
+    5  memory_set: sim_management.incident_reason = stolen
+    6  agent: 'Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.'
+    7  tool: start_block_sim() → ok
+    8  tool: check_sim_status() → ok
+    9  memory_set: sim_management.sim_blocked = false
+   10  agent: 'This SIM is active. Do you want me to block it now to prevent any unauthorized use?'
+[T2] user: "Yes, please block this SIM right now to stop any unauthorized use."
+    1  user: 'Yes, please block this SIM right now to stop any unauthorized use.'
+    2  tool: record_block_consent(wants_to_block=true) → ok
+    3  memory_set: sim_management.wants_to_block = true
+    4  tool: block_sim() → ok
+    5  memory_set: sim_management.sim_blocked = true
+    6  agent: 'Your SIM is now blocked.'
+    7  tool: get_device_info() → ok
+    8  memory_set: sim_management.device_name = iPhone 15 Pro
+    9  memory_set: sim_management.device_imei = 352345678901234
+   10  memory_set: sim_management.device_serial = F2LZK1HQGRX
+   11  memory_set: sim_management.device_info_shared = true
+   12  agent: 'Here are the device details on file for your line: Device: iPhone 15 Pro IMEI: 352345678901234 Serial number: F2LZK1HQGRX'
+   13  agent: 'I’ve secured your mobile service by **blocking your SIM**. Since you still have the phone and service suddenly dropped, this can be consistent with an **unauthorized SIM swap**. If you’d like, I can arrange a **replacement SIM** now: - **Physical nano‑SIM** (posted; activates when inserted), or - **eSIM** (QR code by email; you’ll need Wi‑Fi to download) Which would you prefer: **nano‑SIM** or **eSIM**?'
+[T3] user: "Thanks for blocking it. I don’t want a replacement SIM right now, I’ll sort that out later. That’s all I needed."
+    1  user: 'Thanks for blocking it. I don’t want a replacement SIM right now, I’ll sort that out later. That’s all I needed.'
+    2  tool: transfer_to_sim_management() → ok
+    3  tool: finish_task() → ok
+    4  skill_completed: sim_management
+    5  agent: 'Goodbye!'

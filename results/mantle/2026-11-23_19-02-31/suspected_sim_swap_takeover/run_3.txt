@@ -1,0 +1,180 @@
+scenario: Suspected SIM swap / account takeover
+run: 3
+timestamp: 2026-11-23T13:40:00Z
+conversation_id: sim-7b06af5b-2eef-4179-8931-0926cdd45efd
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent classifies the incident as stolen and the customer hears the matching stolen-SIM advice before the SIM is blocked
+  rationale: In T1 the ledger sets `sim_management.incident_reason = stolen` and the bot immediately gives stolen-SIM advice ("Report the theft to the police... Check your account for any unauthorized charges.") before the SIM is blocked at T2.
+
+[PASS] The agent prioritizes security containment (blocking the SIM) over pushing the customer toward ordering a replacement before the security concern is addressed
+  rationale: The assistant first offers to block the active SIM ("Would you like me to block it right now...") and only after confirming it is blocked does it ask about a replacement SIM.
+
+[PASS] The agent does not reveal account-specific information before the SIM is blocked. Sharing device IMEI or serial after the block is expected.
+  rationale: Account-specific details (device, IMEI, serial) are shared only after the ledger shows `tool: block_sim() → ok` and the bot states "Your SIM has been blocked."
+
+[PASS] The agent avoids actions that could make recovery harder without explaining their impact
+  rationale: The agent does not perform or recommend any recovery-hindering actions (it only blocks the SIM and offers optional replacement), so there is no un-explained harmful action in the transcript.
+
+[PASS] The agent clearly explains the immediate security steps it completed or could not complete
+  rationale: The bot explicitly confirms the core step by saying "Your SIM has been blocked" and gives related security advice, with no unaddressed or unclear attempted actions.
+
+--- Quality Metrics ---
+bot_quality: 4.5/5
+  helpfulness: 4/5 — It correctly blocked the SIM, provided device details, and offered replacement options, though some early advice (e.g., reporting to police) was generic and not clearly sequenced as immediate next steps.
+  repair_quality: 5/5 — There were no user pushbacks or corrections; the assistant followed the user’s intent smoothly without needing repair.
+  coherence: 5/5 — The assistant consistently tracked the user’s intent to block the SIM, then respected the user’s decision not to get a replacement and closed the request appropriately.
+  tone: 4/5 — The tone was polite and clear, though a bit clipped and procedural rather than fully conversational.
+  task_completion: PASS — The assistant explicitly blocked the SIM as requested and provided confirmation and follow-on options, satisfying the user’s stated goal.
+summary: The assistant successfully handled the security-sensitive request, clearly confirming that the SIM was blocked and providing relevant device details and replacement options. Its responses were coherent, aligned with the user’s intent, and couched in a polite if somewhat terse tone. The main opportunity for improvement would be slightly richer guidance around next steps and more natural conversational phrasing.
+
+--- Acknowledgements ---
+summary:
+  coverage: 1/2 tool turns (50%)
+  mean naturalness score: 5.0
+  mean issue score: 5.0
+  issues: none
+
+T1
+  turn:
+    tools:
+      - activate
+      - enter
+      - check_sim_status
+    acknowledgement: "I’m sorry—let me pull up the SIM security options for you."
+    follow-ups:
+      - "Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges."
+      - "Your SIM is currently active. Would you like me to block it right now to stop any unauthorized use?"
+  verdict:
+    naturalness score: 5
+    issue score: 5.0
+    issues: none
+    reasoning: It naturally acknowledges the concern with an apology and appropriately says it will pull up SIM security options without promising any outcome.
+T2
+  turn:
+    tools:
+      - block_sim
+      - get_device_info
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "I think someone may have moved my number to another SIM. I still have my phone right here, but it just lost service a few minutes ago. Can you secure my account immediately?"
+  observed: check_sim_status
+[T2] user: "Yes, please block it right now. I want this SIM blocked immediately to stop any misuse."
+  observed: block_sim
+  observed: get_device_info
+
+--- Assertion Results ---
+[PASS] skill_activated(sim_management)
+[PASS] skill_completed(sim_management)
+[PASS] sequencing
+[PASS] bot_uttered
+[PASS] memory_was_set(sim_management.incident_reason='stolen', sim_management.wants_to_block=True, sim_management.sim_blocked=True)
+[PASS] memory_was_not_set(sim_management.replacement_ordered, sim_management.replacement_complete, sim_management.sim_type, sim_management.sim_order_summary)
+[PASS] tool_executed(check_sim_status)
+[PASS] tool_executed(block_sim)
+
+--- Raw Transcript ---
+[1] agent: Hello! What can I help you with today?
+[2] user: I think someone may have moved my number to another SIM. I still have my phone right here, but it just lost service a few minutes ago. Can you secure my account immediately?
+[3] agent: I’m sorry—let me pull up the SIM security options for you.
+[4] agent: Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.
+
+[5] agent: Your SIM is currently active. Would you like me to block it right now to stop any unauthorized use?
+[6] user: Yes, please block it right now. I want this SIM blocked immediately to stop any misuse.
+[7] agent: Your SIM has been blocked.
+[8] agent: Here are the device details on file for your line:
+Device: iPhone 15 Pro
+IMEI: 352345678901234
+Serial number: F2LZK1HQGRX
+
+[9] agent: Would you like a replacement now—an instant eSIM (emailed QR code) or a physical nano‑SIM shipped in 2–3 business days?
+[10] user: Thanks for blocking it. I don’t want a replacement SIM right now, so I’ll just leave it as blocked. That’s all I needed.
+[11] agent: Okay—closing this out for you now.
+[12] agent: Can I help you with anything else today?
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=1137ms  turn_latency=4354ms
+turn 3: ttft=2172ms  turn_latency=5421ms
+turn 4: ttft=1053ms  turn_latency=5828ms
+conversation avg: ttft=1454ms  turn_latency=5201ms  (over 3 turns with bot text)
+
+--- Inspector URL ---
+http://localhost:5005/webhooks/inspector/inspect.html?sender=sim-7b06af5b-2eef-4179-8931-0926cdd45efd
+
+--- Additional Metrics ---
+Turns to Completion: 3
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  session_started: {"event": "session_started", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "engine_version": "mantle"}
+    2  memory_set: system.session_started_metadata = {"is_simulation": true}
+    3  skill_activated: builtin_session_start
+    4  ordered_block_entered: builtin_session_start/main
+    5  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"ZTEKUO48\", \"skill_id\": \"builtin_session_start\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"5GKQ0LXJ\", \"skill_id\": \"builtin_session_start\", \"block_id\": \"main\", \"step_id\": \"greet\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+    6  slot: consecutive_silence_timeouts = 0.0
+    7  user: '/session_start'
+    8  agent: 'Hello! What can I help you with today?'
+    9  ordered_block_completed: builtin_session_start/main (step=greet)
+   10  skill_completed: builtin_session_start
+   11  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}, {\"op\": \"remove\", \"path\": \"/0\"}]"}
+   12  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}}
+[T1] user: "I think someone may have moved my number to another SIM. I still have my phone right here, but it just lost service a few minutes ago. Can you secure my account immediately?"
+    1  user: 'I think someone may have moved my number to another SIM. I still have my phone right here, but it just lost service a few minutes ago. Can you secure my account immediately?'
+    2  agent: 'I’m sorry—let me pull up the SIM security options for you.'
+    3  skill_activated: sim_management
+    4  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"MCYG5MWQ\", \"skill_id\": \"sim_management\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+    5  memory_set: sim_management.incident_reason = stolen
+    6  memory_set: system.verbatim_when_trigger_match_state = {"MCYG5MWQ": {"utter_sim_incident_advice": true}}
+    7  tool: activate(target_id=sim_management, memory_items={"incident_reason": "stolen"}) → ok
+    8  agent: 'Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.'
+    9  ordered_block_entered: sim_management/block_sim_flow
+   10  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "update": "[{\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"XM5707BU\", \"skill_id\": \"sim_management\", \"block_id\": \"block_sim_flow\", \"step_id\": \"check_status\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   11  tool: enter(target_id=sim_management__block_sim_flow) → ok
+   12  memory_set: sim_management.sim_blocked = false
+   13  memory_set: system.verbatim_when_trigger_match_state = {"MCYG5MWQ": {"utter_sim_incident_advice": true}, "XM5707BU": {"utter_sim_incident_advice": true}}
+   14  tool: check_sim_status() → ok
+   15  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "update": "[{\"op\": \"replace\", \"path\": \"/1/step_id\", \"value\": \"gate_status\"}]"}
+   16  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "update": "[{\"op\": \"replace\", \"path\": \"/1/step_id\", \"value\": \"ask_block\"}]"}
+   17  agent: 'Your SIM is currently active. Would you like me to block it right now to stop any unauthorized use?'
+   18  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}}
+[T2] user: "Yes, please block it right now. I want this SIM blocked immediately to stop any misuse."
+    1  user: 'Yes, please block it right now. I want this SIM blocked immediately to stop any misuse.'
+    2  memory_set: sim_management.wants_to_block = true
+    3  memory_set: system.verbatim_when_trigger_match_state = {"MCYG5MWQ": {"utter_sim_incident_advice": true}, "XM5707BU": {"utter_sim_incident_advice": true}}
+    4  tool: set_memory(wants_to_block=true) → ok
+    5  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "update": "[{\"op\": \"replace\", \"path\": \"/1/step_id\", \"value\": \"gate_block\"}]"}
+    6  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "update": "[{\"op\": \"replace\", \"path\": \"/1/step_id\", \"value\": \"do_block\"}]"}
+    7  memory_set: sim_management.sim_blocked = true
+    8  memory_set: system.verbatim_when_trigger_match_state = {"MCYG5MWQ": {"utter_sim_incident_advice": true}, "XM5707BU": {"utter_sim_incident_advice": true}}
+    9  tool: block_sim() → ok
+   10  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "update": "[{\"op\": \"replace\", \"path\": \"/1/step_id\", \"value\": \"device_info_gate\"}]"}
+   11  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "update": "[{\"op\": \"replace\", \"path\": \"/1/step_id\", \"value\": \"share_device_info\"}]"}
+   12  memory_set: sim_management.device_name = iPhone 15 Pro
+   13  memory_set: sim_management.device_imei = 352345678901234
+   14  memory_set: sim_management.device_serial = F2LZK1HQGRX
+   15  memory_set: sim_management.device_info_shared = true
+   16  memory_set: system.verbatim_when_trigger_match_state = {"MCYG5MWQ": {"utter_sim_incident_advice": true}, "XM5707BU": {"utter_sim_incident_advice": true}}
+   17  tool: get_device_info() → ok
+   18  ordered_block_completed: sim_management/block_sim_flow (step=share_device_info)
+   19  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "update": "[{\"op\": \"remove\", \"path\": \"/1\"}]"}
+   20  agent: 'Your SIM has been blocked.'
+   21  agent: 'Here are the device details on file for your line: Device: iPhone 15 Pro IMEI: 352345678901234 Serial number: F2LZK1HQGRX'
+   22  agent: 'Would you like a replacement now—an instant eSIM (emailed QR code) or a physical nano‑SIM shipped in 2–3 business days?'
+   23  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}}
+[T3] user: "Thanks for blocking it. I don’t want a replacement SIM right now, so I’ll just leave it as blocked. That’s all I needed."
+    1  user: 'Thanks for blocking it. I don’t want a replacement SIM right now, so I’ll just leave it as blocked. That’s all I needed.'
+    2  agent: 'Okay—closing this out for you now.'
+    3  skill_completed: sim_management
+    4  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}]"}
+    5  skill_activated: builtin_completed
+    6  ordered_block_entered: builtin_completed/main
+    7  stack: {"event": "stack", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"6XTIGDT0\", \"skill_id\": \"builtin_completed\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"2XEBVBX8\", \"skill_id\": \"builtin_completed\", \"block_id\": \"main\", \"step_id\": \"ask_continue\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+    8  tool: complete() → ok
+    9  agent: 'Can I help you with anything else today?'
+   10  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "073a4a99897343ac9dad46c29d0f6d20", "model_name": "20261123-190239-curious-rectangle.tar.gz", "assistant_id": "mantle-combined", "session_id": "3d3b5deb-ae39-4ba7-a96c-dc2d3cb79690"}}
