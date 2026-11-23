@@ -1,15 +1,15 @@
 """Run the Mantle vs LangGraph benchmark.
 
-    python harness/run.py mantle lg lg-high --batches 3
+    python harness/run.py mantle lg lg-high --sets 3
 
-Each batch runs every scenario in ``scenarios/`` 3 times against one setup and
+Each set runs every scenario in ``scenarios/`` 3 times against one setup and
 writes the per-run results to ``results/<setup>/<timestamp>/``. At the end,
 ``harness/compare.py`` rebuilds the comparison table in ``results/README.md``.
 
 Quick check that everything starts (one short conversation per setup, results
 kept out of ``results/``):
 
-    python harness/run.py mantle lg lg-high --batches 1 --runs 1 \
+    python harness/run.py mantle lg lg-high --sets 1 --runs 1 \
         --scenario order_status_happy_path --results-dir logs/smoke
 
 The simulated user, the LLM judge and the assertions all come from rasa-pro's
@@ -301,7 +301,7 @@ def git_commit() -> Optional[str]:
     return out.stdout.strip() or None
 
 
-def run_batch(setup: Setup, runs: int, only: Optional[list[str]], results_dir: Path) -> Path:
+def run_set(setup: Setup, runs: int, only: Optional[list[str]], results_dir: Path) -> Path:
     for port in (MCP_PORT, MANTLE_PORT, LANGGRAPH_PORT):
         if port_in_use(port):
             sys.exit(f"Port {port} is in use. Stop that process first.")
@@ -312,7 +312,7 @@ def run_batch(setup: Setup, runs: int, only: Optional[list[str]], results_dir: P
     log_dir = LOGS_DIR / f"{setup.name}_{timestamp}"
     log_dir.mkdir(parents=True, exist_ok=True)
     started = datetime.now().isoformat(timespec="seconds")
-    log(f"{setup.name}: batch {timestamp}, {len(scenario_paths(only))} scenarios x {runs} runs")
+    log(f"{setup.name}: set {timestamp}, {len(scenario_paths(only))} scenarios x {runs} runs")
 
     procs: list[subprocess.Popen] = []
     try:
@@ -353,17 +353,19 @@ def run_batch(setup: Setup, runs: int, only: Optional[list[str]], results_dir: P
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("setups", nargs="+", choices=sorted(SETUPS), help="setups to run, in order")
-    parser.add_argument("--batches", type=int, default=3, help="batches per setup (default 3)")
-    parser.add_argument("--runs", type=int, default=3, help="runs per scenario in each batch (default 3)")
+    parser.add_argument("--sets", type=int, default=3, help="sets per setup (default 3)")
+    parser.add_argument("--runs", type=int, default=3, help="runs per scenario in each set (default 3)")
     parser.add_argument("--scenario", action="append", help="run only this scenario (repeatable)")
     parser.add_argument("--results-dir", type=Path, default=REPO / "results", help="default: results/")
     args = parser.parse_args()
     results_dir = args.results_dir.resolve()
     prepare_environment()
-    for name in args.setups:
-        for batch in range(1, args.batches + 1):
-            log(f"=== {name}: batch {batch}/{args.batches}")
-            run_batch(SETUPS[name], args.runs, args.scenario, results_dir)
+    # Interleave setups (set 1 of each, then set 2 of each, ...) so drift in the
+    # OpenAI API over a long run affects every setup alike.
+    for i in range(1, args.sets + 1):
+        for name in args.setups:
+            log(f"=== {name}: set {i}/{args.sets}")
+            run_set(SETUPS[name], args.runs, args.scenario, results_dir)
     subprocess.run([sys.executable, str(REPO / "harness" / "compare.py"), str(results_dir)], check=True)
 
 

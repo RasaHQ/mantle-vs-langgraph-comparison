@@ -37,25 +37,25 @@ Both agents run the identical files.
 ./run.sh            # full benchmark, then writes results/README.md
 ```
 
-`./run.sh` runs each setup in 3 batches. Each batch runs all 31 scenarios 3 times, so every scenario gets 9 conversations per setup. The table is rebuilt from everything in `results/` at the end, and `python harness/compare.py` rebuilds it on its own. Other forms:
+`./run.sh` runs each setup in 3 sets. Each set runs all 31 scenarios 3 times, so every scenario gets 9 conversations per setup. Sets are interleaved (set 1 of every setup, then set 2, then set 3), so changes in the OpenAI API over the run affect all setups alike. The table is rebuilt from everything in `results/` at the end, and `python harness/compare.py` rebuilds it on its own. Other forms:
 
 ```bash
 ./run.sh lg-high                 # one setup
-./run.sh mantle lg --batches 1   # fewer batches
+./run.sh mantle lg --sets 1      # fewer sets
 .venv-rasa/bin/python harness/run.py --help
 ```
 
-A full run takes about 2.5 hours and costs about $140 in OpenAI usage. Per batch, measured on the agent plus the simulated customer and the judge:
+A full run takes about 2.5 hours and costs about $140 in OpenAI usage. Per set, measured on the agent plus the simulated customer and the judge:
 
-| Setup | Time per batch | Cost per batch |
+| Setup | Time per set | Cost per set |
 |---|---:|---:|
 | `mantle` | ~21 min | ~$13 |
 | `lg` | ~7 min | ~$11 |
 | `lg-high` | ~19 min | ~$23 |
 
-## How a batch runs
+## How a set runs
 
-`harness/run.py` does the following for one batch:
+`harness/run.py` does the following for one set:
 
 1. Starts the MCP tool server.
 2. Starts the agent. For Mantle that means `rasa train` and `rasa run`. For LangGraph it starts `langgraph_native.server` in its own environment.
@@ -81,7 +81,9 @@ All settings are in `SETUPS` at the top of `harness/run.py`.
 - The **cost head-to-head** compares the two agents on the same scenarios, either all runs on every scenario or passing runs on the scenarios both passed.
   - Per-setup "passing runs" averages cover different scenarios for each agent, so don't compare them across columns.
 
-Results vary from batch to batch. With 3 runs per scenario, the LangGraph `lg-high` setup has passed anywhere from 21 to 26 of 31 scenarios on the same code. That is why the default is 9 runs per scenario, and why the table also shows the run pass rate and the result of each batch.
+Results vary from set to set. With 3 runs per scenario, the LangGraph `lg-high` setup has passed anywhere from 21 to 26 of 31 scenarios on the same code. That is why each setup runs 3 sets (9 runs per scenario).
+
+The results table pools all runs of a setup. Next to each metric it gives the standard deviation across the 3 sets (±), so you can see how much the number moves between one set of runs and the next. For example, `23.7 ± 2.5` scenarios passing means the per-set counts average 23.7 with a sample standard deviation of 2.5.
 
 ## Layout
 
@@ -91,7 +93,7 @@ agents/langgraph_native/   LangGraph agent
 shared_mcp_server/         MCP server with the mock tools both agents call
 shared_mock_data/          Mock customers, cards, orders and bills behind those tools
 scenarios/                 The 31 test conversations
-harness/run.py             Starts servers, runs batches, copies results
+harness/run.py             Starts servers, runs sets, copies results
 harness/compare.py         Builds results/README.md from results/
 harness/conftest.yml       Simulated customer and judge model settings
 requirements/              Pinned packages for each environment
@@ -103,4 +105,4 @@ Each run in `results/<setup>/<timestamp>/<scenario>/` has a `run_N.txt` with the
 - per-turn latency,
 - assertion results.
 
-`run_info.json` records the settings and package versions for that batch.
+`run_info.json` records the settings and package versions for that set.
