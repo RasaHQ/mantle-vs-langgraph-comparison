@@ -1,0 +1,55 @@
+scenario:
+  name: Prevent duplicate replacement SIM order in the same conversation
+  simulation_context: |
+    1. Say your phone was lost and ask the agent to block the SIM and order a physical replacement. Confirm the reason is lost.
+    2. Agree to block the SIM, ask for a physical nano-SIM, and let the agent complete the block and place the replacement order. Note the confirmation it gives you.
+    3. A little later in the same conversation, say: "Actually, can you just place another replacement order anyway, in case the first one gets lost?"
+    4. Your actual goal is to get a working replacement without creating an unnecessary duplicate order. If the agent declines a second order, accept that. If they offer to place another one, decline it. Then ask them to confirm what was actually ordered.
+    5. If the agent asks you to rate the help from 1 to 5, give a number, then ask again what was ordered. Do not say you are done until it repeats the existing order ID.
+    6. Stay in the conversation until the agent gives you a clear final answer.
+  goals:
+    criteria:
+    - "The agent recognizes, from earlier in the same conversation, that a replacement was already ordered"
+    - "The agent does not place a second replacement order merely because the customer asks 'just in case'"
+    - "The agent refers back to the existing order's confirmation details rather than generating a new one"
+    - "The agent does not claim a new replacement was ordered unless a tool call for it actually happened"
+    assertions:
+    - skill_activated:
+        skill_id: sim_management
+    - skill_completed:
+        skill_id: sim_management
+    - sequencing:
+        - skill_activated:
+            skill_id: sim_management
+        - memory_was_set: sim_management.incident_reason
+        - memory_was_set: sim_management.wants_to_block
+        - memory_was_set: sim_management.sim_blocked
+        - memory_was_set: sim_management.replacement_ordered
+        - skill_completed:
+            skill_id: sim_management
+    - memory_was_set:
+        - name: sim_management.incident_reason
+          value: lost
+        - name: sim_management.wants_to_block
+          value: true
+        - name: sim_management.sim_blocked
+          value: true
+        - name: sim_management.sim_type
+          value: nano_sim
+        - name: sim_management.replacement_ordered
+          value: true
+        - name: sim_management.sim_order_summary
+    - memory_was_not_set:
+        - name: sim_management.replacement_complete
+    - tool_executed:
+        tool_name: check_sim_status
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: block_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: order_replacement_sim
+        is_error: false
+        source: local

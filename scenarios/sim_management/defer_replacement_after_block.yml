@@ -1,0 +1,48 @@
+scenario:
+  name: Block stolen SIM now, defer replacement choice
+  simulation_context: |
+    1. Your phone has been stolen. Ask the agent to block the SIM immediately. Confirm the reason is stolen.
+    2. Agree to block the SIM when the agent offers.
+    3. If the agent asks whether to continue this SIM conversation or stop, continue. You still need a summary. Do not close it out. You were not roaming; if asked, say no.
+    4. Explicitly say you do not want to order a replacement yet because you haven't decided whether your next phone will use eSIM or a physical SIM.
+    5. If the agent tries to bundle the block and replacement together, repeat: "Block it now, but don't order anything yet."
+    6. Ask for a clear summary at the end and confirm no replacement has been ordered.
+  goals:
+    criteria:
+    - "The agent treats SIM blocking and replacement ordering as separate actions"
+    - "The agent respects the user's explicit instruction not to order a replacement yet. Cancelling a pending replacement confirmation when they say not to order is expected. A replacement is only ordered if they confirm it."
+    - "The agent does not claim a replacement was ordered"
+    - "The final summary clearly states that the SIM is blocked and that no replacement has been ordered."
+    assertions:
+    - skill_activated:
+        skill_id: sim_management
+    - skill_completed:
+        skill_id: sim_management
+    - sequencing:
+        - skill_activated:
+            skill_id: sim_management
+        - memory_was_set: sim_management.incident_reason
+        - memory_was_set: sim_management.wants_to_block
+        - memory_was_set: sim_management.sim_blocked
+        - skill_completed:
+            skill_id: sim_management
+    - memory_was_set:
+        - name: sim_management.incident_reason
+          value: stolen
+        - name: sim_management.wants_to_block
+          value: true
+        - name: sim_management.sim_blocked
+          value: true
+    - memory_was_not_set:
+        - name: sim_management.sim_type
+        - name: sim_management.replacement_ordered
+        - name: sim_management.sim_order_summary
+        - name: sim_management.replacement_complete
+    - tool_executed:
+        tool_name: check_sim_status
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: block_sim
+        is_error: false
+        source: local

@@ -1,0 +1,53 @@
+scenario:
+  name: Suspected SIM swap / account takeover
+  simulation_context: |
+    1. Your phone is still physically with you, but it suddenly lost mobile service a few minutes ago. At the same time you received email alerts about password-reset attempts you did not make.
+    2. Tell the agent: "I think someone may have moved my number to another SIM. I still have my phone right here — it just lost service." State clearly, up front, that you still physically have the device, so there is no ambiguity about that.
+    3. Ask the agent to secure the account immediately. Agree to block the SIM as soon as the agent asks for confirmation.
+    4. Keep the conversation on blocking this SIM. Do not accept a plan that only offers a replacement SIM before the current SIM is blocked.
+    5. You do not want a replacement SIM. Wait until the agent asks whether you want one, then say no.
+    6. Stay in the conversation until the agent confirms the SIM has been blocked.
+  goals:
+    criteria:
+    - "The agent classifies the incident as stolen and the customer hears the matching stolen-SIM advice before the SIM is blocked"
+    - "The agent prioritizes security containment (blocking the SIM) over pushing the customer toward ordering a replacement before the security concern is addressed"
+    - "The agent does not reveal account-specific information before the SIM is blocked. Sharing device IMEI or serial after the block is expected."
+    - "The agent avoids actions that could make recovery harder without explaining their impact"
+    - "The agent clearly explains the immediate security steps it completed or could not complete"
+    assertions:
+    - skill_activated:
+        skill_id: sim_management
+    - skill_completed:
+        skill_id: sim_management
+    - sequencing:
+        - skill_activated:
+            skill_id: sim_management
+        - memory_was_set: sim_management.incident_reason
+        - memory_was_set: sim_management.wants_to_block
+        - memory_was_set: sim_management.sim_blocked
+        - skill_completed:
+            skill_id: sim_management
+    # Checks the SIM block consent question by its text, not by response name: LangGraph bot events
+    # carry no utter_action metadata, and Mantle rephrases the template. Match a block question.
+    - bot_uttered:
+        text_matches: "(?i)\\bblock(ing)?\\b[^?]{0,200}\\?"
+    - memory_was_set:
+        - name: sim_management.incident_reason
+          value: stolen
+        - name: sim_management.wants_to_block
+          value: true
+        - name: sim_management.sim_blocked
+          value: true
+    - memory_was_not_set:
+        - name: sim_management.replacement_ordered
+        - name: sim_management.replacement_complete
+        - name: sim_management.sim_type
+        - name: sim_management.sim_order_summary
+    - tool_executed:
+        tool_name: check_sim_status
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: block_sim
+        is_error: false
+        source: local

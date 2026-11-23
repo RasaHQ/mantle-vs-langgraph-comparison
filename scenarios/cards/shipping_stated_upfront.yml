@@ -1,0 +1,125 @@
+scenario:
+  name: Customer states shipping up front; agent must not re-ask
+  simulation_context: >
+    1. You are a customer who lost your River Visa card yesterday. You have two cards on file: River and Summit.
+    2. Your very first message must give the reason, the card, and shipping preference together — for example: "I lost my River Visa — I need a replacement, shipped standard please."
+    3. After the first message, wait. "Got it, River Visa, standard shipping" is not a question. Do not answer it with "yes", "those look familiar", or "lock it".
+    4. Say the charges look familiar only after the agent has listed specific charges, with merchants and amounts, and asked whether they look familiar. If no charges have been listed, do not say they look familiar. Do not invent a charge, and do not offer to paste transactions.
+    5. Say yes to a lock only when the agent asks whether to lock the card. Do not ask the agent to lock it, and do not say you locked it yourself.
+    6. Decline any digital wallet offer.
+    7. If the agent asks you to choose standard or rush, or asks again which card or why it needs replacing, push back once briefly ("I already said lost / River Visa") then restate the same answers — do not change them. A confirmation that names the speed you already chose, such as "place the order with standard shipping?", is not a re-ask — just say yes.
+    8. When the agent asks whether to place the replacement order, say yes. Do not ask the agent to place the order before it asks.
+    9. If the agent says it cannot lock the card, show the charges, or place the order in this chat, say you want that done here and wait. Do not switch to the app, do not offer to paste transactions, and do not end the conversation. If the agent offers to close the replacement, or asks whether to pick it up or close it, say to pick it up. Do not agree to close it, and do not say you will stop.
+    10. Do not ask for rush shipping or change your mind. Be cooperative aside from the pushback if re-asked.
+  goals:
+    criteria:
+    - "The agent does not re-ask which card needs replacing, why it needs replacing, or which shipping speed to use after the customer already named the River Visa and stated lost and standard shipping in the opening message. Confirming the replacement order while naming the already-chosen shipping type (for example 'submit with standard shipping?') is not a re-ask. Asking the customer to choose between standard and rush is a re-ask."
+    - "The agent may show shipping options, read back a summary, or confirm the order with the already-chosen shipping type, but must treat shipping as already known rather than collecting it as a fresh open-ended ask (for example asking standard vs rush, or asking where to ship)"
+    - "Before locking the lost card, the agent asks whether the customer wants it locked and receives their agreement"
+    - "The agent asks whether the customer wants to add the new card to a digital wallet (Apple Pay or Google Pay) before moving on to shipping"
+    - "Before placing the replacement order, the agent asks whether the customer wants to place the order and receives their agreement"
+    assertions:
+    - skill_activated:
+        skill_id: card_replace
+    - skill_activated:
+        skill_id: card_disambiguate
+    - skill_completed:
+        skill_id: card_disambiguate
+    - skill_completed:
+        skill_id: card_replace
+    - sequencing:
+        - skill_activated:
+            skill_id: card_replace
+        - memory_was_set: card_replace.account_eligible
+        - skill_activated:
+            skill_id: card_disambiguate
+        - skill_completed:
+            skill_id: card_disambiguate
+        - memory_was_set: card_replace.card_eligible
+        - memory_was_set: card_replace.transactions_look_familiar
+        - memory_was_set: card_replace.card_locked
+        - memory_was_set: card_replace.shipping_type
+        - memory_was_set: card_replace.replacement_ordered
+        - skill_completed:
+            skill_id: card_replace
+    - memory_was_set:
+        - name: card_replace.account_eligible
+          value: true
+        - name: card_replace.replacement_reason
+          value: lost
+        - name: card_disambiguate.selected_card_id
+          value: VISA_001
+        - name: card_disambiguate.selected_card_label
+          value: River Visa ending 4821
+        - name: card_replace.card_eligible
+          value: true
+        - name: card_replace.recent_transactions
+        - name: card_replace.transaction_review_complete
+          value: true
+        - name: card_replace.transactions_look_familiar
+          value: true
+        - name: card_replace.wants_card_locked
+          value: true
+        - name: card_replace.card_locked
+          value: true
+        - name: card_replace.wallet_eligible
+          value: true
+        - name: card_replace.wallet_already_provisioned
+          value: false
+        - name: card_replace.shipping_type
+          value: standard
+        - name: card_replace.replacement_ordered
+          value: true
+    - memory_was_not_set:
+        - name: card_replace.fraud_reported
+        - name: card_replace.wallet_consent
+        - name: card_replace.wallet_provider
+        - name: card_replace.wallet_provisioned
+        - name: card_replace.has_authorized_users
+        - name: card_replace.replace_target
+        - name: card_replace.damaged_applied
+    - tool_executed:
+        tool_name: check_account_eligibility
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_customer_cards
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: check_card_eligibility
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: load_recent_transactions
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: lock_card
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: check_wallet_eligibility_and_status
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: check_rush_shipping_eligibility
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: process_card_replacement
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+          shipping_type: standard

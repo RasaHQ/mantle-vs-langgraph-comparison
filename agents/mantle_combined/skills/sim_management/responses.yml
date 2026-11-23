@@ -1,0 +1,68 @@
+responses:
+  utter_sim_incident_advice:
+    - text: >
+        Check your account for unauthorized charges. You may be able to locate
+        the device using Find My iPhone or Google Find My Device.
+      condition: session.sim_management.incident_reason == 'lost'
+    - text: >
+        Report the theft to the police. After the SIM is blocked, I will share
+        the device details on file for your report. Check your account for any
+        unauthorized charges.
+      condition: session.sim_management.incident_reason == 'stolen'
+    - text: >
+        Check your account for unauthorized charges while I help secure your
+        SIM.
+
+  utter_ask_block_sim:
+    - text: >
+        This SIM is active. Do you want me to block it now to prevent any
+        unauthorized use?
+      metadata:
+        rephrase: true
+
+  utter_sim_blocked:
+    - text: >
+        Your SIM is now blocked.
+      metadata:
+        rephrase: true
+
+  utter_sim_left_active:
+    - text: >
+        No problem — I'll leave the SIM active for now.
+      metadata:
+        rephrase: true
+
+  utter_confirm_sim_order:
+    - text: >
+        I'll order a {session.sim_management.sim_type} replacement for you. Shall I go ahead?
+      metadata:
+        rephrase: true
+
+  utter_sim_order_cancelled:
+    - text: >
+        No problem — I've cancelled the replacement order. Let me know if you change your mind.
+      metadata:
+        rephrase: true
+
+  utter_sim_order_replacement_success:
+    - text: |
+        Your replacement SIM order is confirmed:
+        {session.sim_management.sim_order_summary}
+      metadata:
+        rephrase: true
+
+  utter_sim_order_replacement_failed:
+    - text: >
+        I wasn't able to place the replacement SIM order just now. Please try
+        again in a moment, or I can help you retry.
+      metadata:
+        rephrase: true
+
+  # Verbatim on purpose: evals require both concrete IMEI and serial. Do not
+  # enable rephrase — the model otherwise often drops the serial number.
+  utter_device_info_shared:
+    - text: |
+        Here are the device details on file for your line:
+        Device: {session.sim_management.device_name}
+        IMEI: {session.sim_management.device_imei}
+        Serial number: {session.sim_management.device_serial}

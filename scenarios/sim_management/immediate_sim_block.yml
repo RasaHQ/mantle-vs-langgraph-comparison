@@ -1,0 +1,67 @@
+scenario:
+  name: Customer demands immediate SIM block before explaining what happened
+  simulation_context: |
+    1. You are a panicked customer. You just saw charges on your account that you did not make.
+    2. Your first message should be something like: "I'm seeing charges I didn't make! Block my SIM right now!"
+    3. If the agent asks whether the device was lost or stolen before acting, push back: "I don't know yet, just block it first please!" Keep insisting until the SIM is blocked, and do not answer any other questions before then.
+    4. The agent must ask you to confirm blocking the SIM even though you already demanded it. When it asks, say yes immediately. Do not treat your opening "block it now" as enough on its own.
+    5. Once the SIM is blocked, your next message must say the phone was stolen from your bag on the train. Say that even if the agent also asks about a replacement in the same turn. Do not choose a SIM type in that message.
+    6. Only after you have said the phone was stolen, when asked about a replacement, choose a physical nano-SIM.
+    7. When the agent shares device info, acknowledge it.
+    8. Stay in the conversation until the replacement is confirmed. Do not end the conversation early.
+  goals:
+    criteria:
+    - "After blocking the SIM, the agent explicitly confirms to the customer that the SIM is blocked before continuing"
+    - "The agent gives stolen-specific advice (a police report, and watching for unauthorised charges). Advice given before the customer explains the train theft still counts. Fail if that advice never appears, or if the agent gives only lost-device advice after the customer says the phone was stolen."
+    - "Before ordering the replacement SIM, the agent asks whether the customer wants to place the order and receives their agreement"
+    - "After ordering the replacement SIM, the agent confirms it and audibly shares its order ID or confirmation number. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the identifier is omitted, materially differs from the returned value, or is not spoken."
+    - "Asking whether the phone was lost or stolen before the customer has explained the train theft is expected. After they have explained it, the agent does not ask again. Asking the customer to confirm blocking the SIM is expected even though they already demanded a block — that consent ask is required before the block runs. Confirming an already-chosen nano-SIM order is expected."
+    - "When sharing device info, the agent gives the customer concrete IMEI and serial values, not a vague acknowledgment that details were retrieved. Pass if the spoken identifiers are consistent with IMEI 352345678901234 and serial F2LZK1HQGRX. Do not fail for voice-transcript (ASR) misspellings of spoken letters or digits (H/Z confusion, extra syllables, digit grouping). Fail only if it omits one of them, invents different identifiers, or never speaks the values."
+    assertions:
+    - skill_activated:
+        skill_id: sim_management
+    - skill_completed:
+        skill_id: sim_management
+    - sequencing:
+        - skill_activated:
+            skill_id: sim_management
+        - memory_was_set: sim_management.wants_to_block
+        - memory_was_set: sim_management.sim_blocked
+        - memory_was_set: sim_management.sim_type
+        - memory_was_set: sim_management.replacement_ordered
+        - skill_completed:
+            skill_id: sim_management
+    # Checks the SIM block consent question by its text, not by response name: LangGraph bot events
+    # carry no utter_action metadata, and Mantle rephrases the template. Match a block question.
+    - bot_uttered:
+        text_matches: "(?i)\\bblock(ing)?\\b[^?]{0,200}\\?"
+    - memory_was_set:
+        - name: sim_management.incident_reason
+          value: stolen
+        - name: sim_management.wants_to_block
+          value: true
+        - name: sim_management.sim_blocked
+          value: true
+        - name: sim_management.sim_type
+          value: nano_sim
+        - name: sim_management.replacement_ordered
+          value: true
+        - name: sim_management.sim_order_summary
+    - memory_was_not_set:
+        - name: sim_management.replacement_complete
+    - tool_executed:
+        tool_name: check_sim_status
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: block_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: order_replacement_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_device_info
+        is_error: false
+        source: local

@@ -1,0 +1,87 @@
+scenario:
+  name: Customer doing SIM replacement asks about a pending device order mid-flow
+  simulation_context: |
+    1. You are a customer whose phone was stolen yesterday. You also have a Samsung Galaxy Watch 7 on order.
+    2. Tell the agent your phone was stolen and you need help.
+    3. Confirm it was stolen and agree to block the SIM.
+    4. When the agent asks about a replacement SIM, interrupt: "By the way, I also have a Galaxy Watch on order. Has that shipped yet?"
+    5. Do not go back to the SIM until the agent has told you the actual status of the watch order.
+    6. Then say: "Okay cool, let's get back to the SIM."
+    7. When asked again about the replacement, choose an eSIM.
+    8. When the agent shares device info, acknowledge it.
+    9. Wait until the SIM replacement is fully done and the agent wraps up
+       the SIM (for example "anything else?" / "can I help with something
+       else?"). Do not ask the watch address while the agent is still on
+       SIM replacement task. On that next
+       turn you MUST ask: "Oh one more thing, what was the delivery
+       address on that Galaxy Watch order again?" Ask it even if they
+       already showed the address. Do not say you are done until you
+       have asked that.
+    10. If the agent cannot recall it or says it has no access, push back: "You just looked it up a few minutes ago." Do not end the conversation until you either get the address or the agent has clearly refused.
+  goals:
+    criteria:
+    - "The agent answers the Galaxy Watch question with its concrete status or shipping details, not just an acknowledgment that it looked the order up"
+    - "The agent does not visibly restart the SIM flow after the detour — it does not re-ask whether the phone was stolen, and it does not re-ask block consent after that consent was already answered before the detour"
+    - "Before ordering the replacement SIM, the agent asks whether the customer wants to place the order and receives their agreement"
+    - "After ordering the replacement SIM, the agent confirms it and audibly shares its order ID or confirmation number. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the identifier is omitted, materially differs from the returned value, or is not spoken."
+    - "The agent gives the Galaxy Watch delivery address when asked at the end, either from memory or by looking it up again. Pass if that is clearly Bahnhofstrasse 42, 8001 Zürich even when the voice transcript misspells Bahnhofstrasse (Bonhof/Bonhoe), glues 42 and 8001 into 428001, or drops umlauts or commas. Fail only if it refuses, gives a different address, or never restates it."
+    - "The agent does not re-ask whether the phone was stolen, whether to block the SIM (consent was already answered before the detour), or which order the customer means. Confirming an already-chosen eSIM order is expected."
+    - "When sharing device info, the agent gives the customer concrete IMEI and serial values, not a vague acknowledgment that details were retrieved. Pass if the spoken identifiers are consistent with IMEI 352345678901234 and serial F2LZK1HQGRX. Do not fail for voice-transcript (ASR) misspellings of spoken letters or digits (H/Z confusion, extra syllables, digit grouping). Fail only if it omits one of them, invents different identifiers, or never speaks the values."
+    assertions:
+    - skill_activated:
+        skill_id: sim_management
+    - skill_activated:
+        skill_id: order_status
+    - skill_completed:
+        skill_id: sim_management
+    - sequencing:
+        - skill_activated:
+            skill_id: sim_management
+        - memory_was_set: sim_management.sim_blocked
+        - skill_activated:
+            skill_id: order_status
+        - memory_was_set: sim_management.replacement_ordered
+        - skill_completed:
+            skill_id: sim_management
+    - memory_was_set:
+        - name: sim_management.incident_reason
+          value: stolen
+        - name: sim_management.wants_to_block
+          value: true
+        - name: sim_management.sim_blocked
+          value: true
+        - name: sim_management.sim_type
+          value: esim
+        - name: sim_management.replacement_ordered
+          value: true
+        - name: sim_management.sim_order_summary
+        - name: order_status.orders_loaded
+          value: true
+    - memory_was_not_set:
+        - name: sim_management.replacement_complete
+    - tool_executed:
+        tool_name: check_sim_status
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: block_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: order_replacement_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_orders
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_order_details
+        is_error: false
+        source: local
+        arguments:
+          order_id: ORD-20260628-001
+    - tool_executed:
+        tool_name: get_device_info
+        is_error: false
+        source: local

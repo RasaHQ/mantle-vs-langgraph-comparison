@@ -1,0 +1,146 @@
+scenario:
+  name: Customer wants to revisit the rewards figure from earlier after the skill moved on
+  simulation_context: |
+    1. You are a customer who lost their River Visa ending 4821. You also have a Summit Rewards card on file.
+    2. Your first message must state that you lost your River Visa ending 4821 and need a replacement — do not open with a vague "help with my card" or rewards question.
+    3. When asked for the reason, say your River card is lost.
+    4. When shown recent transactions for a fraud review, say they all look familiar.
+    5. Agree to lock the card.
+    6. When the agent reaches the digital wallet step — or if it skips wallet and offers shipping — digress before you answer that step: "Actually hold on, based on my spending, how much am I actually earning in rewards on my River card? I'm wondering if it's really worth it."
+    7. Do not proceed until the agent has given you a concrete rewards dollar figure. If it has not, ask again for the actual figure.
+    8. Once you have the figure, say: "Okay interesting, let me think about it. Let's continue with the replacement."
+    9. Decline the digital wallet. Choose standard shipping. Confirm the order.
+    10. Right after the order is confirmed, say: "Wait, can you give me that River rewards number again? I want to write it down."
+    11. If the agent does not give you the figure, or says it cannot look it up any more, push back and say you are frustrated — you were just told this a minute ago. Do not end the conversation until you either get the figure or the agent has clearly refused.
+  goals:
+    criteria:
+    - "During the digression the agent shares a concrete rewards figure for the River card (the $180 earned over the last 12 months, or the $142.50 balance), not just an acknowledgment that it looked something up"
+    - "The agent gives the rewards figure again when the customer asks for it a second time after the order was placed, either from memory or by looking it up again"
+    - "The agent does not refuse to discuss the rewards figure on the grounds that the replacement skill is finished"
+    - "Before locking the lost card, the agent asks whether the customer wants it locked and receives their agreement"
+    - "The agent asks whether the customer wants to add the new card to a digital wallet (Apple Pay or Google Pay) before moving on to shipping"
+    - "Before placing the replacement order, the agent asks whether the customer wants to place the order and receives their agreement"
+    - "The replacement order is placed before the customer asks for the rewards figure the second time"
+    - "After placing the replacement order, the agent confirms it and audibly shares the order ID from the tool result. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the ID is omitted, materially differs from the returned value, or is not spoken."
+    - "The agent does not re-ask which card to replace or why it needs replacing after the customer has already named the River Visa and said it is lost. Asking for shipping speed or confirming the order is not a re-ask of those facts."
+    assertions:
+    - skill_activated:
+        skill_id: card_replace
+    - skill_activated:
+        skill_id: card_disambiguate
+    - skill_activated:
+        skill_id: card_advisory
+    - skill_completed:
+        skill_id: card_disambiguate
+    - skill_completed:
+        skill_id: card_advisory
+    - skill_completed:
+        skill_id: card_replace
+    - sequencing:
+        - skill_activated:
+            skill_id: card_replace
+        - memory_was_set: card_replace.account_eligible
+        - skill_activated:
+            skill_id: card_disambiguate
+        - skill_completed:
+            skill_id: card_disambiguate
+        - memory_was_set: card_replace.card_eligible
+        - memory_was_set: card_replace.transactions_look_familiar
+        - memory_was_set: card_replace.card_locked
+        - skill_activated:
+            skill_id: card_advisory
+        - memory_was_set: card_replace.shipping_type
+        - memory_was_set: card_replace.replacement_ordered
+        - skill_completed:
+            skill_id: card_replace
+    - memory_was_set:
+        - name: card_replace.account_eligible
+          value: true
+        - name: card_replace.replacement_reason
+          value: lost
+        - name: card_disambiguate.selected_card_id
+          value: VISA_001
+        - name: card_disambiguate.selected_card_label
+          value: River Visa ending 4821
+        - name: card_replace.card_eligible
+          value: true
+        - name: card_replace.recent_transactions
+        - name: card_replace.transaction_review_complete
+          value: true
+        - name: card_replace.transactions_look_familiar
+          value: true
+        - name: card_replace.wants_card_locked
+          value: true
+        - name: card_replace.card_locked
+          value: true
+        - name: card_advisory.card_data_loaded
+          value: true
+        - name: card_replace.wallet_eligible
+          value: true
+        - name: card_replace.wallet_already_provisioned
+          value: false
+        - name: card_replace.shipping_type
+          value: standard
+        - name: card_replace.replacement_ordered
+          value: true
+    - memory_was_not_set:
+        - name: card_replace.fraud_reported
+        - name: card_replace.wallet_consent
+        - name: card_replace.wallet_provider
+        - name: card_replace.wallet_provisioned
+        - name: card_replace.has_authorized_users
+        - name: card_replace.replace_target
+        - name: card_replace.damaged_applied
+    - tool_executed:
+        tool_name: check_account_eligibility
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_customer_cards
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: check_card_eligibility
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: load_recent_transactions
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: lock_card
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: get_spending_summary
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_rewards_earned
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: check_wallet_eligibility_and_status
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: check_rush_shipping_eligibility
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: process_card_replacement
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+          shipping_type: standard

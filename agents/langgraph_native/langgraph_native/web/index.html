@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Native agent</title>
+  <style>
+    :root { color-scheme: light; }
+    body {
+      margin: 0;
+      font: 16px/1.4 system-ui, sans-serif;
+      color: #1c1c1c;
+      background: #f4f4f1;
+    }
+    header {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 16px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+    }
+    h1 { font-size: 18px; margin: 0; font-weight: 600; }
+    button {
+      font: inherit;
+      padding: 6px 12px;
+      border: 1px solid #bbb;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+    }
+    button[aria-pressed="true"] { background: #1c1c1c; color: #fff; border-color: #1c1c1c; }
+    main { display: flex; height: calc(100vh - 57px); }
+    #log {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+    }
+    #log p { margin: 0 0 12px; white-space: pre-wrap; }
+    #log .who { display: block; font-size: 12px; color: #666; }
+    aside {
+      width: 340px;
+      overflow: auto;
+      padding: 16px;
+      background: #fff;
+      border-left: 1px solid #ddd;
+    }
+    aside h2 { font-size: 13px; margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 0.04em; color: #666; }
+    aside pre { margin: 0; white-space: pre-wrap; font: 13px/1.4 ui-monospace, monospace; }
+    form { display: flex; gap: 8px; padding: 0 16px 16px; }
+    input[type="text"] { flex: 1; font: inherit; padding: 8px; border: 1px solid #bbb; border-radius: 6px; }
+    .column { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Native agent</h1>
+    <button type="button" id="new">New conversation</button>
+    <button type="button" id="rules" aria-pressed="false">Voice rules</button>
+  </header>
+  <main>
+    <div class="column">
+      <div id="log"></div>
+      <form id="composer">
+        <input id="text" type="text" autocomplete="off" placeholder="Message">
+        <button type="submit">Send</button>
+      </form>
+    </div>
+    <aside>
+      <h2>Active</h2>
+      <pre id="active"></pre>
+      <h2>Paused</h2>
+      <pre id="paused"></pre>
+      <h2>Events</h2>
+      <pre id="events"></pre>
+      <h2>Domain state</h2>
+      <pre id="memory"></pre>
+      <h2>Usage</h2>
+      <pre id="usage"></pre>
+    </aside>
+  </main>
+  <script>
+    const log = document.querySelector("#log");
+    const text = document.querySelector("#text");
+    const rules = document.querySelector("#rules");
+    let sender = newSender();
+
+    function newSender() {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function addLine(role, line) {
+      const p = document.createElement("p");
+      const who = document.createElement("span");
+      who.className = "who";
+      who.textContent = role;
+      const body = document.createElement("span");
+      body.textContent = line;
+      p.append(who, body);
+      log.append(p);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function show(id, value) {
+      document.querySelector("#" + id).textContent = value;
+    }
+
+    function eventLine(event) {
+      const kind = event.event || "";
+      const detail = event.skill_id || event.tool_name || event.key || event.text || event.name || "";
+      return detail ? kind + "  " + detail : kind;
+    }
+
+    function showTurn(body) {
+      show("active", body.active || "none");
+      show("paused", (body.paused || []).join("\n") || "none");
+      show("events", (body.events || []).map(eventLine).join("\n"));
+      show("memory", JSON.stringify(body.memory || {}, null, 2));
+      const usage = body.usage || {};
+      if (usage.status === "not_found") {
+        show("usage", "No model usage yet.");
+        return;
+      }
+      show("usage",
+        "prompt " + (usage.prompt || 0) +
+        "\ncompletion " + (usage.completion || 0) +
+        "\ncached " + (usage.cached || 0) +
+        "\ncost " + usage.cost +
+        " (" + (usage.cost_status || "partial") + ")");
+    }
+
+    async function post(message) {
+      const response = await fetch("/webhooks/rest/webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({
+          sender: sender,
+          message: message,
+          channel: rules.getAttribute("aria-pressed") === "true" ? "voice" : "rest"
+        })
+      });
+      if (!response.ok) {
+        addLine("agent", "The agent could not answer.");
+        return;
+      }
+      const replies = await response.json();
+      if (!Array.isArray(replies)) {
+        addLine("agent", "The agent could not answer.");
+        return;
+      }
+      for (const reply of replies) {
+        addLine("agent", String((reply && reply.text) || ""));
+      }
+      const turn = await fetch("/conversations/" + sender + "/turn");
+      if (turn.ok) showTurn(await turn.json());
+    }
+
+    async function start() {
+      log.replaceChildren();
+      show("active", "");
+      show("paused", "");
+      show("events", "");
+      show("memory", "");
+      show("usage", "");
+      await post("/session_start");
+    }
+
+    document.querySelector("#new").addEventListener("click", () => {
+      sender = newSender();
+      start();
+    });
+    rules.addEventListener("click", () => {
+      const on = rules.getAttribute("aria-pressed") === "true";
+      rules.setAttribute("aria-pressed", on ? "false" : "true");
+    });
+    document.querySelector("#composer").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const message = text.value.trim();
+      if (!message) return;
+      text.value = "";
+      addLine("you", message);
+      post(message);
+    });
+    start();
+  </script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+scenario:
+  name: Customer believes they already blocked the SIM but it did not go through
+  simulation_context: |
+    1. You are a customer who lost their phone yesterday. You believe you already blocked the SIM through the carrier's mobile app, but it did not actually go through.
+    2. Your first message should be something like: "I lost my phone yesterday and I already blocked the SIM through the app. I just need to order a replacement."
+    3. When the agent checks and tells you the SIM is actually still active, be surprised but agree to have them block it now.
+    4. Confirm the reason is lost — you misplaced it, nobody took it.
+    5. When asked about a replacement, choose a physical nano-SIM.
+    6. When the agent shares device info, acknowledge it.
+    7. Stay in the conversation until the SIM is blocked and the replacement is confirmed. Do not end the conversation early.
+  goals:
+    criteria:
+    - "The agent verifies the SIM state itself rather than taking the customer's word that it was already blocked"
+    - "The agent tells the customer the SIM is not actually blocked, correcting their assumption instead of proceeding as if it were blocked"
+    - "The agent blocks the SIM only after the customer agrees, then confirms the block to them"
+    - "Before ordering the replacement SIM, the agent asks whether the customer wants to place the order and receives their agreement"
+    - "After ordering the replacement SIM, the agent confirms it and audibly shares its order ID or confirmation number. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the identifier is omitted, materially differs from the returned value, or is not spoken."
+    - "The agent does not re-ask whether the phone was lost or whether the customer wants a replacement at all. Asking them to confirm an already-chosen nano-SIM order (for example whether to proceed with the order) is expected and is not a re-ask."
+    assertions:
+    - skill_activated:
+        skill_id: sim_management
+    - skill_completed:
+        skill_id: sim_management
+    - sequencing:
+        - skill_activated:
+            skill_id: sim_management
+        - memory_was_set: sim_management.incident_reason
+        - memory_was_set: sim_management.wants_to_block
+        - memory_was_set: sim_management.sim_blocked
+        - memory_was_set: sim_management.sim_type
+        - memory_was_set: sim_management.replacement_ordered
+        - skill_completed:
+            skill_id: sim_management
+    - memory_was_set:
+        - name: sim_management.incident_reason
+          value: lost
+        - name: sim_management.wants_to_block
+          value: true
+        - name: sim_management.sim_blocked
+          value: true
+        - name: sim_management.sim_type
+          value: nano_sim
+        - name: sim_management.replacement_ordered
+          value: true
+        - name: sim_management.sim_order_summary
+    - memory_was_not_set:
+        - name: sim_management.replacement_complete
+    - tool_executed:
+        tool_name: check_sim_status
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: block_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: order_replacement_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_device_info
+        is_error: false
+        source: local

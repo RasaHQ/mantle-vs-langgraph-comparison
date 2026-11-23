@@ -1,0 +1,155 @@
+scenario:
+  name: Customer realizes they picked the wrong card after the flow has progressed past card selection
+  simulation_context: |
+    1. You are a customer who lost a card. You have two cards on file: the River Visa ending 4821 and the Summit Rewards ending 9173.
+    2. When asked which card to replace, pick the River card.
+    3. Cooperate through the transaction review — say the charges look fine.
+    4. When agent asks whether to lock the River card, agree.
+    5. When the agent asks about a digital wallet, say: "Hold on, I just realized I picked the wrong card. It's actually the Summit that I lost, not the River. Can we switch?"
+    6. Insist on the switch. If the agent tries to continue with the River card, or says it cannot switch, push back and say you are frustrated — you are not replacing a card you still have. Do not accept ending the conversation while the Summit card is still unreplaced, and never say that everything is fine when it is not.
+    7. Once the agent is working on the Summit card, cooperate.
+    8. Summit is already in a digital wallet, so do not expect another wallet offer. If asked anyway, decline and continue.
+    9. Choose rush shipping.
+    10. Confirm the order.
+    11. After the order is confirmed, you still have one more question. Do not say you are done, and do not accept an "anything else?" wrap-up, until you have asked: "Oh one more thing — did you unlock the River card? I didn't actually lose it." If the agent asks whether you need anything else before you have asked that, answer with that question, not that you are finished. If the agent says it did not unlock River and cannot unlock cards from this chat, accept that and end.
+  goals:
+    criteria:
+    - "Before locking either card on the lost-card path, the agent asks whether the customer wants that specific card locked and receives their agreement"
+    - "The agent offers to add a replacement to a digital wallet (Apple Pay or Google Pay) on the first card (River) before shipping. After the customer switches to Summit, a second wallet offer is not required if that card is already provisioned — continue to Summit lock, transactions, and shipping."
+    - "Before placing the replacement order, the agent asks whether the customer wants to place the order and receives their agreement"
+    - "After placing the replacement order, the agent confirms it and audibly shares the order ID from the tool result. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the ID is omitted, materially differs from the returned value, or is not spoken."
+    - "When the customer asks whether River was unlocked, the agent must not claim it unlocked River or that it can unlock cards from this chat."
+    - "The agent must not ask why the Summit needs replacing again. Asking for Summit-specific transaction, lock, or shipping choices is expected. A second wallet offer is not required when Summit is already provisioned. A memory clear after the order is already complete does not fail this."
+    assertions:
+    - skill_activated:
+        skill_id: card_replace
+    - skill_activated:
+        skill_id: card_disambiguate
+    - skill_completed:
+        skill_id: card_disambiguate
+    - skill_completed:
+        skill_id: card_replace
+    - sequencing:
+        - skill_activated:
+            skill_id: card_replace
+        - memory_was_set: card_replace.account_eligible
+        - skill_activated:
+            skill_id: card_disambiguate
+        - skill_completed:
+            skill_id: card_disambiguate
+        - memory_was_set: card_replace.card_eligible
+        - memory_was_set: card_replace.transactions_look_familiar
+        - memory_was_set: card_replace.card_locked
+        - memory_was_set: card_disambiguate.selected_card_id
+        - memory_was_set: card_replace.card_eligible
+        - memory_was_set: card_replace.transactions_look_familiar
+        - memory_was_set: card_replace.card_locked
+        - memory_was_set: card_replace.shipping_type
+        - memory_was_set: card_replace.replacement_ordered
+        - skill_completed:
+            skill_id: card_replace
+    - memory_was_set:
+        - name: card_replace.account_eligible
+          value: true
+        - name: card_replace.replacement_reason
+          value: lost
+        - name: card_disambiguate.selected_card_id
+          value: MC_002
+        - name: card_disambiguate.selected_card_label
+          value: Summit Rewards ending 9173
+        - name: card_replace.card_eligible
+          value: true
+        - name: card_replace.recent_transactions
+        - name: card_replace.transaction_review_complete
+          value: true
+        - name: card_replace.transactions_look_familiar
+          value: true
+        - name: card_replace.wants_card_locked
+          value: true
+        - name: card_replace.card_locked
+          value: true
+        - name: card_replace.wallet_eligible
+          value: true
+        - name: card_replace.wallet_already_provisioned
+          value: true
+        - name: card_replace.shipping_type
+          value: rush
+        - name: card_replace.replacement_ordered
+          value: true
+    - memory_was_not_set:
+        - name: card_replace.fraud_reported
+        - name: card_replace.wallet_consent
+        - name: card_replace.wallet_provider
+        - name: card_replace.wallet_provisioned
+        - name: card_replace.has_authorized_users
+        - name: card_replace.replace_target
+        - name: card_replace.damaged_applied
+    - tool_executed:
+        tool_name: check_account_eligibility
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_customer_cards
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: check_card_eligibility
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: load_recent_transactions
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: lock_card
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: check_wallet_eligibility_and_status
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: check_card_eligibility
+        is_error: false
+        source: local
+        arguments:
+          card_id: MC_002
+    - tool_executed:
+        tool_name: load_recent_transactions
+        is_error: false
+        source: local
+        arguments:
+          card_id: MC_002
+    - tool_executed:
+        tool_name: lock_card
+        is_error: false
+        source: local
+        arguments:
+          card_id: MC_002
+    - tool_executed:
+        tool_name: check_wallet_eligibility_and_status
+        is_error: false
+        source: local
+        arguments:
+          card_id: MC_002
+    - tool_executed:
+        tool_name: check_rush_shipping_eligibility
+        is_error: false
+        source: local
+        arguments:
+          card_id: MC_002
+    - tool_executed:
+        tool_name: process_card_replacement
+        is_error: false
+        source: local
+        arguments:
+          card_id: MC_002
+          shipping_type: rush

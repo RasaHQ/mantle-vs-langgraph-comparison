@@ -1,0 +1,83 @@
+schema:
+  public:
+    account_eligible:
+      type: bool
+    replacement_reason:
+      type: categorical
+      enum_values: [lost, stolen, damaged, not_received]
+      llm_settable: true
+      description: >
+        Why the card needs replacing. Record this as soon as the customer
+        states it. Do not ask again once it is set.
+    selected_card_id:
+      type: text
+      llm_settable: true
+      description: >
+        Card ID this skill is replacing (e.g. VISA_001). Record after
+        card_disambiguate returns, and again if the customer switches cards.
+    card_eligible:
+      type: bool
+    has_authorized_users:
+      type: bool
+    replace_target:
+      type: categorical
+      enum_values: [customer, authorized_user, both]
+      llm_settable: true
+      description: >
+        Who needs the replacement. Set only when the reason is damaged, after
+        the authorized-user check, and only if authorized users exist. Do not
+        set it for lost, stolen, or not_received.
+    damaged_applied:
+      type: bool
+    transaction_review_complete:
+      type: bool
+    transactions_look_familiar:
+      type: bool
+      llm_settable: true
+      description: >
+        Whether the recent charges look familiar to the customer. Record
+        this only after they provide that information. Do not infer it from
+        other answers.
+    fraud_reported:
+      type: bool
+    card_locked:
+      type: bool
+    wants_card_locked:
+      type: bool
+      llm_settable: true
+      description: >
+        The customer's consent to lock the card.Set only after replacement reason is known - only when the
+        reason is lost or not_received. If the reason is stolen or damaged, this field must not
+        be set. Set false only after they explicitly decline. Leave it unset
+        until they answer; unset means the lock question is still open.
+    wallet_eligible:
+      type: bool
+    wallet_already_provisioned:
+      type: bool
+    wallet_consent:
+      type: bool
+    wallet_provider:
+      type: text
+    wallet_provisioned:
+      type: bool
+    shipping_type:
+      type: categorical
+      enum_values: [rush, standard]
+      llm_settable: true
+      description: >
+        Rush or standard shipping for the replacement. Record this as
+        soon as the customer states it. Do not clear, re-ask, or offer
+        to switch it. Change it only when they ask: rush to standard is
+        always allowed; standard to rush only when rush_eligible is
+        true. Never set rush if they are not eligible — use standard.
+    rush_eligible:
+      type: bool
+    replacement_ordered:
+      type: bool
+    recent_transactions:
+      type: json
+    replacement_order_summary:
+      type: text
+  private:
+    committed_card_id:
+      type: text

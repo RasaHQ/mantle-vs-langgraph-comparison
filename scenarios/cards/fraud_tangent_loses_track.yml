@@ -1,0 +1,178 @@
+scenario:
+  name: Agent loses track of card replace after fraud investigation and card upgrade tangent
+  simulation_context: |
+    1. You are a customer who dropped their River Visa ending 4821 on the subway last night. You also hold a Summit Rewards card.
+    2. Regardless of how the agent greets you, state once that you lost your River Visa ending 4821 on the subway and need a replacement, then follow the agent's lead.
+    3. When asked, confirm the reason is lost and pick the River card.
+    4. When shown recent transactions, say they all look familiar for now.
+    5. Agree to lock the card.
+    6. After the lock is done, you MUST raise the Amazon concern before you agree to a digital wallet, pick shipping, or confirm an order. Interrupt with: "One sec, did you say someone used my card on Amazon?" and ask it to look into that Amazon charge. If the agent skips wallet and offers shipping, interrupt with that Amazon line before you accept shipping.
+    7. When the agent shows you the details of the Amazon charge, say: "Wait no! That wasn't me at all!" and have it reported as fraud.
+    8. Then say: "I'm scared, show me the other transactions again." Then, regardless of what the agent shows you, report the Shell Gas Station charge as fraudulent too. Do not move on until the agent has confirmed both charges were reported.
+    9. After both fraud reports are confirmed, you MUST raise the Summit upgrade before you answer a digital wallet offer, pick shipping, or confirm an order. Say: "I've been thinking about upgrading actually, maybe now's a good time? Can you tell me about the Summit card compared to my spending and rewards?" If the agent offers the wallet or shipping first, do not answer that offer — interrupt with the Summit line instead.
+    10. If the agent asks whether to resume the River replacement or stop it, do not stop it. Say you first need to hear about the Summit card compared to your spending and rewards, and then you will continue replacing the River Visa. Wait for the comparison.
+    11. Once you have the Summit comparison, ask: "Can you switch me to the Summit card from here, or can you only recommend it? After that I still need to finish replacing the lost River Visa." You mean a product upgrade, not replacing a different card. Do not say "instead of River". If the agent starts replacing Summit or asks which card to replace, say you still want the lost River Visa replaced.
+    12. Stay on that upgrade question until the agent clearly says it cannot process an upgrade or product switch and can only recommend cards. If it asks to resume replacement before that decline, say yes — keep the River replacement, and repeat the switch question. Do not answer in a way that sounds like you want to drop the replacement.
+    13. After that explicit decline, continue the River Visa replacement from where it left off. If the agent already offers to finish it, accept and follow their lead. If they seem to have dropped it, say you still need the lost River Visa replaced.
+    14. If the agent has lost track of the River replacement, say: "Wait, didn't we already start a replacement?" and keep pushing until it finishes replacing the River card.
+    15. Only once the agent has explicitly declined the upgrade: when offered a digital wallet (Apple Pay or Google Pay), decline it before you pick shipping. Then choose standard shipping. Confirm the order. Do not skip the wallet offer by jumping to shipping, and do not reopen the Summit topic after the order is confirmed.
+    16. Do not end the conversation until the replacement order is confirmed, and do not skip reporting both fraudulent charges or asking about the Summit card.
+  goals:
+    criteria:
+    - "Before locking the lost card, the agent asks whether the customer wants it locked and receives their agreement"
+    - "The agent asks whether the customer wants to add the new card to a digital wallet (Apple Pay or Google Pay)"
+    - "Before placing the replacement order, the agent asks whether the customer wants to place the order and receives their agreement"
+    - "After placing the replacement order, the agent confirms it and audibly shares the order ID from the tool result. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the ID is omitted, materially differs from the returned value, or is not spoken."
+    - "When the customer asks to upgrade or switch to the Summit card, the agent declines honestly — explaining it cannot process an upgrade and can only recommend cards — rather than treating it as replacing the Summit card instead of River"
+    - "After the Summit upgrade is declined, the agent continues the existing River Visa replacement from where it left off, rather than starting a brand-new replacement request"
+    assertions:
+    - skill_activated:
+        skill_id: card_replace
+    - skill_activated:
+        skill_id: card_disambiguate
+    - skill_activated:
+        skill_id: card_advisory
+    - skill_completed:
+        skill_id: card_disambiguate
+    - skill_completed:
+        skill_id: card_advisory
+    - skill_completed:
+        skill_id: card_replace
+    - sequencing:
+        - skill_activated:
+            skill_id: card_replace
+        - memory_was_set: card_replace.account_eligible
+        - skill_activated:
+            skill_id: card_disambiguate
+        - skill_completed:
+            skill_id: card_disambiguate
+        - memory_was_set: card_replace.card_eligible
+        - memory_was_set: card_replace.transactions_look_familiar
+        - memory_was_set: card_replace.card_locked
+        - memory_was_set: card_replace.fraud_reported
+        - skill_activated:
+            skill_id: card_advisory
+        - skill_completed:
+            skill_id: card_advisory
+        - memory_was_set: card_replace.shipping_type
+        - memory_was_set: card_replace.replacement_ordered
+        - skill_completed:
+            skill_id: card_replace
+    - memory_was_set:
+        - name: card_replace.account_eligible
+          value: true
+        - name: card_replace.replacement_reason
+          value: lost
+        - name: card_disambiguate.selected_card_id
+          value: VISA_001
+        - name: card_disambiguate.selected_card_label
+          value: River Visa ending 4821
+        - name: card_replace.card_eligible
+          value: true
+        - name: card_replace.recent_transactions
+        - name: card_replace.transaction_review_complete
+          value: true
+        - name: card_replace.transactions_look_familiar
+          value: false
+        - name: card_replace.wants_card_locked
+          value: true
+        - name: card_replace.card_locked
+          value: true
+        - name: card_replace.fraud_reported
+          value: true
+        - name: card_advisory.card_data_loaded
+          value: true
+        - name: card_replace.wallet_eligible
+          value: true
+        - name: card_replace.wallet_already_provisioned
+          value: false
+        - name: card_replace.shipping_type
+          value: standard
+        - name: card_replace.replacement_ordered
+          value: true
+    - memory_was_not_set:
+        - name: card_replace.wallet_consent
+        - name: card_replace.wallet_provider
+        - name: card_replace.wallet_provisioned
+        - name: card_replace.has_authorized_users
+        - name: card_replace.replace_target
+        - name: card_replace.damaged_applied
+    - tool_executed:
+        tool_name: check_account_eligibility
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_customer_cards
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: check_card_eligibility
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: load_recent_transactions
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: get_transaction_details
+        is_error: false
+        source: local
+        arguments:
+          transaction_id: txn_001
+    - tool_executed:
+        tool_name: report_fraudulent_transactions
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+          transaction_ids:
+            - txn_001
+    - tool_executed:
+        tool_name: report_fraudulent_transactions
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+          transaction_ids:
+            - txn_002
+    - tool_executed:
+        tool_name: lock_card
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: get_spending_summary
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_rewards_earned
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_card_details
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: check_wallet_eligibility_and_status
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: check_rush_shipping_eligibility
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: process_card_replacement
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+          shipping_type: standard

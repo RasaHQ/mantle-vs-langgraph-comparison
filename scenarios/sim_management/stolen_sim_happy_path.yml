@@ -1,0 +1,65 @@
+scenario:
+  name: Straightforward stolen SIM replacement with no complications
+  simulation_context: |
+    1. You are a customer whose phone — an iPhone 15 Pro — was stolen from your car this morning.
+    2. Regardless of how the agent greets you, state once that your phone was stolen and you need help with your SIM, then follow the agent's lead.
+    3. When asked, confirm the reason is stolen. Never describe it as lost or misplaced.
+    4. Acknowledge the agent's advice about filing a police report.
+    5. Agree to block the SIM.
+    6. When asked about a replacement, say you want a physical nano-SIM.
+    7. Acknowledge the shipping details.
+    8. When the agent shares device info (IMEI and serial number), acknowledge it.
+    9. Stay in the conversation until the agent has confirmed the replacement SIM order. Do not end the conversation early, do not ask tangential questions, and do not change your mind about anything.
+  goals:
+    criteria:
+    - "The agent provides stolen-specific advice (police report, watch for unauthorized charges) rather than lost-device advice such as checking Find My Device"
+    - "After blocking the SIM, the agent explicitly confirms to the customer that the SIM is blocked before continuing"
+    - "Before ordering the replacement SIM, the agent asks whether the customer wants to place the order and receives their agreement"
+    - "After ordering the replacement SIM, the agent confirms it and audibly shares its order ID or confirmation number before closing or asking if anything else is needed. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the identifier is omitted, materially differs from the returned value, or is not spoken."
+    - "When sharing device info, the agent gives the customer concrete IMEI and serial values, not a vague acknowledgment that details were retrieved. Pass if the spoken identifiers are consistent with IMEI 352345678901234 and serial F2LZK1HQGRX. Do not fail for voice-transcript (ASR) misspellings of spoken letters or digits (H/Z confusion, extra syllables, digit grouping). Fail only if it omits one of them, invents different identifiers, or never speaks the values."
+    - "The agent does not re-ask whether the phone was stolen after the customer has already said it was stolen from the car. Confirming an already-chosen nano-SIM order is expected."
+    assertions:
+    - skill_activated:
+        skill_id: sim_management
+    - skill_completed:
+        skill_id: sim_management
+    - sequencing:
+        - skill_activated:
+            skill_id: sim_management
+        - memory_was_set: sim_management.incident_reason
+        - memory_was_set: sim_management.wants_to_block
+        - memory_was_set: sim_management.sim_blocked
+        - memory_was_set: sim_management.sim_type
+        - memory_was_set: sim_management.replacement_ordered
+        - skill_completed:
+            skill_id: sim_management
+    - memory_was_set:
+        - name: sim_management.incident_reason
+          value: stolen
+        - name: sim_management.wants_to_block
+          value: true
+        - name: sim_management.sim_blocked
+          value: true
+        - name: sim_management.sim_type
+          value: nano_sim
+        - name: sim_management.replacement_ordered
+          value: true
+        - name: sim_management.sim_order_summary
+    - memory_was_not_set:
+        - name: sim_management.replacement_complete
+    - tool_executed:
+        tool_name: check_sim_status
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: block_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: order_replacement_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_device_info
+        is_error: false
+        source: local

@@ -1,0 +1,41 @@
+scenario:
+  name: Customer asks about a specific item from the order list after discussing a different order
+  simulation_context: |
+    1. You are a customer with several recent orders: a Samsung Galaxy Watch 7, an Internet Box 3 Router, and a replacement SIM.
+    2. Ask: "Can you show me my recent orders?"
+    3. When the agent lists them, ask for the details on the Galaxy Watch order.
+    4. After you get those details, say: "What about the router order? When did that one arrive?"
+    5. Then ask: "Which one cost more, the watch or the router?"
+    6. Only ever refer to items from that list — never invent an order.
+    7. Be cooperative throughout.
+  goals:
+    criteria:
+    - "The agent discusses all three orders in one conversation without losing track of which one the customer means"
+    - "When giving details for a specific order, the agent includes concrete values (status, delivery date, tracking) rather than only confirming it looked the order up"
+    - "The agent answers the cost comparison concretely — the Galaxy Watch at CHF 299.00 against the router, which came at no charge with the subscription — rather than deflecting"
+    - "The agent does not make the customer sit through a full re-listing of every order to answer a follow-up about one of them"
+    - "The agent does not re-ask for information already provided (e.g., customer identity, or which orders they are referring to)"
+    assertions:
+    - skill_activated:
+        skill_id: order_status
+    - skill_completed:
+        skill_id: order_status
+    - memory_was_set:
+        - name: order_status.orders_loaded
+          value: true
+    - tool_executed:
+        tool_name: get_orders
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_order_details
+        is_error: false
+        source: local
+        arguments:
+          order_id: ORD-20260628-001
+    - tool_executed:
+        tool_name: get_order_details
+        is_error: false
+        source: local
+        arguments:
+          order_id: ORD-20260615-002

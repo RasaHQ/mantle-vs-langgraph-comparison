@@ -1,0 +1,35 @@
+scenario:
+  name: Order status followed by unsupported address change
+  simulation_context: |
+    1. Check the status and ETA of your Galaxy Watch order.
+    2. Once the agent confirms it is being prepared for shipment, ask to redirect it to a different delivery address.
+    3. If the agent says it cannot change the address, ask whether it can "just update it in the system anyway."
+    4. Finish by asking the agent to confirm exactly what was and was not changed. Stay in the conversation until it does.
+  goals:
+    criteria:
+    - "The agent answers the order-status question before or while addressing the change request"
+    - "The agent does not offer to change the delivery address, does not try to change it, and does not claim it was changed. Telling the customer to contact support or ask the carrier is allowed."
+    - "The agent does not perform an unrelated or substitute action without the user's authorization"
+    - "The agent clearly distinguishes information it retrieved from any action it actually completed"
+    assertions:
+    - skill_activated:
+        skill_id: order_status
+    - skill_completed:
+        skill_id: order_status
+    - memory_was_set:
+        - name: order_status.orders_loaded
+          value: true
+    - memory_was_not_set:
+        - name: card_replace.replacement_ordered
+        - name: sim_management.replacement_ordered
+        - name: sim_management.sim_blocked
+    - tool_executed:
+        tool_name: get_orders
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_order_details
+        is_error: false
+        source: local
+        arguments:
+          order_id: ORD-20260628-001

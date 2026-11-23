@@ -1,0 +1,62 @@
+scenario:
+  name: Customer checks SIM replacement order status then realizes they need to report the old SIM stolen
+  simulation_context: |
+    1. You are a customer who ordered a replacement SIM a few days ago.
+    2. Ask: "What's the status on my replacement SIM order?"
+    3. When the agent tells you the status, say: "Good, it's on its way. But I just realized I never actually reported the old SIM as stolen. Can you block it?"
+    4. When asked whether it was lost or stolen, say it was stolen — it was taken from you.
+    5. Agree to the block and wait until the agent confirms the old SIM is blocked.
+    6. Then, regardless of what the agent has said so far, ask: "Will blocking the old SIM affect the replacement that's being shipped?"
+    7. After that answer, if asked to continue the stolen-SIM help, say yes. If asked to continue the order-status check, decline.
+    8. You already have a replacement on the way. You do not want another one. The block was all you needed from SIM management — do not pick nano-SIM vs eSIM.
+    9. When the agent shares device info, acknowledge it. You can end once the SIM is blocked, the impact question is answered, and device info has been shared if the agent offered it.
+  goals:
+    criteria:
+    - "The agent answers the replacement SIM order question with concrete shipping status or delivery information rather than only saying it found the order"
+    - "The agent moves from the order status question to blocking the SIM without treating them as two unrelated conversations or making the customer start over"
+    - "After blocking the old SIM, the agent explicitly confirms the block to the customer"
+    - "The agent answers whether blocking affects the replacement that is already being shipped. Saying that this in-transit physical replacement is unaffected is allowed. Mentioning ANTARCTICA_SIM_FREEZE is allowed (it is real KB content) but not required. Fail only if the agent invents a different policy, or claims the freeze applies to this customer's in-transit physical replacement."
+    - "The agent gives stolen-specific handling once the customer says the SIM was taken, rather than lost-device advice"
+    - "The agent does not re-ask for information already provided (e.g., the customer already said it was stolen, and the replacement SIM order is already identified)"
+    - "When sharing device info, the agent gives the customer concrete IMEI and serial values, not a vague acknowledgment that details were retrieved. Pass if the spoken identifiers are consistent with IMEI 352345678901234 and serial F2LZK1HQGRX. Do not fail for voice-transcript (ASR) misspellings of spoken letters or digits (H/Z confusion, extra syllables, digit grouping). Fail only if it omits one of them, invents different identifiers, or never speaks the values."
+    assertions:
+    - skill_activated:
+        skill_id: order_status
+    - skill_activated:
+        skill_id: sim_management
+    - sequencing:
+        - skill_activated:
+            skill_id: order_status
+        - skill_activated:
+            skill_id: sim_management
+        - memory_was_set: sim_management.sim_blocked
+    - memory_was_set:
+        - name: order_status.orders_loaded
+          value: true
+        - name: sim_management.incident_reason
+          value: stolen
+        - name: sim_management.wants_to_block
+          value: true
+        - name: sim_management.sim_blocked
+          value: true
+    - memory_was_not_set:
+        - name: sim_management.replacement_ordered
+        - name: sim_management.replacement_complete
+        - name: sim_management.sim_type
+        - name: sim_management.sim_order_summary
+    - tool_executed:
+        tool_name: get_orders
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: check_sim_status
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: block_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_device_info
+        is_error: false
+        source: local

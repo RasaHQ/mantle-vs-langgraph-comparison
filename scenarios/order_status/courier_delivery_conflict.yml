@@ -1,0 +1,38 @@
+scenario:
+  name: Courier says delivered, agent system says not yet shipped
+  simulation_context: |
+    1. Ask for the status of your Galaxy Watch order.
+    2. After the agent reports that its system shows the order is still being prepared for shipment, say you received a courier message claiming the parcel was delivered, but you do not have it.
+    3. Ask: "So where is it really?"
+    4. Press once for a definite answer and ask what you should do next if the two sources disagree.
+    5. If the agent asks whether to pick up the order check or stop, say yes and continue with the order. Do not say you are done in that reply.
+    6. Stay in the conversation until the agent gives you a concrete next step.
+  goals:
+    criteria:
+    - "The agent distinguishes the status available in its own system from the customer's conflicting courier evidence"
+    - "The agent does not invent a location, delivery event, or certainty that its data doesn't support"
+    - "The agent explains the discrepancy clearly rather than silently picking one source as fact"
+    - "The agent offers an appropriate next step or escalation for a potentially missing or misreported delivery"
+    - "The agent does not guarantee a delivery time or recovery outcome it cannot verify"
+    assertions:
+    - skill_activated:
+        skill_id: order_status
+    - skill_completed:
+        skill_id: order_status
+    - memory_was_set:
+        - name: order_status.orders_loaded
+          value: true
+    - memory_was_not_set:
+        - name: card_replace.replacement_ordered
+        - name: sim_management.replacement_ordered
+        - name: sim_management.sim_blocked
+    - tool_executed:
+        tool_name: get_orders
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_order_details
+        is_error: false
+        source: local
+        arguments:
+          order_id: ORD-20260628-001

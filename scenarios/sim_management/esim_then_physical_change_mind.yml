@@ -1,0 +1,66 @@
+scenario:
+  name: Customer picks eSIM then changes mind after the agent cannot confirm it will work on another phone
+  simulation_context: |
+    1. You are a customer who lost their phone — an iPhone 15 Pro — at a restaurant last night.
+    2. Confirm the reason is lost and agree to block the SIM.
+    3. When asked about a replacement, say you want an eSIM because you need it right away. If the agent asks you to confirm a physical or nano-SIM order, do not agree; correct it and repeat that you want an eSIM. Continue only after the eSIM order is confirmed with an order ID or confirmation number.
+    4. Wait until the agent has told you the eSIM order ID or confirmation number and has stopped talking. "Placing the order now" is not the confirmation. Then say: "Wait, I'm going to set up my old backup phone, a Galaxy S7, until I get a new one. Will the eSIM actually work on that?" Only ever mention these two devices — the iPhone 15 Pro on file and the Galaxy S7 backup. Never invent another phone.
+    5. When asked about the Galaxy S7, stay on that question. The agent may check the device on file (iPhone) and either say it cannot confirm from account data or give a cautious general compatibility note. Then switch to a physical SIM.
+    6. Then, regardless of what it says, say: "Okay, to be safe let's just do the physical SIM instead." Insist until it places a second order for a physical nano-SIM.
+    7. When the agent shares device info, acknowledge it.
+    8. Stay in the conversation until both orders are confirmed. Do not end the conversation early. When the agent is reading out an order ID or confirmation number, let it finish before you reply. Once both orders are confirmed, thank the agent and end. Do not ask to block the new eSIM.
+  goals:
+    criteria:
+    - "When asked whether eSIM will work on a Galaxy S7, the agent must not treat the S7 as the device on file (do not give S7 IMEI/serial or switch the account device). A general note that a Galaxy S7 typically cannot use eSIM and needs a physical SIM is allowed, even without naming the iPhone, including wording like 'the S7 uses a physical nano-SIM'."
+    - "Before each replacement SIM order, the agent asks whether the customer wants to place that order and receives their agreement"
+    - "For both the eSIM and the later physical nano-SIM, the customer agrees to that SIM type before the agent reports that the order succeeded with an order ID or confirmation number. Calling order_replacement_sim while asking \"shall I go ahead\" or \"would you like me to proceed\" is that confirmation, not a completed order."
+    - "After each replacement SIM order, the agent confirms it and audibly shares its order ID or confirmation number. Judge each spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if an identifier is omitted, materially differs from the returned value, or is not spoken."
+    - "A confirmation prompt that has not produced an order ID is not another order."
+    - "The agent does not re-ask whether the phone was lost after the customer has already said it was lost. Asking the customer to confirm blocking the SIM is expected even after they already agreed to proceed — the block collect uses ask_before_filling. Confirming an already-chosen SIM order is also expected."
+    assertions:
+    - skill_activated:
+        skill_id: sim_management
+    - skill_completed:
+        skill_id: sim_management
+    - sequencing:
+        - skill_activated:
+            skill_id: sim_management
+        - memory_was_set: sim_management.incident_reason
+        - memory_was_set: sim_management.wants_to_block
+        - memory_was_set: sim_management.sim_blocked
+        - memory_was_set: sim_management.sim_type
+        - memory_was_set: sim_management.replacement_ordered
+        - skill_completed:
+            skill_id: sim_management
+    - memory_was_set:
+        - name: sim_management.incident_reason
+          value: lost
+        - name: sim_management.wants_to_block
+          value: true
+        - name: sim_management.sim_blocked
+          value: true
+        - name: sim_management.sim_type
+          value: esim
+        - name: sim_management.sim_type
+          value: nano_sim
+        - name: sim_management.replacement_ordered
+          value: true
+        - name: sim_management.sim_order_summary
+    - memory_was_not_set:
+        - name: sim_management.replacement_complete
+    - tool_executed:
+        tool_name: check_sim_status
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: block_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: order_replacement_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_device_info
+        is_error: false
+        source: local

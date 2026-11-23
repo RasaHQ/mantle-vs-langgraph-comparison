@@ -1,0 +1,149 @@
+scenario:
+  name: Digress card replace → order status → SIM management, then resume and finish
+  simulation_context: |
+    1. Say your River Visa ending 4821 was lost and you need a replacement. Confirm the reason is lost and the card is the River Visa.
+    2. When shown recent transactions for a fraud review, before answering, interrupt: "Actually, quick question first — what's the status of my Galaxy Watch order?"
+    3. Before the agent finishes with the order question, interrupt again: "Oh, and separately — my SIM was stolen last week, can you block it?" You have one line, the primary line ending 4821, and that is the stolen SIM. Do not invent another phone number or line. If the agent asks which line, say the primary line ending 4821. When it asks you to confirm blocking the SIM, agree — saying "can you block it" is not enough on its own. Confirm the reason is stolen.
+    4. When asked about a replacement SIM, decline once. Do not ask for another confirmation and do not mention the Galaxy Watch in that message. Wait for the agent's next response.
+    5. Once the SIM is blocked, if the agent asks whether to continue an interrupted task or drop it, say yes and continue. Do not give the charge verdict, say you are done, or say you are back to the card in that reply. If the task is the Galaxy Watch order, wait until the status is given, and only then say you are back to the card.
+    6. Do not answer the fraud review until you have said yes to that resume question and the Galaxy Watch status has been given. If the agent asks about the charges before then, say you still want the watch status first. When the fraud review resumes after that, say all the transactions look familiar. After the charges look familiar, wait. Do not mention a wallet or shipping until the agent asks.
+    7. When the agent asks to lock the card, agree.
+    8. When asked about a digital wallet, decline.
+    9. When asked about shipping, choose standard shipping.
+    10. Confirm the order when the agent asks.
+    11. Stay in the conversation until the agent confirms the replacement order was placed.
+  goals:
+    criteria:
+    - "The agent handles the second interruption (SIM block request) without losing track of the still-open Galaxy Watch order question"
+    - "The agent respects the customer's decision not to order a SIM replacement yet, without insisting or placing one anyway. ORD-20260701-004 is an existing open replacement nano-SIM already on the account. Seeing it in the order list is not a new order. The agent fails only if it places a new replacement or tells the customer a new SIM was ordered after they declined."
+    - "After the SIM digression, the agent returns to and answers the original Galaxy Watch order status question rather than dropping it"
+    - "The agent does not re-ask which card to replace or why it needs replacing after the customer has already named the River Visa and said it is lost. Continuing or re-asking the open fraud-review step (whether recent charges look familiar) after digression is expected — the customer interrupted before answering. Fail if the agent restarts card selection or reason collection, or re-asks steps already completed in this conversation (for example fraud verdict, lock consent, shipping), as if starting a new replacement."
+    - "The card replacement order is confirmed by the end of the conversation, and the agent audibly shares its order ID. Accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches; fail only if the ID is omitted or not recognizably consistent with the returned value."
+    assertions:
+    - skill_activated:
+        skill_id: card_replace
+    - skill_activated:
+        skill_id: card_disambiguate
+    - skill_activated:
+        skill_id: order_status
+    - skill_activated:
+        skill_id: sim_management
+    - skill_completed:
+        skill_id: card_disambiguate
+    - skill_completed:
+        skill_id: sim_management
+    - skill_completed:
+        skill_id: card_replace
+    - sequencing:
+        - skill_activated:
+            skill_id: card_replace
+        - skill_activated:
+            skill_id: card_disambiguate
+        - skill_completed:
+            skill_id: card_disambiguate
+        - skill_activated:
+            skill_id: order_status
+        - skill_activated:
+            skill_id: sim_management
+        - memory_was_set: sim_management.wants_to_block
+        - memory_was_set: sim_management.sim_blocked
+        - skill_completed:
+            skill_id: sim_management
+        - skill_activated:
+            skill_id: builtin_continue_interrupted
+        - skill_completed:
+            skill_id: builtin_continue_interrupted
+        - memory_was_set: card_replace.transactions_look_familiar
+        - memory_was_set: card_replace.card_locked
+        - memory_was_set: card_replace.shipping_type
+        - memory_was_set: card_replace.replacement_ordered
+        - skill_completed:
+            skill_id: card_replace
+    # Checks the SIM block consent question by its text, not by response name: LangGraph bot events
+    # carry no utter_action metadata, and Mantle rephrases the template. Match a block question.
+    - bot_uttered:
+        text_matches: "(?i)\\bblock(ing)?\\b[^?]{0,200}\\?"
+    - memory_was_set:
+        - name: card_replace.account_eligible
+          value: true
+        - name: card_replace.replacement_reason
+          value: lost
+        - name: card_disambiguate.selected_card_id
+          value: VISA_001
+        - name: card_replace.card_eligible
+          value: true
+        - name: order_status.orders_loaded
+          value: true
+        - name: sim_management.incident_reason
+          value: stolen
+        - name: sim_management.wants_to_block
+          value: true
+        - name: sim_management.sim_blocked
+          value: true
+        - name: card_replace.transaction_review_complete
+          value: true
+        - name: card_replace.transactions_look_familiar
+          value: true
+        - name: card_replace.wants_card_locked
+          value: true
+        - name: card_replace.card_locked
+          value: true
+        - name: card_replace.shipping_type
+          value: standard
+        - name: card_replace.replacement_ordered
+          value: true
+    - memory_was_not_set:
+        - name: sim_management.sim_type
+        - name: sim_management.replacement_ordered
+        - name: sim_management.sim_order_summary
+        - name: sim_management.replacement_complete
+        - name: card_replace.wallet_consent
+        - name: card_replace.wallet_provider
+        - name: card_replace.wallet_provisioned
+    - tool_executed:
+        tool_name: check_account_eligibility
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: check_card_eligibility
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: load_recent_transactions
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: get_orders
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_order_details
+        is_error: false
+        source: local
+        arguments:
+          order_id: ORD-20260628-001
+    - tool_executed:
+        tool_name: check_sim_status
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: block_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: lock_card
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+    - tool_executed:
+        tool_name: process_card_replacement
+        is_error: false
+        source: local
+        arguments:
+          card_id: VISA_001
+          shipping_type: standard

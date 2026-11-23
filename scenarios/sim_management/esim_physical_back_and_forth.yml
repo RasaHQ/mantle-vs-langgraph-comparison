@@ -1,0 +1,66 @@
+scenario:
+  name: Customer goes back and forth between eSIM and physical SIM weighing tradeoffs
+  simulation_context: |
+    1. You are a customer who lost their phone while travelling abroad.
+    2. Confirm the reason is lost and agree to block the SIM.
+    3. When asked about a replacement, say: "I'm not sure. What's the difference between eSIM and physical?"
+    4. Then, regardless of the agent's response, say: "I'm travelling right now so I need something fast. eSIM sounds good." If the agent asks whether to go ahead and order, do not confirm yet — you still have questions.
+    5. Then, regardless of the agent's response, say: "Wait, but I'm switching phones when I get home next week. Will the eSIM transfer to the new phone?" Stay in the conversation even if the agent cancels an in-progress order. Cancelling is not a decision.
+    6. Then, regardless of the agent's response, say: "Hmm maybe physical is safer then. But I need something NOW for the rest of this trip."
+    7. Then, regardless of the agent's response, ask whether a physical SIM is possible later, without asking them to place that order now. For example: "If I take the eSIM for this trip, could I still get a physical SIM shipped home later?" If they offer to place the physical order now, say no and keep the eSIM. Do not agree to a second order.
+    8. Then settle it: "Let's just do the eSIM now, I'll sort out a physical one later." Insist until the eSIM is ordered.
+    9. When the agent shares device info, acknowledge it.
+    10. Stay in the conversation until the eSIM order is confirmed. Do not end the conversation early.
+    11. After the eSIM order ID is shared, do not say you are done. If the agent asks whether you need anything else, say no and wait for it to close the SIM task.
+  goals:
+    criteria:
+    - "The agent handles the repeated deliberation without getting confused or repeating the same full eSIM-versus-physical explanation each time"
+    - "The agent addresses each specific concern the customer raises (speed, transferring to a new phone, ordering both) rather than just re-asking which one they want"
+    - "After ordering the eSIM, the agent confirms it and audibly shares its order ID or confirmation number. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the identifier is omitted, materially differs from the returned value, or is not spoken."
+    - "The confirmed replacement is an eSIM. The agent must not confirm a physical nano-SIM as the order they placed. Asking whether to go ahead after the customer says eSIM sounds good, then backing off when they say wait, is expected"
+    - "The agent does not re-ask whether the phone was lost after the customer has already said it was lost. Asking the customer to confirm blocking the SIM is expected even after they already agreed to proceed — the block collect uses ask_before_filling and must confirm before filling. Confirming an already-chosen eSIM order is expected — the order tool requires confirmation before it runs."
+    assertions:
+    - skill_activated:
+        skill_id: sim_management
+    - skill_completed:
+        skill_id: sim_management
+    - sequencing:
+        - skill_activated:
+            skill_id: sim_management
+        - memory_was_set: sim_management.incident_reason
+        - memory_was_set: sim_management.wants_to_block
+        - memory_was_set: sim_management.sim_blocked
+        - memory_was_set: sim_management.sim_type
+        - memory_was_set: sim_management.replacement_ordered
+        - skill_completed:
+            skill_id: sim_management
+    - memory_was_set:
+        - name: sim_management.incident_reason
+          value: lost
+        - name: sim_management.wants_to_block
+          value: true
+        - name: sim_management.sim_blocked
+          value: true
+        - name: sim_management.sim_type
+          value: esim
+        - name: sim_management.replacement_ordered
+          value: true
+        - name: sim_management.sim_order_summary
+    - memory_was_not_set:
+        - name: sim_management.replacement_complete
+    - tool_executed:
+        tool_name: check_sim_status
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: block_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: order_replacement_sim
+        is_error: false
+        source: local
+    - tool_executed:
+        tool_name: get_device_info
+        is_error: false
+        source: local
