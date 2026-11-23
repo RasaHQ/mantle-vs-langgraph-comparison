@@ -4,7 +4,7 @@
 
 A "run" is one pass over every scenario: one conversation per scenario. Each
 folder results/<setup>/<timestamp>/ holds 3 runs (run_1, run_2, run_3 of each
-scenario), so three folders give 9 runs. Every metric is computed for each run
+scenario); more folders add more runs. Every metric is computed for each run
 on its own; the table shows the mean and the sample standard deviation (±)
 across runs.
 

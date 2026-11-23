@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Runs the benchmark, then writes the comparison table to results/README.md.
 #
-#   ./run.sh                         all three setups, 3 sets each (9 runs per scenario)
+#   ./run.sh                         all three setups, one set each (3 runs per scenario)
 #   ./run.sh lg-high                 one setup
-#   ./run.sh mantle lg --sets 1      fewer sets
+#   ./run.sh mantle lg --sets 3      more sets (9 runs per scenario)
 #   ./run.sh --smoke                 one short conversation per setup, results in logs/smoke
 set -euo pipefail
 cd "$(dirname "$0")"

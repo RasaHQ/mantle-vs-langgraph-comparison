@@ -1,6 +1,6 @@
 """Run the Mantle vs LangGraph benchmark.
 
-    python harness/run.py mantle lg lg-high --sets 3
+    python harness/run.py mantle lg lg-high
 
 Each set runs every scenario in ``scenarios/`` 3 times against one setup and
 writes the per-run results to ``results/<setup>/<timestamp>/``. At the end,
@@ -63,7 +63,7 @@ class Setup:
 
 
 SETUPS = {
-    "mantle": Setup("mantle", "mantle_combined", None, None, 30, 600, 10),
+    "mantle": Setup("mantle", "mantle_combined", None, None, 30, 600, 15),
     "lg": Setup("lg", "langgraph_native", "none", 30, 30, 600, 15),
     # Reasoning makes turns slow. Limits are raised so no run fails on a timeout.
     "lg-high": Setup("lg-high", "langgraph_native", "high", 300, 300, 3600, 15),
@@ -383,7 +383,7 @@ def run_set(setup: Setup, runs: int, only: Optional[list[str]], results_dir: Pat
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("setups", nargs="+", choices=sorted(SETUPS), help="setups to run, in order")
-    parser.add_argument("--sets", type=int, default=3, help="sets per setup (default 3)")
+    parser.add_argument("--sets", type=int, default=1, help="sets per setup (default 1)")
     parser.add_argument("--runs", type=int, default=3, help="runs per scenario in each set (default 3)")
     parser.add_argument("--scenario", action="append", help="run only this scenario (repeatable)")
     parser.add_argument("--results-dir", type=Path, default=REPO / "results", help="default: results/")

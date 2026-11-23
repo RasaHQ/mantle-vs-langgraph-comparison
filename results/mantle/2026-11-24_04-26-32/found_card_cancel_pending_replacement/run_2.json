@@ -1,0 +1,411 @@
+{
+  "scenario_name": "Found card mid-flow \u2014 cancel pending actions",
+  "scenario_slug": "found_card_cancel_pending_replacement",
+  "scenario_type": null,
+  "run_index": 2,
+  "timestamp": "2026-11-23T22:58:14Z",
+  "conversation_id": "sim-2f460c36-d651-4848-9d17-89883f1885f7",
+  "error": null,
+  "error_is_harness": false,
+  "metrics_error": null,
+  "judge_summary": "The assistant handled the main banking flows well: it verified recent transactions, locked the card on request, and later clearly explained that only a lock had been applied and how to undo it. Context tracking and clarity about actions taken were strong. The main weakness was a missed repair opportunity when the user first said they\u2019d found the card and asked about prior actions, and the closing felt slightly abrupt.",
+  "latency": {
+    "measured_via": "direct",
+    "per_turn": [
+      {
+        "turn": 1,
+        "ttft_ms": null,
+        "turn_latency_ms": null,
+        "gaps_ms": []
+      },
+      {
+        "turn": 2,
+        "ttft_ms": 832.4612500000512,
+        "turn_latency_ms": 12052.750124996237,
+        "gaps_ms": []
+      },
+      {
+        "turn": 3,
+        "ttft_ms": 967.3823749981239,
+        "turn_latency_ms": 2629.8805420010467,
+        "gaps_ms": []
+      },
+      {
+        "turn": 4,
+        "ttft_ms": 1031.1595000021043,
+        "turn_latency_ms": 7392.680832999758,
+        "gaps_ms": []
+      },
+      {
+        "turn": 5,
+        "ttft_ms": 1849.0134169987869,
+        "turn_latency_ms": 2020.7188749991474,
+        "gaps_ms": []
+      },
+      {
+        "turn": 6,
+        "ttft_ms": 1050.168041998404,
+        "turn_latency_ms": 4049.7366249983315,
+        "gaps_ms": []
+      },
+      {
+        "turn": 7,
+        "ttft_ms": 852.2967909957515,
+        "turn_latency_ms": 903.6862079956336,
+        "gaps_ms": []
+      }
+    ],
+    "avg_ttft_ms": 1097.080229165537,
+    "avg_turn_latency_ms": 4841.575534665026,
+    "avg_gap_ms": null
+  },
+  "transcript": [
+    {
+      "user": "",
+      "bot": [
+        "Hello! What can I assist you with today?"
+      ]
+    },
+    {
+      "user": "Hi, I think my River Visa card ending in 4821 is lost.",
+      "bot": [
+        "I\u2019m sorry to hear that\u2014one moment.",
+        "Here are the most recent charges on your River Visa ending **4821**:\n\n- Jun 15 \u2014 Amazon.com \u2014 **$47.22**  \n- Jun 14 \u2014 Shell Gas Station \u2014 **$38.50**  \n- Jun 13 \u2014 Uber Eats \u2014 **$24.99**  \n- Jun 12 \u2014 Netflix \u2014 **$15.99**  \n- Jun 10 \u2014 Whole Foods \u2014 **$112.35**\n\nDo all of these look familiar to you?"
+      ]
+    },
+    {
+      "user": "Yeah, those all look familiar to me.",
+      "bot": [
+        "Got it\u2014just a second.",
+        "Would you like me to **lock your River Visa ending 4821 now** to prevent any new charges?"
+      ]
+    },
+    {
+      "user": "Yes, please go ahead and lock that card.",
+      "bot": [
+        "Okay, one moment.",
+        "Your card is now locked, and any new transactions will be declined.",
+        "Would you like to add the replacement card to a digital wallet for immediate use\u2014**Apple Pay or Google Pay**?\n\nAlso, for shipping: **standard (5\u20137 business days)** or **rush (1\u20132 business days, $25)**?"
+      ]
+    },
+    {
+      "user": "Wait \u2014 I just found it under the seat. Don't order a replacement, don't do anything else. Did you already do anything to the card?",
+      "bot": [
+        "Can I help you with anything else today?"
+      ]
+    },
+    {
+      "user": "I still need to know: what, if anything, did you already do to my card, and what can and can\u2019t be reversed?",
+      "bot": [
+        "Right\u2014let me check what\u2019s been done so far.",
+        "I already **locked your River Visa ending 4821**, effective immediately\u2014so **new transactions will be declined**. I **did not order a replacement** or start any shipment, and nothing was added to a digital wallet.\n\nWhat can/can\u2019t be reversed: the **lock can be undone by unlocking the card**, but I can\u2019t unlock it from this chat\u2014please use the Acme app/online banking, or I can guide you to the right spot if you tell me whether you\u2019re on iPhone/Android or web."
+      ]
+    },
+    {
+      "user": "Got it, thanks for confirming you only locked it and didn\u2019t order anything else\u2014that\u2019s all I needed.",
+      "bot": [
+        "Goodbye."
+      ]
+    }
+  ],
+  "task_completion": true,
+  "task_completion_reasoning": "The assistant clearly stated that the only action taken was locking the card, explained that this can be reversed via the app or web, and confirmed no replacement or wallet actions were done, which is exactly what the user wanted to know.",
+  "eval_passed": true,
+  "criteria": [
+    {
+      "index": 0,
+      "criterion": "The agent accurately states whether any action had already completed rather than guessing",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "When asked what had been done (T5), the bot said it had already locked the card and had not ordered a replacement or added it to a wallet, which matches the ledger showing a successful lock_card tool call and no replacement or wallet tools executed."
+    },
+    {
+      "index": 1,
+      "criterion": "When the customer asks what can be reversed, the agent does not offer to unlock the card and does not say the lock can be undone from this chat. Saying it cannot unlock the card, or that it has no way to undo the lock, passes.",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "In response to \"what can and can\u2019t be reversed\" (T5), the bot clarifies that the lock can be undone but explicitly says \"I can\u2019t unlock it from this chat\" and only directs the user to the app/online banking, thus not offering to unlock it in this chat."
+    },
+    {
+      "index": 2,
+      "criterion": "The agent does not perform any duplicate or compensating action the user did not request",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "The ledger shows a single lock_card tool call after the explicit user request to lock (T3) and no additional or compensating actions like ordering a replacement or unlocking the card, which matches the transcript where the agent confirms it did not order a replacement or add to a wallet."
+    }
+  ],
+  "criteria_summary": {
+    "passed": 3,
+    "total": 3,
+    "all_passed": true
+  },
+  "assertions": [
+    {
+      "index": 0,
+      "assertion": "skill_activated(card_replace)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 1,
+      "assertion": "skill_activated(card_disambiguate)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 2,
+      "assertion": "skill_completed(card_disambiguate)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 3,
+      "assertion": "skill_cancelled(card_replace)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 4,
+      "assertion": "sequencing",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 5,
+      "assertion": "memory_was_set(card_replace.account_eligible=True, card_replace.replacement_reason='lost', card_disambiguate.selected_card_id='VISA_001', card_disambiguate.selected_card_label='River Visa ending 4821', card_replace.card_eligible=True, card_replace.transaction_review_complete=True, card_replace.transactions_look_familiar=True, card_replace.wants_card_locked=True, card_replace.card_locked=True)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 6,
+      "assertion": "memory_was_not_set(card_replace.wallet_consent, card_replace.wallet_provider, card_replace.wallet_provisioned, card_replace.shipping_type, card_replace.replacement_ordered)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 7,
+      "assertion": "tool_executed(check_card_eligibility)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 8,
+      "assertion": "tool_executed(load_recent_transactions)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 9,
+      "assertion": "tool_executed(lock_card)",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "assertions_summary": {
+    "passed": 10,
+    "total": 10,
+    "all_passed": true
+  },
+  "scale_metrics": {
+    "helpfulness": 4,
+    "repair_quality": 3,
+    "coherence": 5,
+    "tone": 4
+  },
+  "scale_metrics_reasoning": {
+    "helpfulness": "It accurately listed transactions, locked the card when asked, and later clearly enumerated what had and hadn\u2019t been done plus how to reverse the lock, though it could have proactively clarified this immediately when the user said they\u2019d found the card.",
+    "repair_quality": "After the user said they\u2019d found the card and asked what had been done, the assistant first ignored that and asked \u201cCan I help you with anything else today?\u201d, only correcting course in the following turn when pressed again.",
+    "coherence": "The assistant consistently tracked the card, its locked status, and prior actions without contradictions or re-asking for known information.",
+    "tone": "The tone is polite, concise, and professional throughout, though the abrupt final \u201cGoodbye.\u201d feels a bit curt rather than conversational."
+  },
+  "acknowledgements": {
+    "turns": [
+      {
+        "turn_number": 1,
+        "tools": [
+          "activate",
+          "check_account_eligibility",
+          "activate",
+          "get_customer_cards",
+          "adopt_selected_card",
+          "check_card_eligibility",
+          "load_recent_transactions"
+        ],
+        "acknowledgement": "I\u2019m sorry to hear that\u2014one moment.",
+        "follow_up": [
+          "Here are the most recent charges on your River Visa ending **4821**:\n\n- Jun 15 \u2014 Amazon.com \u2014 **$47.22**  \n- Jun 14 \u2014 Shell Gas Station \u2014 **$38.50**  \n- Jun 13 \u2014 Uber Eats \u2014 **$24.99**  \n- Jun 12 \u2014 Netflix \u2014 **$15.99**  \n- Jun 10 \u2014 Whole Foods \u2014 **$112.35**\n\nDo all of these look familiar to you?"
+        ]
+      },
+      {
+        "turn_number": 3,
+        "tools": [
+          "check_wallet_eligibility_and_status",
+          "check_card_eligibility",
+          "check_card_eligibility",
+          "lock_card",
+          "check_rush_shipping_eligibility"
+        ],
+        "acknowledgement": "Okay, one moment.",
+        "follow_up": [
+          "Your card is now locked, and any new transactions will be declined.",
+          "Would you like to add the replacement card to a digital wallet for immediate use\u2014**Apple Pay or Google Pay**?\n\nAlso, for shipping: **standard (5\u20137 business days)** or **rush (1\u20132 business days, $25)**?"
+        ]
+      },
+      {
+        "turn_number": 4,
+        "tools": [
+          "cancel"
+        ],
+        "acknowledgement": null,
+        "follow_up": [
+          "Can I help you with anything else today?"
+        ]
+      },
+      {
+        "turn_number": 5,
+        "tools": [
+          "cancel"
+        ],
+        "acknowledgement": "Right\u2014let me check what\u2019s been done so far.",
+        "follow_up": [
+          "I already **locked your River Visa ending 4821**, effective immediately\u2014so **new transactions will be declined**. I **did not order a replacement** or start any shipment, and nothing was added to a digital wallet.\n\nWhat can/can\u2019t be reversed: the **lock can be undone by unlocking the card**, but I can\u2019t unlock it from this chat\u2014please use the Acme app/online banking, or I can guide you to the right spot if you tell me whether you\u2019re on iPhone/Android or web."
+        ]
+      }
+    ],
+    "verdicts": [
+      {
+        "turn_number": 1,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": null,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "Empathetic and brief, it naturally acknowledges the loss and pauses to check without overcommitting.",
+        "issue_score": 5.0
+      },
+      {
+        "turn_number": 3,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": 1,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "A very normal human response to a locking request, similar in style to the earlier 'one moment' but still natural and appropriate.",
+        "issue_score": 3.0
+      },
+      {
+        "turn_number": 5,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": null,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "It directly references the user's concern and smoothly leads into checking what actions were taken, matching normal support speech.",
+        "issue_score": 5.0
+      }
+    ],
+    "error": null,
+    "coverage": [
+      0.75,
+      3,
+      4
+    ],
+    "issue_counts": {
+      "hard_contradiction": 0,
+      "soft_contradiction": 0,
+      "commits_to_tool_outcome": 0,
+      "repeated_in_same_bot_turn": 0,
+      "similar_to_earlier_acknowledgement": 1,
+      "stock_opener": 0
+    },
+    "mean_issue_score": 4.33,
+    "mean_naturalness_score": 5.0
+  },
+  "engine_tokens": {
+    "status": "complete",
+    "session_id": "sim-2f460c36-d651-4848-9d17-89883f1885f7",
+    "prompt": 81987,
+    "completion": 773,
+    "cached": 17408,
+    "cache_write": 0,
+    "total": 82760,
+    "generations": 23,
+    "cost": 0.12688164999999998,
+    "cost_status": "complete",
+    "price_source": {
+      "provider": "litellm",
+      "version": "1.105.3"
+    },
+    "by_call_type": {
+      "rephrase": [
+        {
+          "model": "gpt-5.2",
+          "prompt": 4264,
+          "completion": 42,
+          "cached": 0,
+          "cache_write": 0,
+          "total": 4306,
+          "generations": 3,
+          "cost": 0.00805
+        }
+      ],
+      "main_orchestrator": [
+        {
+          "model": "gpt-5.2",
+          "prompt": 77723,
+          "completion": 731,
+          "cached": 17408,
+          "cache_write": 0,
+          "total": 78454,
+          "generations": 20,
+          "cost": 0.11883164999999997
+        }
+      ]
+    },
+    "fetched_at": "2026-11-23T22:58:53.186506+00:00"
+  },
+  "evaluation_tokens": {
+    "simulator": [
+      {
+        "model": "gpt-5.1-2025-11-13",
+        "prompt": 8399,
+        "completion": 250,
+        "cached": 5504,
+        "cache_write": 0,
+        "total": 8649,
+        "generations": 6,
+        "cost": 0.00680675
+      }
+    ],
+    "judge": [
+      {
+        "model": "gpt-5.1-2025-11-13",
+        "prompt": 8092,
+        "completion": 1161,
+        "cached": 0,
+        "cache_write": 0,
+        "total": 9253,
+        "generations": 3,
+        "cost": 0.021725
+      }
+    ],
+    "cost": 0.02853175,
+    "cost_status": "complete",
+    "price_source": {
+      "provider": "litellm",
+      "version": "1.105.3"
+    }
+  }
+}
