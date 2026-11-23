@@ -45,11 +45,11 @@ Both agents run the identical files.
 .venv-rasa/bin/python harness/run.py --help
 ```
 
-A full run takes about 2.5 hours and costs about $140 in OpenAI usage. Per set, measured on the agent plus the simulated customer and the judge:
+A full run takes about 1.5 hours and costs about $140 in OpenAI usage. Per set, measured on the agent plus the simulated customer and the judge:
 
 | Setup | Time per set | Cost per set |
 |---|---:|---:|
-| `mantle` | ~21 min | ~$13 |
+| `mantle` | ~10 min | ~$13 |
 | `lg` | ~7 min | ~$11 |
 | `lg-high` | ~19 min | ~$23 |
 
@@ -69,7 +69,7 @@ Server logs go to `logs/`, which is not committed.
 | Agent model call timeout | 30s | 30s | 300s |
 | Wait for one agent reply | 30s | 30s | 300s |
 | Limit for one conversation | 600s | 600s | 3600s |
-| Conversations in parallel | 4 | 15 | 15 |
+| Conversations in parallel | 10 | 15 | 15 |
 
 All settings are in `SETUPS` at the top of `harness/run.py`.
 

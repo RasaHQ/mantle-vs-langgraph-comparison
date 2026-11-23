@@ -26,6 +26,7 @@ import json
 import logging
 import os
 import platform
+import re
 import shutil
 import signal
 import socket
@@ -62,7 +63,7 @@ class Setup:
 
 
 SETUPS = {
-    "mantle": Setup("mantle", "mantle_combined", None, None, 30, 600, 4),
+    "mantle": Setup("mantle", "mantle_combined", None, None, 30, 600, 10),
     "lg": Setup("lg", "langgraph_native", "none", 30, 30, 600, 15),
     # Reasoning makes turns slow. Limits are raised so no run fails on a timeout.
     "lg-high": Setup("lg-high", "langgraph_native", "high", 300, 300, 3600, 15),
@@ -301,6 +302,34 @@ def git_commit() -> Optional[str]:
     return out.stdout.strip() or None
 
 
+# Agent-side OpenAI call timeouts as they appear in the server logs (litellm for
+# Mantle, the openai client for LangGraph).
+_AGENT_LLM_TIMEOUT = re.compile(r"APITimeoutError|litellm\.Timeout|Request timed out")
+
+
+def count_timeouts(log_dir: Path) -> dict:
+    """Timeouts seen during a set, from its logs.
+
+    turn_retries: the harness got no reply to a user message within the turn
+      timeout and sent it again (up to 3 attempts; the run fails if all do).
+    agent_llm_timeouts: log lines where one of the agent's own OpenAI calls timed out.
+    """
+
+    def count(path: Path, match) -> int:
+        if not path.is_file():
+            return 0
+        with open(path, encoding="utf-8", errors="replace") as handle:
+            return sum(1 for line in handle if match(line))
+
+    return {
+        "turn_retries": count(
+            log_dir / "harness.log",
+            lambda line: "send_message.failed" in line and "Timeout" in line,
+        ),
+        "agent_llm_timeouts": count(log_dir / "server.log", lambda line: bool(_AGENT_LLM_TIMEOUT.search(line))),
+    }
+
+
 def run_set(setup: Setup, runs: int, only: Optional[list[str]], results_dir: Path) -> Path:
     for port in (MCP_PORT, MANTLE_PORT, LANGGRAPH_PORT):
         if port_in_use(port):
@@ -344,6 +373,7 @@ def run_set(setup: Setup, runs: int, only: Optional[list[str]], results_dir: Pat
         "python": platform.python_version(),
         "sim_llm_cap": SIM_LLM_CAP,
         "eval_llm_cap": EVAL_LLM_CAP,
+        "timeouts": count_timeouts(log_dir),
     }
     (out_dir / "run_info.json").write_text(json.dumps(info, indent=2) + "\n", encoding="utf-8")
     log(f"{setup.name}: results in {out_dir}")

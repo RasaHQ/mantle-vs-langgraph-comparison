@@ -14,6 +14,11 @@ Definitions:
 - Cost per conversation: mean over runs.
 - Head-to-head cost compares Mantle with another setup on the same scenarios:
   all runs on every scenario, and passing runs on the scenarios both setups passed.
+- Timeouts: "Runs ended by a timeout" are runs whose error is a timeout (the
+  agent never answered a turn after 3 attempts, or the conversation hit its time
+  limit). "Turns resent after a timeout" counts user messages the harness sent
+  again because no reply came within the turn timeout. "Agent LLM call timeouts"
+  are the agent's own OpenAI calls that timed out, counted from its server log.
 - ± is the sample standard deviation of the metric across sets: the metric is
   computed for each set on its own, and the spread of those values is reported.
   For the head-to-head, sets are paired in the order they ran (first with first).
@@ -22,6 +27,7 @@ Definitions:
 from __future__ import annotations
 
 import json
+import re
 import statistics
 import sys
 from dataclasses import dataclass, field
@@ -43,6 +49,7 @@ class Run:
     passed: bool
     cost: Optional[float]
     harness_error: bool
+    timed_out: bool
 
 
 @dataclass
@@ -68,6 +75,7 @@ Results = dict[str, Scenario]  # scenario name -> its runs
 class SetupResults:
     set_names: list[str]
     sets: list[Results]  # one entry per set, in the order they ran
+    set_info: list[dict]  # run_info.json of each set
     pooled: Results  # all sets together
 
 
@@ -78,6 +86,7 @@ def load_run(path: Path) -> Run:
         passed=bool(data.get("eval_passed")),
         cost=float(cost) if cost is not None else None,
         harness_error=bool(data.get("error_is_harness")),
+        timed_out=bool(re.search(r"timeout|timed out", data.get("error") or "", re.IGNORECASE)),
     )
 
 
@@ -86,6 +95,7 @@ def load_setup(setup_dir: Path) -> Optional[SetupResults]:
     if not set_dirs:
         return None
     sets: list[Results] = []
+    set_info: list[dict] = []
     pooled: Results = {}
     for set_dir in set_dirs:
         one_set: Results = {}
@@ -94,7 +104,9 @@ def load_setup(setup_dir: Path) -> Optional[SetupResults]:
             one_set.setdefault(path.parent.name, Scenario()).runs.append(run)
             pooled.setdefault(path.parent.name, Scenario()).runs.append(run)
         sets.append(one_set)
-    return SetupResults([d.name for d in set_dirs], sets, pooled)
+        info_path = set_dir / "run_info.json"
+        set_info.append(json.loads(info_path.read_text(encoding="utf-8")) if info_path.is_file() else {})
+    return SetupResults([d.name for d in set_dirs], sets, set_info, pooled)
 
 
 # --- metrics on one group of results ------------------------------------------
@@ -201,6 +213,25 @@ def summary_table(loaded: dict[str, SetupResults], shared: list[str]) -> list[st
                 )
                 for k in keys
             ],
+        )
+    def count_with_sd(per_set_counts: list[Optional[float]]) -> str:
+        present = [v for v in per_set_counts if v is not None]
+        if not present:
+            return "—"
+        _, sd = spread(present)
+        return f"{int(sum(present))}" + (f" ± {sd:.1f}" if sd is not None else "")
+
+    row(
+        "Runs ended by a timeout",
+        [count_with_sd(per_set(k, lambda s: sum(r.timed_out for n in shared if n in s for r in s[n].runs))) for k in keys],
+    )
+    for title, field_name in (
+        ("Turns resent after a timeout", "turn_retries"),
+        ("Agent LLM call timeouts", "agent_llm_timeouts"),
+    ):
+        row(
+            title,
+            [count_with_sd([(i.get("timeouts") or {}).get(field_name) for i in loaded[k].set_info]) for k in keys],
         )
     row(
         "Runs",
