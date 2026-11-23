@@ -25,7 +25,7 @@ Both agents run the identical files.
 
 - macOS or Linux, and [uv](https://docs.astral.sh/uv/getting-started/installation/). `uv` installs Python 3.11 when needed.
 - An OpenAI API key.
-- A Rasa Pro license (`RASA_LICENSE`) for the Mantle agent.
+- A Rasa Pro license (`RASA_LICENSE`) for the Mantle agent. The free Developer Edition license works: [request one here](https://rasa.com/rasa-pro-developer-edition-license-key-request).
 - Ports 5005, 5007 and 8001 free.
 
 ## Run it
