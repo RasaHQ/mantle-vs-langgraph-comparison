@@ -413,13 +413,32 @@ async def check_wallet_eligibility_and_status(
     already = card.get("already_provisioned", False)
     context.memory.set("wallet_eligible", eligible)
     context.memory.set("wallet_already_provisioned", already)
-    return ToolResult(
-        llm_response={
-            "card_id": card_id,
-            "wallet_eligible": eligible,
-            "already_provisioned": already,
-        }
+    response: dict = {
+        "card_id": card_id,
+        "wallet_eligible": eligible,
+        "already_provisioned": already,
+    }
+    lock_question_open = (
+        context.memory.get("replacement_reason") in ("lost", "not_received")
+        and context.memory.get("card_locked") is not True
+        and context.memory.get("wants_card_locked") is None
     )
+    if eligible and not already and lock_question_open:
+        response["hint"] = (
+            "The lock question comes first. Ask whether they want this card "
+            "locked and wait for the answer. Offer the wallet after that, "
+            "unless they already asked for a wallet."
+        )
+    elif eligible and not already:
+        response["hint"] = (
+            "Next, ask only whether they want the new card added to Apple Pay "
+            "or Google Pay, then wait for the answer. Do not check or mention "
+            "shipping in this reply. If they already named a wallet, add it "
+            "with provision_digital_wallet instead of asking."
+        )
+    else:
+        response["hint"] = "No wallet offer for this card. Continue to shipping."
+    return ToolResult(llm_response=response)
 
 
 @tool(
