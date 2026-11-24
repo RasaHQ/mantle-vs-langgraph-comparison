@@ -12,18 +12,17 @@ Definitions:
   passed (``eval_passed`` in the conversation's JSON).
 - Cost: ``engine_tokens.cost``, the agent's own LLM spend for one conversation.
   The simulated user and the judge are not included.
-- Scenario solved reliably: a scenario that passed in every one of its runs
-  (pass^3 with 3 runs).
+- Reliably resolved scenario: a scenario resolved in every one of its runs.
 - Total cost: the agent's cost summed over all of a setup's conversations,
   resolved or not.
 - Cost per conversation = total cost / number of conversations.
 - Cost per resolved conversation = total cost / conversations resolved.
-- Cost per reliably solved scenario (the headline) = (total cost / runs) /
-  scenarios solved reliably. Total cost / runs is what one run over all
-  scenarios costs. A scenario that passes only sometimes adds cost but does
-  not count as solved.
-- pass^k: the scenarios that passed in at least k of their runs. With 3 runs,
-  pass^1 counts scenarios solved at least once, pass^3 those solved every time.
+- Cost per reliably resolved scenario (the headline) = (total cost / runs) /
+  reliably resolved scenarios. Total cost / runs is what one run over all
+  scenarios costs. A scenario resolved only in some runs adds cost but does not
+  count.
+- Scenarios resolved in at least k of the runs: how many scenarios the agent
+  resolved at least k times. "All runs" is the headline's reliably resolved.
 - Timeouts: "Conversations ended by a timeout" have a timeout as their error
   (the agent never answered a turn after 3 attempts, or the conversation hit its
   time limit). "Turns resent after a timeout" counts user messages the harness
@@ -146,7 +145,7 @@ def pass_k(results: SetupResults, names: list[str], k: int) -> int:
 
 
 def reliable_cost(results: SetupResults, names: list[str]) -> tuple[int, Optional[float]]:
-    """Returns (scenarios solved in every run, cost per reliably solved scenario)."""
+    """Returns (scenarios resolved in every run, cost per reliably resolved scenario)."""
     _, convs, cost = resolved_and_cost(results, names)
     solved = pass_k(results, names, len(results.runs))
     per_run = cost / convs * len(names) if convs else 0.0
@@ -156,7 +155,7 @@ def reliable_cost(results: SetupResults, names: list[str]) -> tuple[int, Optiona
 def headline_table(loaded: dict[str, SetupResults], shared: list[str]) -> list[str]:
     n = len(shared)
     lines = [
-        "| Setup | Scenarios solved in every run | Cost per reliably solved scenario |",
+        "| Setup | Scenarios resolved in all runs | Cost per reliably resolved scenario |",
         "|---|---:|---:|",
     ]
     for k, r in loaded.items():
@@ -177,15 +176,15 @@ def _table(loaded: dict[str, SetupResults], rows: list[tuple[str, list[str]]]) -
 def accuracy_table(loaded: dict[str, SetupResults], shared: list[str]) -> list[str]:
     keys = list(loaded)
     n = len(shared)
-    max_k = min(3, max(len(loaded[k].runs) for k in keys))
+    runs = max(len(loaded[k].runs) for k in keys)
     rows = []
-    for kk in range(1, max_k + 1):
-        label = {1: "at least 1", max_k: "all"}.get(kk, f"at least {kk}")
+    for kk in sorted({runs, *range(1, min(3, runs))}, reverse=True):
+        label = f"all {runs} runs" if kk == runs else f"at least {kk} of {runs} runs"
         cells = []
         for k in keys:
             m = pass_k(loaded[k], shared, kk)
             cells.append(f"{m}/{n} ({m / n:.1%})")
-        rows.append((f"pass^{kk}: scenarios passed in {label} of the runs", cells))
+        rows.append((f"Scenarios resolved in {label}", cells))
     return _table(loaded, rows)
 
 
@@ -194,7 +193,7 @@ def cost_table(loaded: dict[str, SetupResults], shared: list[str]) -> list[str]:
     stats = {k: resolved_and_cost(loaded[k], shared) for k in keys}
     reliable = {k: reliable_cost(loaded[k], shared)[1] for k in keys}
     rows = [
-        ("**Cost per reliably solved scenario**", [f"**{money(reliable[k])}**" if reliable[k] else "—" for k in keys]),
+        ("**Cost per reliably resolved scenario**", [f"**{money(reliable[k])}**" if reliable[k] else "—" for k in keys]),
         (
             "Cost per resolved conversation",
             [money(stats[k][2] / stats[k][0]) if stats[k][0] else "—" for k in keys],
@@ -240,7 +239,7 @@ def health_table(loaded: dict[str, SetupResults], shared: list[str]) -> list[str
 def scenario_table(loaded: dict[str, SetupResults], shared: list[str]) -> list[str]:
     keys = list(loaded)
     lines = [
-        "| Scenario | " + " | ".join(f"{SETUPS[k]}, runs passed" for k in keys) + " |",
+        "| Scenario | " + " | ".join(f"{SETUPS[k]}, runs resolved" for k in keys) + " |",
         "|---|" + ":-:|" * len(keys),
     ]
     for name in shared:
@@ -274,11 +273,11 @@ def main() -> None:
         out.append(f"| {SETUPS[k]} | {', '.join(f'`{f}`' for f in r.folders)} |")
     if dropped:
         out += ["", f"Left out because not every setup ran them: {', '.join(dropped)}."]
-    out += ["", "## Cost per reliably solved scenario", ""] + headline_table(loaded, shared)
+    out += ["", "## Cost per reliably resolved scenario", ""] + headline_table(loaded, shared)
     out += [
         "",
-        "What one run over all scenarios costs, divided by the scenarios the setup solved in "
-        "every run. A scenario that passes only sometimes adds cost but does not count.",
+        "What one run over all scenarios costs, divided by the scenarios the setup resolved in "
+        "every run. A scenario resolved only in some runs adds cost but does not count.",
     ]
     out += ["", "## Accuracy", ""] + accuracy_table(loaded, shared)
     out += ["", "## Cost", ""] + cost_table(loaded, shared)
