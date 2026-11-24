@@ -1,0 +1,316 @@
+scenario: Damaged card replacement follows the damaged path without a fraud review
+run: 3
+timestamp: 2026-11-24T07:30:45Z
+conversation_id: sim-74907d3d-8ca2-4699-9838-353d4a6a6214
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] Before provisioning a digital wallet, the agent asks whether the customer wants to add the new card to Apple Pay or Google Pay and receives their agreement
+  rationale: The bot asks, “Would you like me to add the new card to a digital wallet for immediate use—Apple Pay or Google Pay?” and the user replies, “Yes, please add it to Apple Pay,” before the ledger shows provision_digital_wallet() being called.
+
+[PASS] Before placing the replacement order, the agent asks whether the customer wants to place the order and receives their agreement
+  rationale: After getting the shipping preference, the bot asks, “Okay—would you like me to place the replacement order with standard shipping?” and the user replies, “Yes, please go ahead and place the replacement order with standard shipping,” prior to process_card_replacement() → ok in the ledger.
+
+[PASS] After placing the replacement order, the agent confirms it and audibly shares the order ID from the tool result. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the ID is omitted, materially differs from the returned value, or is not spoken.
+  rationale: After process_card_replacement() → ok, the bot confirms the order and explicitly states “Order ID: RPL-2026-001843,” which matches the ID stored in card_replace.replacement_order_summary.
+
+[PASS] The agent does not re-ask which card to replace or why it needs replacing after the customer has already named the River Visa and said it is damaged. A brief confirmation of that already-named card is not a re-ask. Asking the customer to choose between the cards on the account is a re-ask. Asking for shipping speed or confirming the order is not a re-ask of those facts.
+  rationale: After the user initially specifies “my River Visa ending in 4821” and that it was chewed up, the bot only confirms eligibility and scope (authorized user card) and never re-asks which card or why it needs replacing.
+
+--- Quality Metrics ---
+bot_quality: 4.75/5
+  helpfulness: 5/5 — Every step directly advanced the user's goal with clear questions, options, and a specific final confirmation including order ID and shipping details.
+  repair_quality: 5/5 — There were no user pushbacks or disfluency signals, so there were no repair opportunities to mishandle.
+  coherence: 4/5 — The assistant consistently tracked which card, which cardholder, and the chosen options, though it slightly redundantly re-asked to confirm standard shipping after the user had already said it was fine.
+  tone: 5/5 — The tone was natural, polite, and conversational throughout, with clear phrasing and appropriate brevity for a transactional flow.
+  task_completion: PASS — The assistant successfully ordered the replacement card with standard shipping, added it to Apple Pay, and clearly confirmed completion with concrete details.
+summary: This was a smooth, successful transactional interaction: the assistant gathered necessary details, carried out the replacement, and clearly confirmed the outcome. It maintained coherent state and a friendly tone, with only a small redundant confirmation step that did not hinder the experience.
+
+--- Acknowledgements ---
+summary:
+  coverage: 5/5 tool turns (100%)
+  mean naturalness score: 5.0
+  mean issue score: 3.4
+  issues:
+    - similar_to_earlier_acknowledgement: 4
+
+T1
+  turn:
+    tools:
+      - activate
+      - check_account_eligibility
+      - activate
+      - get_customer_cards
+      - adopt_selected_card
+      - check_card_eligibility
+    acknowledgement: "Got it—let me pull up your card options."
+    follow-ups:
+      - "Perfect—River Visa ending **4821** is eligible for a replacement.
+
+         Next, I just need to confirm scope: is it **only your card** that’s damaged, or do you have any **authorized user cards on this River Visa** that also need replacement?"
+  verdict:
+    naturalness score: 5
+    issue score: 5.0
+    issues: none
+    reasoning: Casual and specific to checking card options, matching what the tools then do.
+T2
+  turn:
+    tools:
+      - check_damaged_replacement_scope
+      - check_wallet_eligibility_and_status
+    acknowledgement: "Okay—one moment."
+    follow-ups:
+      - "Thanks—I'll replace **only your card** (not Mike Chen’s authorized-user card).
+
+         Would you like me to add the new card to a digital wallet for immediate use—**Apple Pay or Google Pay**?"
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T1)
+    reasoning: A brief, natural pause phrase that fits before running checks about scope.
+T3
+  turn:
+    tools:
+      - provision_digital_wallet
+      - check_rush_shipping_eligibility
+    acknowledgement: "Alright—one second."
+    follow-ups:
+      - "Done—your replacement card has been provisioned to **Apple Pay** and should appear in your Wallet app in about **2–3 minutes**.
+
+         For the physical card, do you want **rush shipping (1–2 business days, $25)** or **standard (5–7 business days)**?"
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T2)
+    reasoning: Friendly, short delay statement that aligns with provisioning the wallet.
+T4
+  turn:
+    tools:
+      - process_card_replacement
+    acknowledgement: "Got it—give me just a moment."
+    follow-ups:
+      - "Okay—would you like me to place the replacement order with standard shipping?"
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T3)
+    reasoning: Very typical service-agent phrasing indicating a brief wait before processing shipping.
+T5
+  turn:
+    tools:
+      - process_card_replacement
+      - resolve_tool_confirmation
+    acknowledgement: "Alright—one moment."
+    follow-ups:
+      - "All set. Your replacement card has been ordered:
+         Order ID: RPL-2026-001843
+         Card: River Visa ending 4821
+         Shipping: standard
+         Estimated delivery: 5-7 business days"
+      - "Is there anything else you need help with?"
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T3)
+    reasoning: Sounds like a natural spoken acknowledgment before finalizing the replacement order.
+
+--- Tool Call Metrics ---
+[T1] user: "Hi, my dog chewed up my River Visa ending in 4821 and I need a replacement card, please."
+  observed: run_after_setting_replacement_reason
+  observed: check_account_eligibility
+  observed: get_customer_cards
+  observed: run_after_setting_selected_card_id
+  observed: adopt_selected_card
+  observed: check_card_eligibility(card_id='VISA_001')
+[T2] user: "It’s just my card that’s damaged, not the authorized user’s."
+  observed: check_damaged_replacement_scope(card_id='VISA_001')
+  observed: run_after_setting_replace_target
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+[T3] user: "Yes, please add it to Apple Pay."
+  observed: provision_digital_wallet(card_id='VISA_001', wallet_provider='apple_pay')
+  observed: check_rush_shipping_eligibility(card_id='VISA_001')
+[T4] user: "Standard shipping is fine, thanks."
+  observed: process_card_replacement(card_id='VISA_001', shipping_type='standard')
+[T5] user: "Yes, please go ahead and place the replacement order with standard shipping."
+  observed: process_card_replacement(card_id='VISA_001', shipping_type='standard')
+
+--- Assertion Results ---
+[PASS] skill_activated(card_replace)
+[PASS] skill_activated(card_disambiguate)
+[PASS] skill_completed(card_disambiguate)
+[PASS] skill_completed(card_replace)
+[PASS] sequencing
+[PASS] memory_was_set(card_replace.account_eligible=True, card_replace.replacement_reason='damaged', card_disambiguate.selected_card_id='VISA_001', card_disambiguate.selected_card_label='River Visa ending 4821', card_replace.card_eligible=True, card_replace.has_authorized_users=True, card_replace.replace_target='customer', card_replace.damaged_applied=True, card_replace.wallet_eligible=True, card_replace.wallet_already_provisioned=False, card_replace.wallet_consent=True, card_replace.wallet_provider='apple_pay', card_replace.wallet_provisioned=True, card_replace.shipping_type='standard', card_replace.replacement_ordered=True)
+[PASS] memory_was_not_set(card_replace.transaction_review_complete, card_replace.transactions_look_familiar, card_replace.fraud_reported, card_replace.card_locked, card_replace.wants_card_locked, card_replace.recent_transactions)
+[PASS] tool_executed(check_account_eligibility)
+[PASS] tool_executed(get_customer_cards)
+[PASS] tool_executed(check_card_eligibility)
+[PASS] tool_executed(check_damaged_replacement_scope)
+[PASS] tool_executed(check_wallet_eligibility_and_status)
+[PASS] tool_executed(provision_digital_wallet)
+[PASS] tool_executed(check_rush_shipping_eligibility)
+[PASS] tool_executed(process_card_replacement)
+
+--- Raw Transcript ---
+[1] agent: Hello—what can I help you with today?
+[2] user: Hi, my dog chewed up my River Visa ending in 4821 and I need a replacement card, please.
+[3] agent: Got it—let me pull up your card options.
+[4] agent: Perfect—River Visa ending **4821** is eligible for a replacement.
+
+Next, I just need to confirm scope: is it **only your card** that’s damaged, or do you have any **authorized user cards on this River Visa** that also need replacement?
+[5] user: It’s just my card that’s damaged, not the authorized user’s.
+[6] agent: Okay—one moment.
+[7] agent: Thanks—I'll replace **only your card** (not Mike Chen’s authorized-user card).
+
+Would you like me to add the new card to a digital wallet for immediate use—**Apple Pay or Google Pay**?
+[8] user: Yes, please add it to Apple Pay.
+[9] agent: Alright—one second.
+[10] agent: Done—your replacement card has been provisioned to **Apple Pay** and should appear in your Wallet app in about **2–3 minutes**.
+
+For the physical card, do you want **rush shipping (1–2 business days, $25)** or **standard (5–7 business days)**?
+[11] user: Standard shipping is fine, thanks.
+[12] agent: Got it—give me just a moment.
+[13] agent: Okay—would you like me to place the replacement order with standard shipping?
+[14] user: Yes, please go ahead and place the replacement order with standard shipping.
+[15] agent: Alright—one moment.
+[16] agent: All set. Your replacement card has been ordered:
+Order ID: RPL-2026-001843
+Card: River Visa ending 4821
+Shipping: standard
+Estimated delivery: 5-7 business days
+
+[17] agent: Is there anything else you need help with?
+[18] user: Nope, that’s everything I needed. Thanks for the help!
+[19] agent: Were you satisfied with the assistance you received today?
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=901ms  turn_latency=11288ms
+turn 3: ttft=980ms  turn_latency=5375ms
+turn 4: ttft=923ms  turn_latency=4366ms
+turn 5: ttft=1005ms  turn_latency=3805ms
+turn 6: ttft=973ms  turn_latency=6032ms
+turn 7: ttft=1224ms  turn_latency=1224ms
+conversation avg: ttft=1001ms  turn_latency=5348ms  (over 6 turns with bot text)
+
+--- Inspector URL ---
+http://localhost:5005/webhooks/inspector/inspect.html?sender=sim-74907d3d-8ca2-4699-9838-353d4a6a6214
+
+--- Additional Metrics ---
+Turns to Completion: 6
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  session_started: {"event": "session_started", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}, "engine_version": "mantle"}
+    2  memory_set: system.session_started_metadata = {"is_simulation": true}
+    3  skill_activated: builtin_session_start
+    4  ordered_block_entered: builtin_session_start/main
+    5  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"6AGRD5QI\", \"skill_id\": \"builtin_session_start\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"V754VCQS\", \"skill_id\": \"builtin_session_start\", \"block_id\": \"main\", \"step_id\": \"greet\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+    6  slot: consecutive_silence_timeouts = 0.0
+    7  user: '/session_start'
+    8  agent: 'Hello—what can I help you with today?'
+    9  ordered_block_completed: builtin_session_start/main (step=greet)
+   10  skill_completed: builtin_session_start
+   11  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}, {\"op\": \"remove\", \"path\": \"/0\"}]"}
+   12  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}}
+[T1] user: "Hi, my dog chewed up my River Visa ending in 4821 and I need a replacement card, please."
+    1  user: 'Hi, my dog chewed up my River Visa ending in 4821 and I need a replacement card, please.'
+    2  agent: 'Got it—let me pull up your card options.'
+    3  skill_activated: card_replace
+    4  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"K0RX4F8I\", \"skill_id\": \"card_replace\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+    5  memory_set: card_replace.replacement_reason = damaged
+    6  tool: activate(target_id=card_replace, memory_items={"replacement_reason": "damaged"}) → ok
+    7  tool: run_after_setting_replacement_reason() → ok
+    8  memory_set: card_replace.account_eligible = true
+    9  tool: check_account_eligibility() → ok
+   10  skill_activated: card_disambiguate
+   11  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}, "update": "[{\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"CDG80BCN\", \"skill_id\": \"card_disambiguate\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+   12  tool: activate(target_id=card_disambiguate, memory_items={"named_card_last4": "4821", "named_c…) → ok
+   13  memory_set: card_disambiguate.card_list = [{"id": "VISA_001", "label": "River Visa ending 4821", "type": "River Visa"}, {"id": "MC_002", "label": "Summit Rewards ending 9173", "type": "Summit Rewards"}]
+   14  tool: get_customer_cards() → ok
+   15  memory_set: card_disambiguate.selected_card_id = VISA_001
+   16  memory_set: card_disambiguate.selected_card_label = River Visa ending 4821
+   17  tool: set_memory(selected_card_id=VISA_001) → ok
+   18  tool: run_after_setting_selected_card_id() → ok
+   19  skill_completed: card_disambiguate
+   20  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}, "update": "[{\"op\": \"remove\", \"path\": \"/1\"}]"}
+   21  tool: complete() → ok
+   22  memory_set: card_replace.selected_card_id = VISA_001
+   23  memory_set: card_replace.committed_card_id = VISA_001
+   24  tool: adopt_selected_card() → ok
+   25  memory_set: card_replace.card_eligible = true
+   26  tool: check_card_eligibility(card_id=VISA_001) → ok
+   27  agent: 'Perfect—River Visa ending **4821** is eligible for a replacement. Next, I just need to confirm scope: is it **only your card** that’s damaged, or do you have any **authorized user cards on this River Visa** that also need replacement?'
+   28  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}}
+[T2] user: "It’s just my card that’s damaged, not the authorized user’s."
+    1  user: 'It’s just my card that’s damaged, not the authorized user’s.'
+    2  agent: 'Okay—one moment.'
+    3  memory_set: card_replace.has_authorized_users = true
+    4  tool: check_damaged_replacement_scope(card_id=VISA_001) → ok
+    5  memory_set: card_replace.replace_target = customer
+    6  memory_set: card_replace.damaged_applied = true
+    7  tool: set_memory(replace_target=customer) → ok
+    8  tool: run_after_setting_replace_target() → ok
+    9  memory_set: card_replace.wallet_eligible = true
+   10  memory_set: card_replace.wallet_already_provisioned = false
+   11  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   12  agent: "Thanks—I'll replace **only your card** (not Mike Chen’s authorized-user card). Would you like me to add the new card to a digital wallet for immediate use—**Apple Pay or Google Pay**?"
+   13  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}}
+[T3] user: "Yes, please add it to Apple Pay."
+    1  user: 'Yes, please add it to Apple Pay.'
+    2  agent: 'Alright—one second.'
+    3  memory_set: card_replace.wallet_provider = apple_pay
+    4  memory_set: card_replace.wallet_consent = true
+    5  memory_set: card_replace.wallet_provisioned = true
+    6  tool: provision_digital_wallet(card_id=VISA_001, wallet_provider=apple_pay) → ok
+    7  memory_set: card_replace.rush_eligible = true
+    8  tool: check_rush_shipping_eligibility(card_id=VISA_001) → ok
+    9  agent: 'Done—your replacement card has been provisioned to **Apple Pay** and should appear in your Wallet app in about **2–3 minutes**. For the physical card, do you want **rush shipping (1–2 business days, $25)** or **standard (5–7 business days)**?'
+   10  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}}
+[T4] user: "Standard shipping is fine, thanks."
+    1  user: 'Standard shipping is fine, thanks.'
+    2  agent: 'Got it—give me just a moment.'
+    3  memory_set: card_replace.shipping_type = standard
+    4  tool: set_memory(shipping_type=standard) → ok
+    5  memory_set: system.pending_tool_confirmation = {"tool_name": "process_card_replacement", "tool_args": {"card_id": "VISA_001", "shipping_type": "standard"}, "tool_call_metadata": {}, "confirmation_ask": "Alright, shall I go ahead and place the order with standard shipping?", "utter_on_user_denial": "utter_order_cancelled", "skill_id": "card_replace", "frame_id": "K0RX4F8I", "execute_step_id": null, "deferred_next": []}
+    6  tool: process_card_replacement(card_id=VISA_001, shipping_type=standard) → awaiting confirmation
+    7  agent: 'Okay—would you like me to place the replacement order with standard shipping?'
+    8  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}}
+[T5] user: "Yes, please go ahead and place the replacement order with standard shipping."
+    1  user: 'Yes, please go ahead and place the replacement order with standard shipping.'
+    2  agent: 'Alright—one moment.'
+    3  memory_cleared: system.pending_tool_confirmation
+    4  memory_set: card_replace.shipping_type = standard
+    5  memory_set: card_replace.replacement_ordered = true
+    6  memory_set: card_replace.replacement_order_summary = Order ID: RPL-2026-001843 Card: River Visa ending 4821 Shipping: standard Estimated delivery: 5-7 business days
+    7  tool: process_card_replacement(card_id=VISA_001, shipping_type=standard) → ok
+    8  tool: resolve_tool_confirmation(confirmed=true) → ok
+    9  agent: 'All set. Your replacement card has been ordered: Order ID: RPL-2026-001843 Card: River Visa ending 4821 Shipping: standard Estimated delivery: 5-7 business days'
+   10  skill_completed: card_replace
+   11  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}]"}
+   12  skill_activated: builtin_completed
+   13  ordered_block_entered: builtin_completed/main
+   14  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"2QFQXY2H\", \"skill_id\": \"builtin_completed\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"Z896QG0L\", \"skill_id\": \"builtin_completed\", \"block_id\": \"main\", \"step_id\": \"ask_continue\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   15  tool: complete() → ok
+   16  agent: 'Is there anything else you need help with?'
+   17  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}}
+[T6] user: "Nope, that’s everything I needed. Thanks for the help!"
+    1  user: 'Nope, that’s everything I needed. Thanks for the help!'
+    2  memory_set: builtin_completed.wants_to_continue = false
+    3  tool: set_memory(wants_to_continue=false) → ok
+    4  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}, "update": "[{\"op\": \"replace\", \"path\": \"/1/step_id\", \"value\": \"csat_link\"}]"}
+    5  ordered_block_completed: builtin_completed/main (step=csat_link)
+    6  skill_completed: builtin_completed
+    7  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}, {\"op\": \"remove\", \"path\": \"/0\"}]"}
+    8  skill_activated: builtin_customer_satisfaction
+    9  ordered_block_entered: builtin_customer_satisfaction/main
+   10  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"UAVZ8N72\", \"skill_id\": \"builtin_customer_satisfaction\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"8M0WJ5V2\", \"skill_id\": \"builtin_customer_satisfaction\", \"block_id\": \"main\", \"step_id\": \"ask_csat\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   11  agent: 'Were you satisfied with the assistance you received today?'
+   12  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "0dd6467b-796e-415e-b646-1f7882e9f01d"}}

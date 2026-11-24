@@ -1,0 +1,214 @@
+scenario: Courier says delivered, agent system says not yet shipped
+run: 3
+timestamp: 2026-11-24T07:30:45Z
+conversation_id: sim-2560e639-b567-4d8a-9801-2402bc39fcaf
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent distinguishes the status available in its own system from the customer's conflicting courier evidence
+  rationale: The bot repeatedly contrasts its system status ("still shows PENDING... no tracking number has been assigned yet") with the Swiss Post SMS showing delivery and says it "can’t confirm a delivery from here" and "can’t reconcile it to that Swiss Post ‘delivered’ scan".
+
+[PASS] The agent does not invent a location, delivery event, or certainty that its data doesn't support
+  rationale: The bot explicitly states it cannot confirm that the Swiss Post delivery is linked to the order and never asserts a specific delivery location or event beyond what its own system shows (pending, being prepared, no tracking).
+
+[PASS] The agent explains the discrepancy clearly rather than silently picking one source as fact
+  rationale: The bot clearly explains that their record shows "being prepared for shipment" with no tracking, so they "can’t reconcile it" to the Swiss Post 'delivered' scan, and discusses that they cannot yet confirm the SMS is for this shipment.
+
+[PASS] The agent offers an appropriate next step or escalation for a potentially missing or misreported delivery
+  rationale: The bot instructs the user to verify tracking on Swiss Post’s official site, open a "delivered but not received" case if it still shows delivered, obtain a case/reference number, and then return so the bot can help determine linkage and next steps from the Acme side.
+
+[PASS] The agent does not guarantee a delivery time or recovery outcome it cannot verify
+  rationale: After the discrepancy arises, the bot avoids promising any delivery or recovery outcome and only suggests investigations and case numbers without guaranteeing resolution or timing.
+
+--- Quality Metrics ---
+bot_quality: 4.5/5
+  helpfulness: 4/5 — The assistant gave clear, specific status information and a stepwise plan to reconcile the courier vs. system mismatch, though it didn’t explicitly confirm what will happen on Acme’s side after the user returns with the case number.
+  repair_quality: 5/5 — There were no user disfluency or correction signals; the user consistently aligned with the assistant’s guidance, so there was nothing to repair.
+  coherence: 5/5 — The assistant consistently tracked the order number, status, and address, and its follow-up guidance stayed aligned with the user’s evolving questions.
+  tone: 4/5 — The tone was polite, clear, and professional, though the closing survey-style questions felt a bit abrupt and slightly formulaic compared to the earlier supportive style.
+  task_completion: PASS — The assistant clearly provided the order status and concrete next steps about the courier discrepancy, which the user accepted and agreed to follow.
+summary: The assistant effectively checked the order status and provided a logical, actionable plan for handling the discrepancy between Swiss Post and the internal system. It maintained consistent context and used a clear, professional tone, though the conversation ended somewhat abruptly with a satisfaction question instead of confirming next steps once the user planned to return with more information.
+
+--- Acknowledgements ---
+summary:
+  coverage: 2/2 tool turns (100%)
+  mean naturalness score: 5.0
+  mean issue score: 4.0
+  issues:
+    - similar_to_earlier_acknowledgement: 1
+
+T1
+  turn:
+    tools:
+      - activate
+      - get_orders
+      - get_order_details
+    acknowledgement: "Right, let me check your Galaxy Watch order."
+    follow-ups:
+      - "Your **Samsung Galaxy Watch 7** order (**ORD-20260628-001**, placed **June 28, 2026**) is currently **OPEN / PENDING** and **being prepared for shipment at the distribution center**. It’s expected to **ship July 1, 2026** with an estimated delivery window of **July 3–5, 2026** via **Standard Post (Swiss Post)**, and **tracking isn’t available yet** (it will be assigned once it ships)."
+  verdict:
+    naturalness score: 5
+    issue score: 5.0
+    issues: none
+    reasoning: Very natural, specific to the Galaxy Watch order, and accurately sets up checking the order before tools run.
+T2
+  turn:
+    tools:
+      - get_order_details
+    acknowledgement: "I hear you—let me check the latest delivery details."
+    follow-ups:
+      - "In our system, your Galaxy Watch order **ORD-20260628-001** still shows **PENDING (being prepared for shipment)** and **no tracking number has been assigned yet**, so I can’t confirm a delivery from here. If you can share the **courier name** and the **tracking/parcel number from the SMS**, I can help you sanity-check whether it matches this shipment (or looks like a scam/misdirected delivery)."
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T1)
+    reasoning: Empathetic and context-specific (“latest delivery details”) and smoothly leads into fetching updated order details.
+
+--- Tool Call Metrics ---
+[T1] user: "Hi, I want to check the status of my Galaxy Watch order, please."
+  observed: get_orders
+  observed: get_order_details(order_id='ORD-20260628-001')
+[T2] user: "That’s weird, because I just got an SMS from the courier saying the parcel was delivered today, but I don’t have anything. So where is it really?"
+  observed: get_order_details(order_id='ORD-20260628-001')
+[T3] user: "The SMS says it’s from Swiss Post, tracking number 99.00.123456.78900001, and it shows as delivered to my address this afternoon. What should I do next if your system says it hasn’t even shipped bu..."
+  observed: search_knowledge(query='Swiss Post SMS delivered but order shows not shipped tracking not assigned what to do next Acme')
+
+--- Assertion Results ---
+[PASS] skill_activated(order_status)
+[PASS] skill_completed(order_status)
+[PASS] memory_was_set(order_status.orders_loaded=True)
+[PASS] memory_was_not_set(card_replace.replacement_ordered, sim_management.replacement_ordered, sim_management.sim_blocked)
+[PASS] tool_executed(get_orders)
+[PASS] tool_executed(get_order_details)
+
+--- Raw Transcript ---
+[1] agent: Hello—what can I assist you with today?
+[2] user: Hi, I want to check the status of my Galaxy Watch order, please.
+[3] agent: Right, let me check your Galaxy Watch order.
+[4] agent: Your **Samsung Galaxy Watch 7** order (**ORD-20260628-001**, placed **June 28, 2026**) is currently **OPEN / PENDING** and **being prepared for shipment at the distribution center**. It’s expected to **ship July 1, 2026** with an estimated delivery window of **July 3–5, 2026** via **Standard Post (Swiss Post)**, and **tracking isn’t available yet** (it will be assigned once it ships).
+[5] user: That’s weird, because I just got an SMS from the courier saying the parcel was delivered today, but I don’t have anything. So where is it really?
+[6] agent: I hear you—let me check the latest delivery details.
+[7] agent: In our system, your Galaxy Watch order **ORD-20260628-001** still shows **PENDING (being prepared for shipment)** and **no tracking number has been assigned yet**, so I can’t confirm a delivery from here. If you can share the **courier name** and the **tracking/parcel number from the SMS**, I can help you sanity-check whether it matches this shipment (or looks like a scam/misdirected delivery).
+[8] user: The SMS says it’s from Swiss Post, tracking number 99.00.123456.78900001, and it shows as delivered to my address this afternoon. What should I do next if your system says it hasn’t even shipped but the courier says delivered?
+[9] agent: Okay, one moment.
+[10] agent: If our order **still shows “being prepared” with no tracking assigned**, we can’t confirm that Swiss Post delivery is linked to your Galaxy Watch shipment yet, even if the SMS says “delivered.”
+
+Next steps:
+1) **Don’t open any links in the SMS.** Instead, enter the tracking number directly in the **official Swiss Post website/app**.  
+2) If Swiss Post still shows **“delivered”** but you don’t have the parcel, **open a “delivered but not received” case with Swiss Post** and get a **case/reference number**.  
+3) Send me the **reference number** (and confirm whether your delivery address is still **Bahnhofstrasse 42, 8001 Zürich**) and I’ll help you figure out what we can do from the Acme side with that information.
+[11] agent: Do you want me to keep looking into your order status from where we left off, or would you prefer I stop here?
+[12] user: Yes, please keep looking into the order. And yes, my address is still Bahnhofstrasse 42, 8001 Zürich. What exactly should I do now while your system and Swiss Post disagree?
+[13] agent: Got it—continuing with the order check.
+[14] agent: Thanks—address confirmed as **Bahnhofstrasse 42, 8001 Zürich**. Right now, our order record for **ORD-20260628-001 (Galaxy Watch 7)** still shows **“being prepared for shipment”** and **no tracking number on file**, so we can’t reconcile it to that Swiss Post “delivered” scan from within Acme yet.
+
+What to do now (in order):
+1) **Verify the tracking on the official Swiss Post site/app** by typing/pasting the number (don’t use the SMS link).  
+2) If it still shows **Delivered today** but you don’t have it, **open a “delivered but not received” investigation with Swiss Post** and request a **case/reference number** (they can also confirm the **sender** tied to that label).  
+3) Reply here with the **Swiss Post case/reference number** and (if Swiss Post provides it) the **sender name** shown for that tracking—then I can help you determine whether it’s related to this Acme order or something else.
+
+At the same time, since our system shows it hasn’t shipped, if Swiss Post cannot confirm the sender is Acme/our fulfillment partner, treat that SMS as potentially unrelated until we can match it.
+[15] user: Okay, I’ll file the “delivered but not received” case with Swiss Post and get a reference number. Once I have that and the sender name, should I just come back here and give those to you so you can escalate it on your side?
+[16] agent: Is there anything else you need help with?
+[17] user: No, that’s all for now, I’ll follow those steps and come back with the case number if needed. Thanks.
+[18] agent: Were you satisfied with the assistance you received today?
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=879ms  turn_latency=5344ms
+turn 3: ttft=897ms  turn_latency=3600ms
+turn 4: ttft=1226ms  turn_latency=6266ms
+turn 5: ttft=1028ms  turn_latency=5857ms
+turn 6: ttft=1880ms  turn_latency=1966ms
+turn 7: ttft=1168ms  turn_latency=1168ms
+conversation avg: ttft=1180ms  turn_latency=4033ms  (over 6 turns with bot text)
+
+--- Inspector URL ---
+http://localhost:5005/webhooks/inspector/inspect.html?sender=sim-2560e639-b567-4d8a-9801-2402bc39fcaf
+
+--- Additional Metrics ---
+Turns to Completion: 6
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  session_started: {"event": "session_started", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}, "engine_version": "mantle"}
+    2  memory_set: system.session_started_metadata = {"is_simulation": true}
+    3  skill_activated: builtin_session_start
+    4  ordered_block_entered: builtin_session_start/main
+    5  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"XL9XYZCP\", \"skill_id\": \"builtin_session_start\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"6ERQDYDZ\", \"skill_id\": \"builtin_session_start\", \"block_id\": \"main\", \"step_id\": \"greet\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+    6  slot: consecutive_silence_timeouts = 0.0
+    7  user: '/session_start'
+    8  agent: 'Hello—what can I assist you with today?'
+    9  ordered_block_completed: builtin_session_start/main (step=greet)
+   10  skill_completed: builtin_session_start
+   11  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}, {\"op\": \"remove\", \"path\": \"/0\"}]"}
+   12  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}}
+[T1] user: "Hi, I want to check the status of my Galaxy Watch order, please."
+    1  user: 'Hi, I want to check the status of my Galaxy Watch order, please.'
+    2  agent: 'Right, let me check your Galaxy Watch order.'
+    3  skill_activated: order_status
+    4  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"7N4G7SZ8\", \"skill_id\": \"order_status\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+    5  tool: activate(target_id=order_status) → ok
+    6  memory_set: order_status.orders_loaded = true
+    7  tool: get_orders() → ok
+    8  tool: get_order_details(order_id=ORD-20260628-001) → ok
+    9  agent: 'Your **Samsung Galaxy Watch 7** order (**ORD-20260628-001**, placed **June 28, 2026**) is currently **OPEN / PENDING** and **being prepared for shipment at the distribution center**. It’s expected to **ship July 1, 2026** with an estimated delivery window of **July 3–5, 2026** via **Standard Post (Swiss Post)**, and **tracking isn’t available yet** (it will be assigned once it ships).'
+   10  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}}
+[T2] user: "That’s weird, because I just got an SMS from the courier saying the parcel was delivered today, but I don’t have anything. So where is it really?"
+    1  user: 'That’s weird, because I just got an SMS from the courier saying the parcel was delivered today, but I don’t have anything. So where is it really?'
+    2  agent: 'I hear you—let me check the latest delivery details.'
+    3  tool: get_order_details(order_id=ORD-20260628-001) → ok
+    4  agent: 'In our system, your Galaxy Watch order **ORD-20260628-001** still shows **PENDING (being prepared for shipment)** and **no tracking number has been assigned yet**, so I can’t confirm a delivery from here. If you can share the **courier name** and the **tracking/parcel number from the SMS**, I can help you sanity-check whether it matches this shipment (or looks like a scam/misdirected delivery).'
+    5  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}}
+[T3] user: "The SMS says it’s from Swiss Post, tracking number 99.00.123456.78900001, and it shows as delivered to my address this afternoon. What should I do next if your system says it hasn’t even shipped but …"
+    1  user: 'The SMS says it’s from Swiss Post, tracking number 99.00.123456.78900001, and it shows as delivered to my address this afternoon. What should I do next if your system says it hasn’t even shipped but the courier says delivered?'
+    2  agent: 'Okay, one moment.'
+    3  tool: search_knowledge(query=Swiss Post SMS delivered but order show…) → ok
+    4  agent: 'If our order **still shows “being prepared” with no tracking assigned**, we can’t confirm that Swiss Post delivery is linked to your Galaxy Watch shipment yet, even if the SMS says “delivered.” Next steps: 1) **Don’t open any links in the SMS.** Instead, enter the tracking number directly in the **official Swiss Post website/app**. 2) If Swiss Post still shows **“delivered”** but you don’t have the parcel, **open a “delivered but not received” case with Swiss Post** and get a **case/reference number**. 3) Send me the **reference number** (and confirm whether your delivery address is still **Bahnhofstrasse 42, 8001 Zürich**) and I’ll help you figure out what we can do from the Acme side with that information.'
+    5  skill_interrupted: order_status (step=autonomous)
+    6  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}, "update": "[{\"op\": \"add\", \"path\": \"/0/previous_frame_type\", \"value\": \"regular\"}, {\"op\": \"replace\", \"path\": \"/0/frame_type\", \"value\": \"interrupt\"}]"}
+    7  skill_activated: builtin_continue_interrupted
+    8  ordered_block_entered: builtin_continue_interrupted/main
+    9  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}, "update": "[{\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"AMKMX291\", \"skill_id\": \"builtin_continue_interrupted\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/2\", \"value\": {\"frame_id\": \"7AK3E77F\", \"skill_id\": \"builtin_continue_interrupted\", \"block_id\": \"main\", \"step_id\": \"ask_resume\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   10  memory_set: builtin_continue_interrupted.interrupted_task_name = Order Status (Check the status of recent orders including device shipments, delivery tracking, and order history)
+   11  agent: 'Do you want me to keep looking into your order status from where we left off, or would you prefer I stop here?'
+   12  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}}
+[T4] user: "Yes, please keep looking into the order. And yes, my address is still Bahnhofstrasse 42, 8001 Zürich. What exactly should I do now while your system and Swiss Post disagree?"
+    1  user: 'Yes, please keep looking into the order. And yes, my address is still Bahnhofstrasse 42, 8001 Zürich. What exactly should I do now while your system and Swiss Post disagree?'
+    2  agent: 'Got it—continuing with the order check.'
+    3  memory_set: builtin_continue_interrupted.wants_to_resume = true
+    4  tool: set_memory(wants_to_resume=true) → ok
+    5  ordered_block_completed: builtin_continue_interrupted/main (step=ask_resume)
+    6  skill_completed: builtin_continue_interrupted
+    7  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}, "update": "[{\"op\": \"remove\", \"path\": \"/1\"}, {\"op\": \"remove\", \"path\": \"/1\"}]"}
+    8  skill_resumed: order_status (step=autonomous)
+    9  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}, "update": "[{\"op\": \"remove\", \"path\": \"/0/previous_frame_type\"}, {\"op\": \"replace\", \"path\": \"/0/frame_type\", \"value\": \"regular\"}]"}
+   10  agent: 'Thanks—address confirmed as **Bahnhofstrasse 42, 8001 Zürich**. Right now, our order record for **ORD-20260628-001 (Galaxy Watch 7)** still shows **“being prepared for shipment”** and **no tracking number on file**, so we can’t reconcile it to that Swiss Post “delivered” scan from within Acme yet. What to do now (in order): 1) **Verify the tracking on the official Swiss Post site/app** by typing/pasting the number (don’t use the SMS link). 2) If it still shows **Delivered today** but you don’t have it, **open a “delivered but not received” investigation with Swiss Post** and request a **case/reference number** (they can also confirm the **sender** tied to that label). 3) Reply here with the **Swiss Post case/reference number** and (if Swiss Post provides it) the **sender name** shown for that tracking—then I can help you determine whether it’s related to this Acme order or something else. At the same time, since our system shows it hasn’t shipped, if Swiss Post cannot confirm the sender is Acme/our fulfillment partner, treat that SMS as potentially unrelated until we can match it.'
+   11  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}}
+[T5] user: "Okay, I’ll file the “delivered but not received” case with Swiss Post and get a reference number. Once I have that and the sender name, should I just come back here and give those to you so you can e…"
+    1  user: 'Okay, I’ll file the “delivered but not received” case with Swiss Post and get a reference number. Once I have that and the sender name, should I just come back here and give those to you so you can escalate it on your side?'
+    2  skill_completed: order_status
+    3  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}]"}
+    4  skill_activated: builtin_completed
+    5  ordered_block_entered: builtin_completed/main
+    6  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"X0MT5XP3\", \"skill_id\": \"builtin_completed\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"54X28K0H\", \"skill_id\": \"builtin_completed\", \"block_id\": \"main\", \"step_id\": \"ask_continue\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+    7  tool: complete() → ok
+    8  agent: 'Is there anything else you need help with?'
+    9  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}}
+[T6] user: "No, that’s all for now, I’ll follow those steps and come back with the case number if needed. Thanks."
+    1  user: 'No, that’s all for now, I’ll follow those steps and come back with the case number if needed. Thanks.'
+    2  memory_set: builtin_completed.wants_to_continue = false
+    3  tool: set_memory(wants_to_continue=false) → ok
+    4  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}, "update": "[{\"op\": \"replace\", \"path\": \"/1/step_id\", \"value\": \"csat_link\"}]"}
+    5  ordered_block_completed: builtin_completed/main (step=csat_link)
+    6  skill_completed: builtin_completed
+    7  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}, {\"op\": \"remove\", \"path\": \"/0\"}]"}
+    8  skill_activated: builtin_customer_satisfaction
+    9  ordered_block_entered: builtin_customer_satisfaction/main
+   10  stack: {"event": "stack", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"MFBPL8MM\", \"skill_id\": \"builtin_customer_satisfaction\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"38W26BS7\", \"skill_id\": \"builtin_customer_satisfaction\", \"block_id\": \"main\", \"step_id\": \"ask_csat\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   11  agent: 'Were you satisfied with the assistance you received today?'
+   12  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "7cfd6a2e1f6541d6b1f952bb62317e18", "model_name": "20261124-130018-asymptotic-bulldozer.tar.gz", "assistant_id": "mantle-combined", "session_id": "77fdd3d8-2f84-44f1-b83e-296fc618ecd9"}}
