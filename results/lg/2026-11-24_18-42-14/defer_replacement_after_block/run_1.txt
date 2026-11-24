@@ -1,0 +1,196 @@
+scenario: Block stolen SIM now, defer replacement choice
+run: 1
+timestamp: 2026-11-24T13:12:34Z
+conversation_id: sim-46cd0c30-97c7-45bc-a997-a1b0b13b3d6f
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent treats SIM blocking and replacement ordering as separate actions
+  rationale: The bot first blocks the SIM and shares device details, then separately asks, "Would you like a replacement SIM" and later states "I won’t order a replacement SIM yet," clearly handling blocking and replacement ordering as distinct steps.
+
+[PASS] The agent respects the user's explicit instruction not to order a replacement yet. Cancelling a pending replacement confirmation when they say not to order is expected. A replacement is only ordered if they confirm it.
+  rationale: After the user says "Please don’t order a replacement yet," the bot replies "No problem — I won’t order a replacement SIM yet" and no replacement tool call or claim of ordering appears in the transcript or ledger.
+
+[PASS] The agent does not claim a replacement was ordered
+  rationale: At no point does the bot state that a replacement was ordered; instead it explicitly confirms "A replacement SIM has been ordered: No" in the final summary.
+
+[PASS] The final summary clearly states that the SIM is blocked and that no replacement has been ordered.
+  rationale: In the final summary the bot states "Blocked your SIM" and under Confirmation lists "Your SIM is blocked: Yes" and "A replacement SIM has been ordered: No," clearly covering both points.
+
+--- Quality Metrics ---
+bot_quality: 5.0/5
+  helpfulness: 5/5 — It promptly blocked the SIM, provided device identifiers, and delivered a clear final summary and confirmation exactly as requested.
+  repair_quality: 5/5 — There were no user corrections or pushback; every user request was smoothly acknowledged and complied with on the first try.
+  coherence: 5/5 — The assistant consistently tracked that the phone was stolen, that the SIM was blocked, and that no replacement was desired, and repeated this accurately in the summary.
+  tone: 5/5 — The tone was concise, clear, polite, and appropriately professional and reassuring throughout a loss-related situation.
+  task_completion: PASS — The assistant clearly confirmed the SIM was blocked, no replacement SIM was ordered, and summarized the actions taken, matching the user’s goals.
+summary: The assistant successfully handled the theft report by blocking the SIM, providing the necessary device details, and accurately summarizing the actions taken. It remained coherent across turns and used an appropriate, professional tone. The interaction fully satisfied the user’s requests without evident issues.
+
+--- Acknowledgements ---
+summary:
+  coverage: 0/5 tool turns (0%)
+  mean naturalness score: None
+  mean issue score: None
+  issues: none
+
+T1
+  turn:
+    tools:
+      - transfer_to_sim_management
+      - record_incident
+      - start_block_sim
+      - check_sim_status
+    no acknowledgement
+T2
+  turn:
+    tools:
+      - record_block_consent
+      - block_sim
+      - get_device_info
+    no acknowledgement
+T3
+  turn:
+    tools:
+      - transfer_to_sim_management
+      - finish_task
+    no acknowledgement
+T4
+  turn:
+    tools:
+      - transfer_to_sim_management
+    no acknowledgement
+T5
+  turn:
+    tools:
+      - transfer_to_sim_management
+      - finish_task
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "Hi, my phone was just stolen. Please block my SIM immediately."
+  observed: transfer_to_sim_management
+  observed: record_incident(reason='stolen')
+  observed: start_block_sim
+  observed: check_sim_status
+[T2] user: "Yes, please block it now. The phone was stolen, I’m not roaming or anything."
+  observed: record_block_consent(wants_to_block=true)
+  observed: block_sim
+  observed: get_device_info
+[T3] user: "Thanks. Please don’t order a replacement yet — I haven’t decided if my next phone will use an eSIM or a physical SIM."
+  observed: transfer_to_sim_management
+  observed: finish_task
+[T4] user: "Can you please give me a quick summary of what you’ve done today, and confirm again that my SIM is blocked and no replacement has been ordered?"
+  observed: transfer_to_sim_management
+[T5] user: "Perfect, thanks—that’s all I needed."
+  observed: transfer_to_sim_management
+  observed: finish_task
+
+--- Assertion Results ---
+[PASS] skill_activated(sim_management)
+[PASS] skill_completed(sim_management)
+[PASS] sequencing
+[PASS] memory_was_set(sim_management.incident_reason='stolen', sim_management.wants_to_block=True, sim_management.sim_blocked=True)
+[PASS] memory_was_not_set(sim_management.sim_type, sim_management.replacement_ordered, sim_management.sim_order_summary, sim_management.replacement_complete)
+[PASS] tool_executed(check_sim_status)
+[PASS] tool_executed(block_sim)
+
+--- Raw Transcript ---
+[1] agent: Hi! How can I help you today?
+[2] user: Hi, my phone was just stolen. Please block my SIM immediately.
+[3] agent: Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.
+[4] agent: This SIM is active. Do you want me to block it now to prevent any unauthorized use?
+[5] user: Yes, please block it now. The phone was stolen, I’m not roaming or anything.
+[6] agent: Your SIM is now blocked.
+[7] agent: Here are the device details on file for your line:
+Device: iPhone 15 Pro
+IMEI: 352345678901234
+Serial number: F2LZK1HQGRX
+[8] agent: I’ve blocked your SIM now.
+
+For your records (useful for police/insurance):
+- **IMEI:** 352345678901234  
+- **Serial:** F2LZK1HQGRX  
+
+Would you like a **replacement SIM** — a **physical nano‑SIM by post** (activates when inserted) or an **eSIM by email (QR code, needs Wi‑Fi)**?
+[9] user: Thanks. Please don’t order a replacement yet — I haven’t decided if my next phone will use an eSIM or a physical SIM.
+[10] agent: No problem — I won’t order a replacement SIM yet.
+[11] user: Can you please give me a quick summary of what you’ve done today, and confirm again that my SIM is blocked and no replacement has been ordered?
+[12] agent: Today, you told us your **phone was stolen**, and I:
+
+- **Recorded the incident as stolen**
+- **Blocked your SIM** (so it can’t be used on the network)
+- Provided your device identifiers for police/insurance:
+  - **IMEI:** 352345678901234  
+  - **Serial:** F2LZK1HQGRX  
+
+Confirmation:
+- **Your SIM is blocked:** Yes  
+- **A replacement SIM has been ordered:** No
+[13] user: Perfect, thanks—that’s all I needed.
+[14] agent: Goodbye!
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=—  turn_latency=4013ms
+turn 3: ttft=—  turn_latency=2331ms
+turn 4: ttft=—  turn_latency=3668ms
+turn 5: ttft=—  turn_latency=3735ms
+turn 6: ttft=—  turn_latency=3200ms
+conversation avg: turn_latency=3389ms  (over 0 turns with bot text, 5 turns timed)
+
+--- Inspector URL ---
+http://127.0.0.1:5007/webhooks/inspector/inspect.html?sender=sim-46cd0c30-97c7-45bc-a997-a1b0b13b3d6f
+
+--- Additional Metrics ---
+Turns to Completion: 5
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  action: action_session_start
+    2  session_started: {"event": "session_started"}
+    3  agent: 'Hi! How can I help you today?'
+[T1] user: "Hi, my phone was just stolen. Please block my SIM immediately."
+    1  user: 'Hi, my phone was just stolen. Please block my SIM immediately.'
+    2  tool: transfer_to_sim_management() → ok
+    3  skill_activated: sim_management
+    4  tool: record_incident(reason=stolen) → ok
+    5  memory_set: sim_management.incident_reason = stolen
+    6  agent: 'Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.'
+    7  tool: start_block_sim() → ok
+    8  tool: check_sim_status() → ok
+    9  memory_set: sim_management.sim_blocked = false
+   10  agent: 'This SIM is active. Do you want me to block it now to prevent any unauthorized use?'
+[T2] user: "Yes, please block it now. The phone was stolen, I’m not roaming or anything."
+    1  user: 'Yes, please block it now. The phone was stolen, I’m not roaming or anything.'
+    2  tool: record_block_consent(wants_to_block=true) → ok
+    3  memory_set: sim_management.wants_to_block = true
+    4  tool: block_sim() → ok
+    5  memory_set: sim_management.sim_blocked = true
+    6  agent: 'Your SIM is now blocked.'
+    7  tool: get_device_info() → ok
+    8  memory_set: sim_management.device_name = iPhone 15 Pro
+    9  memory_set: sim_management.device_imei = 352345678901234
+   10  memory_set: sim_management.device_serial = F2LZK1HQGRX
+   11  memory_set: sim_management.device_info_shared = true
+   12  agent: 'Here are the device details on file for your line: Device: iPhone 15 Pro IMEI: 352345678901234 Serial number: F2LZK1HQGRX'
+   13  agent: 'I’ve blocked your SIM now. For your records (useful for police/insurance): - **IMEI:** 352345678901234 - **Serial:** F2LZK1HQGRX Would you like a **replacement SIM** — a **physical nano‑SIM by post** (activates when inserted) or an **eSIM by email (QR code, needs Wi‑Fi)**?'
+[T3] user: "Thanks. Please don’t order a replacement yet — I haven’t decided if my next phone will use an eSIM or a physical SIM."
+    1  user: 'Thanks. Please don’t order a replacement yet — I haven’t decided if my next phone will use an eSIM or a physical SIM.'
+    2  tool: transfer_to_sim_management() → ok
+    3  tool: finish_task() → ok
+    4  skill_completed: sim_management
+    5  agent: 'No problem — I won’t order a replacement SIM yet.'
+[T4] user: "Can you please give me a quick summary of what you’ve done today, and confirm again that my SIM is blocked and no replacement has been ordered?"
+    1  user: 'Can you please give me a quick summary of what you’ve done today, and confirm again that my SIM is blocked and no replacement has been ordered?'
+    2  tool: transfer_to_sim_management() → ok
+    3  skill_activated: sim_management
+    4  agent: 'Today, you told us your **phone was stolen**, and I: - **Recorded the incident as stolen** - **Blocked your SIM** (so it can’t be used on the network) - Provided your device identifiers for police/insurance: - **IMEI:** 352345678901234 - **Serial:** F2LZK1HQGRX Confirmation: - **Your SIM is blocked:** Yes - **A replacement SIM has been ordered:** No'
+[T5] user: "Perfect, thanks—that’s all I needed."
+    1  user: 'Perfect, thanks—that’s all I needed.'
+    2  tool: transfer_to_sim_management() → ok
+    3  tool: finish_task() → ok
+    4  skill_completed: sim_management
+    5  agent: 'Goodbye!'

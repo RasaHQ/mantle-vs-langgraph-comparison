@@ -9,18 +9,18 @@ Every scenario runs 3 times per setup. A scenario counts as **reliably resolved*
 | Setup | Scenarios resolved in all 3 runs | Cost per reliably resolved scenario |
 |---|---:|---:|
 | **Mantle (reasoning: none)** | **28/31** (90%) | **$0.102** |
-| LangGraph (reasoning: none) | 19/31 (61%) | $0.149 |
+| LangGraph (reasoning: none) | 22/31 (71%) | $0.132 |
 | LangGraph (reasoning: high) | 21/31 (68%) | $0.323 |
 
-> **Main takeaway:** Mantle resolves more scenarios, and resolves them more consistently from run to run, at about the same cost per conversation as LangGraph without reasoning ($0.092 vs $0.091). LangGraph fails more of its conversations, so each scenario it resolves reliably costs more: $0.149 against $0.102 for Mantle. Turning reasoning up to high helps LangGraph a little and more than doubles its cost.
+> **Main takeaway:** Mantle resolves more scenarios, and resolves them more consistently from run to run, at about the same cost per conversation as LangGraph without reasoning ($0.092 vs $0.093). LangGraph fails more of its conversations, so each scenario it resolves reliably costs more: $0.132 against $0.102 for Mantle. Turning LangGraph's reasoning up to high does not make it more reliable here, and more than doubles its cost.
 
 **Cost** (the agent's own LLM spend, `gpt-5.2`)
 
 | | Mantle (reasoning: none) | LangGraph (reasoning: none) | LangGraph (reasoning: high) |
 |---|---:|---:|---:|
-| **Cost per reliably resolved scenario** | **$0.102** | $0.149 | $0.323 |
-| Cost per resolved conversation | **$0.095** | $0.118 | $0.271 |
-| Cost per conversation | $0.092 | $0.091 | $0.219 |
+| **Cost per reliably resolved scenario** | **$0.102** | $0.132 | $0.323 |
+| Cost per resolved conversation | **$0.095** | $0.114 | $0.271 |
+| Cost per conversation | $0.092 | $0.093 | $0.219 |
 
 **How the cost rows are computed**
 
@@ -28,9 +28,9 @@ Each setup ran 31 scenarios 3 times: 93 conversations. Total cost is the agent's
 
 | | Mantle (reasoning: none) | LangGraph (reasoning: none) | LangGraph (reasoning: high) |
 |---|---:|---:|---:|
-| Total cost, 93 conversations | $8.59 | $8.50 | $20.34 |
-| Conversations resolved | 90 | 72 | 75 |
-| Scenarios resolved in all 3 runs | 28 | 19 | 21 |
+| Total cost, 93 conversations | $8.59 | $8.69 | $20.34 |
+| Conversations resolved | 90 | 76 | 75 |
+| Scenarios resolved in all 3 runs | 28 | 22 | 21 |
 
 - **Cost per conversation** = total cost ÷ 93 conversations. Mantle: $8.59 ÷ 93 = $0.092.
 - **Cost per resolved conversation** = total cost ÷ conversations resolved. Mantle: $8.59 ÷ 90 = $0.095.

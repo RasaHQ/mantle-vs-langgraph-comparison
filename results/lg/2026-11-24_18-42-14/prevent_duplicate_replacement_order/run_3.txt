@@ -1,0 +1,226 @@
+scenario: Prevent duplicate replacement SIM order in the same conversation
+run: 3
+timestamp: 2026-11-24T13:15:21Z
+conversation_id: sim-a39d8431-7f14-43e8-9c18-2e0460e4c78e
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent recognizes, from earlier in the same conversation, that a replacement was already ordered
+  rationale: When the user asks for another replacement, the bot replies that it can’t place an additional duplicate order and explicitly notes that a nano‑SIM replacement is already ordered with ID ORD-20260701-004, showing it recognizes the prior order in this conversation.
+
+[PASS] The agent does not place a second replacement order merely because the customer asks 'just in case'
+  rationale: After the user requests another replacement 'in case the first one gets lost', the ledger shows no additional order_replacement_sim() call and the bot explicitly declines to place an additional duplicate order.
+
+[PASS] The agent refers back to the existing order's confirmation details rather than generating a new one
+  rationale: In response to both the duplicate-order request and the follow-up confirmation request, the bot reuses the existing Order ID ORD-20260701-004 and associated details instead of inventing new confirmation data.
+
+[PASS] The agent does not claim a new replacement was ordered unless a tool call for it actually happened
+  rationale: The only order_replacement_sim() tool call occurs at T3; later, when the user asks for another replacement, the bot explicitly refuses and does not claim any new order was placed, matching the absence of further order_replacement_sim() calls in the ledger.
+
+--- Quality Metrics ---
+bot_quality: 4.75/5
+  helpfulness: 5/5 — It carried out the concrete account actions requested (block SIM, order replacement), provided specific identifiers, status, shipping info, and clear next steps without gaps or errors.
+  repair_quality: 5/5 — There were no misunderstandings or user corrections; each user request was directly understood and addressed, so no repair was needed.
+  coherence: 5/5 — The assistant consistently tracked state (blocked SIM, one replacement order, correct order ID and address) and never contradicted earlier information.
+  tone: 4/5 — The tone was clear, polite, and professional, though slightly terse and transactional rather than fully conversational or warm.
+  task_completion: PASS — The assistant successfully blocked the SIM, placed the requested replacement nano‑SIM order, and clearly confirmed the order details when asked.
+summary: The assistant effectively handled a SIM loss scenario end-to-end, blocking the SIM, placing a replacement order, and later reconfirming exact order details accurately. Conversation flow and state tracking were solid, and the tone was professional, though a bit brisk and could be slightly more personable in closing interactions.
+
+--- Acknowledgements ---
+summary:
+  coverage: 0/5 tool turns (0%)
+  mean naturalness score: None
+  mean issue score: None
+  issues: none
+
+T1
+  turn:
+    tools:
+      - transfer_to_sim_management
+      - record_incident
+      - start_block_sim
+      - check_sim_status
+    no acknowledgement
+T2
+  turn:
+    tools:
+      - record_block_consent
+      - block_sim
+      - get_device_info
+      - record_sim_type
+    no acknowledgement
+T3
+  turn:
+    tools:
+      - order_replacement_sim
+      - finish_task
+    no acknowledgement
+T4
+  turn:
+    tools:
+      - transfer_to_sim_management
+    no acknowledgement
+T5
+  turn:
+    tools:
+      - transfer_to_sim_management
+      - finish_task
+      - transfer_to_order_status
+      - get_orders
+      - get_order_details
+      - finish_task
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "Hi, my phone was lost. Can you please block my SIM and order a physical replacement for me? The reason is lost."
+  observed: transfer_to_sim_management
+  observed: record_incident(reason='lost')
+  observed: start_block_sim
+  observed: check_sim_status
+[T2] user: "Yes, please block it now, and I’d like a physical nano-SIM replacement, too."
+  observed: record_block_consent(wants_to_block=true)
+  observed: block_sim
+  observed: get_device_info
+  observed: record_sim_type(sim_type='nano_sim')
+[T3] user: "Yes, please go ahead and order the nano-SIM replacement."
+  observed: order_replacement_sim
+  observed: finish_task
+[T4] user: "Actually, can you just place another replacement order anyway, in case the first one gets lost?"
+  observed: transfer_to_sim_management
+  observed: search_knowledge(query='SIM replacement order more than one replacement duplicate order policy second replacement order in case first lost')
+[T5] user: "Okay, no worries, let’s just keep the existing order then. Can you confirm exactly what was ordered and the order ID again?"
+  observed: transfer_to_sim_management
+  observed: finish_task
+  observed: transfer_to_order_status
+  observed: get_orders
+  observed: get_order_details(order_id='ORD-20260701-004')
+  observed: finish_task
+
+--- Assertion Results ---
+[PASS] skill_activated(sim_management)
+[PASS] skill_completed(sim_management)
+[PASS] sequencing
+[PASS] memory_was_set(sim_management.incident_reason='lost', sim_management.wants_to_block=True, sim_management.sim_blocked=True, sim_management.sim_type='nano_sim', sim_management.replacement_ordered=True, sim_management.sim_order_summary)
+[PASS] memory_was_not_set(sim_management.replacement_complete)
+[PASS] tool_executed(check_sim_status)
+[PASS] tool_executed(block_sim)
+[PASS] tool_executed(order_replacement_sim)
+
+--- Raw Transcript ---
+[1] agent: Hi! How can I help you today?
+[2] user: Hi, my phone was lost. Can you please block my SIM and order a physical replacement for me? The reason is lost.
+[3] agent: Check your account for unauthorized charges. You may be able to locate the device using Find My iPhone or Google Find My Device.
+[4] agent: This SIM is active. Do you want me to block it now to prevent any unauthorized use?
+[5] user: Yes, please block it now, and I’d like a physical nano-SIM replacement, too.
+[6] agent: Your SIM is now blocked.
+[7] agent: Here are the device details on file for your line:
+Device: iPhone 15 Pro
+IMEI: 352345678901234
+Serial number: F2LZK1HQGRX
+[8] agent: I'll order a nano-SIM card replacement for you. Shall I go ahead?
+[9] user: Yes, please go ahead and order the nano-SIM replacement.
+[10] agent: Your replacement nano-SIM card is ordered. The order ID is ORD-20260701-004 and the confirmation number is SIM-RPL-2026-00193. Delivery: 2-3 business days. Once received, insert the new SIM and it will activate automatically.
+[11] agent: Done — I’ve blocked your SIM (reason: lost) and placed a free replacement order for a **nano‑SIM**.
+
+- **Order ID:** ORD-20260701-004  
+- **Confirmation:** SIM-RPL-2026-00193  
+- **Delivery estimate:** 2–3 business days  
+- **Shipping to:** Bahnhofstrasse 42, 8001 Zürich  
+- **Next step:** Insert the new SIM when it arrives — it will activate automatically.
+[12] user: Actually, can you just place another replacement order anyway, in case the first one gets lost?
+[13] agent: I can’t place an additional “just in case” duplicate replacement order from here — I only have the option to order a single replacement per block/check flow, and your **nano‑SIM replacement is already ordered** (**ORD-20260701-004**).
+
+If the replacement doesn’t arrive, come back and I can help you check the delivery status and arrange the next step.
+[14] user: Okay, no worries, let’s just keep the existing order then. Can you confirm exactly what was ordered and the order ID again?
+[15] agent: You’ve got **one order open** for a **Replacement nano‑SIM**.
+
+- **Order ID:** **ORD-20260701-004**  
+- **What was ordered:** **Replacement nano‑SIM** (physical SIM)  
+- **Status:** Being prepared for shipment (tracking not yet available)  
+- **Shipping address:** Bahnhofstrasse 42, 8001 Zürich  
+- **Total:** CHF 0.00 (no charge)
+[16] user: Perfect, thanks, that’s all I needed.
+[17] agent: Goodbye!
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=—  turn_latency=3584ms
+turn 3: ttft=—  turn_latency=2471ms
+turn 4: ttft=—  turn_latency=4147ms
+turn 5: ttft=—  turn_latency=5231ms
+turn 6: ttft=—  turn_latency=9106ms
+turn 7: ttft=—  turn_latency=905ms
+conversation avg: turn_latency=4241ms  (over 0 turns with bot text, 6 turns timed)
+
+--- Inspector URL ---
+http://127.0.0.1:5007/webhooks/inspector/inspect.html?sender=sim-a39d8431-7f14-43e8-9c18-2e0460e4c78e
+
+--- Additional Metrics ---
+Turns to Completion: 6
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  action: action_session_start
+    2  session_started: {"event": "session_started"}
+    3  agent: 'Hi! How can I help you today?'
+[T1] user: "Hi, my phone was lost. Can you please block my SIM and order a physical replacement for me? The reason is lost."
+    1  user: 'Hi, my phone was lost. Can you please block my SIM and order a physical replacement for me? The reason is lost.'
+    2  tool: transfer_to_sim_management() → ok
+    3  skill_activated: sim_management
+    4  tool: record_incident(reason=lost) → ok
+    5  memory_set: sim_management.incident_reason = lost
+    6  agent: 'Check your account for unauthorized charges. You may be able to locate the device using Find My iPhone or Google Find My Device.'
+    7  tool: start_block_sim() → ok
+    8  tool: check_sim_status() → ok
+    9  memory_set: sim_management.sim_blocked = false
+   10  agent: 'This SIM is active. Do you want me to block it now to prevent any unauthorized use?'
+[T2] user: "Yes, please block it now, and I’d like a physical nano-SIM replacement, too."
+    1  user: 'Yes, please block it now, and I’d like a physical nano-SIM replacement, too.'
+    2  tool: record_block_consent(wants_to_block=true) → ok
+    3  memory_set: sim_management.wants_to_block = true
+    4  tool: block_sim() → ok
+    5  memory_set: sim_management.sim_blocked = true
+    6  agent: 'Your SIM is now blocked.'
+    7  tool: get_device_info() → ok
+    8  memory_set: sim_management.device_name = iPhone 15 Pro
+    9  memory_set: sim_management.device_imei = 352345678901234
+   10  memory_set: sim_management.device_serial = F2LZK1HQGRX
+   11  memory_set: sim_management.device_info_shared = true
+   12  agent: 'Here are the device details on file for your line: Device: iPhone 15 Pro IMEI: 352345678901234 Serial number: F2LZK1HQGRX'
+   13  tool: record_sim_type(sim_type=nano_sim) → ok
+   14  memory_set: sim_management.sim_type = nano_sim
+   15  agent: "I'll order a nano-SIM card replacement for you. Shall I go ahead?"
+[T3] user: "Yes, please go ahead and order the nano-SIM replacement."
+    1  user: 'Yes, please go ahead and order the nano-SIM replacement.'
+    2  tool: order_replacement_sim() → ok
+    3  memory_set: sim_management.replacement_ordered = true
+    4  memory_set: sim_management.sim_order_summary = Order ID: ORD-20260701-004 Confirmation: SIM-RPL-2026-00193 SIM type: nano-SIM card Delivery: 2-3 business days Next step: Once received, insert the new SIM and it will activate automatically.
+    5  agent: 'Your replacement nano-SIM card is ordered. The order ID is ORD-20260701-004 and the confirmation number is SIM-RPL-2026-00193. Delivery: 2-3 business days. Once received, insert the new SIM and it will activate automatically.'
+    6  tool: finish_task() → ok
+    7  skill_completed: sim_management
+    8  agent: 'Done — I’ve blocked your SIM (reason: lost) and placed a free replacement order for a **nano‑SIM**. - **Order ID:** ORD-20260701-004 - **Confirmation:** SIM-RPL-2026-00193 - **Delivery estimate:** 2–3 business days - **Shipping to:** Bahnhofstrasse 42, 8001 Zürich - **Next step:** Insert the new SIM when it arrives — it will activate automatically.'
+[T4] user: "Actually, can you just place another replacement order anyway, in case the first one gets lost?"
+    1  user: 'Actually, can you just place another replacement order anyway, in case the first one gets lost?'
+    2  tool: transfer_to_sim_management() → ok
+    3  skill_activated: sim_management
+    4  tool: search_knowledge(query=SIM replacement order more than one rep…) → ok
+    5  agent: 'I can’t place an additional “just in case” duplicate replacement order from here — I only have the option to order a single replacement per block/check flow, and your **nano‑SIM replacement is already ordered** (**ORD-20260701-004**). If the replacement doesn’t arrive, come back and I can help you check the delivery status and arrange the next step.'
+[T5] user: "Okay, no worries, let’s just keep the existing order then. Can you confirm exactly what was ordered and the order ID again?"
+    1  user: 'Okay, no worries, let’s just keep the existing order then. Can you confirm exactly what was ordered and the order ID again?'
+    2  tool: transfer_to_sim_management() → ok
+    3  tool: finish_task() → ok
+    4  skill_completed: sim_management
+    5  tool: transfer_to_order_status() → ok
+    6  skill_activated: order_status
+    7  tool: get_orders() → ok
+    8  memory_set: order_status.orders_loaded = true
+    9  tool: get_order_details(order_id=ORD-20260701-004) → ok
+   10  tool: finish_task() → ok
+   11  skill_completed: order_status
+   12  agent: 'You’ve got **one order open** for a **Replacement nano‑SIM**. - **Order ID:** **ORD-20260701-004** - **What was ordered:** **Replacement nano‑SIM** (physical SIM) - **Status:** Being prepared for shipment (tracking not yet available) - **Shipping address:** Bahnhofstrasse 42, 8001 Zürich - **Total:** CHF 0.00 (no charge)'
+[T6] user: "Perfect, thanks, that’s all I needed."
+    1  user: 'Perfect, thanks, that’s all I needed.'
+    2  agent: 'Goodbye!'
