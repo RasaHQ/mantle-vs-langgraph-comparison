@@ -55,11 +55,17 @@ tool_constraints:
 - check_rush_shipping_eligibility:
     requires: >
       session.card_replace.card_eligible
-      and session.card_replace.wallet_eligible != None
+      and (session.card_replace.wallet_eligible == False
+      or session.card_replace.wallet_already_provisioned == True
+      or session.card_replace.wallet_provisioned == True
+      or session.card_replace.wallet_declined == True)
 - process_card_replacement:
     requires: >
       session.card_replace.card_eligible
-      and session.card_replace.wallet_eligible != None
+      and (session.card_replace.wallet_eligible == False
+      or session.card_replace.wallet_already_provisioned == True
+      or session.card_replace.wallet_provisioned == True
+      or session.card_replace.wallet_declined == True)
       and session.card_replace.shipping_type
       and session.card_replace.rush_eligible != None
       and not session.card_replace.replacement_ordered
@@ -114,9 +120,8 @@ if: session.card_disambiguate.selected_card_id == None
 if: session.card_replace.selected_card_id != None
 2. If the customer corrects which card to replace:
    1. Keep the already-collected replacement_reason.
-   2. Hand off to @skill.card_disambiguate if they have not named a new id, then
-      call @tool.adopt_selected_card — or record the new id with
-      @tool.set_memory(selected_card_id=...) on this skill.
+   2. Hand off to @skill.card_disambiguate (it uses the card they named
+      without asking again), then call @tool.adopt_selected_card.
    3. Call @tool.check_card_eligibility for the new card.
    4. If not eligible, inform the customer and end.
    5. Finish replacement for the new card — re-do every step that depends on
@@ -228,7 +233,9 @@ that request then — do not make them wait.
    check eligibility and provision.
 4. If they accept, call @tool.provision_digital_wallet. If they already
    named Apple Pay or Google Pay, use that. Only ask which if they said
-   yes without naming one.
+   yes without naming one. If they decline, set wallet_declined to true.
+   Shipping is not available until the wallet is added, declined, or
+   skipped.
 5. Proceed to shipping.
 
 ## Shipping

@@ -42,6 +42,7 @@ _CARD_DEPENDENT_FIELDS = (
     "wallet_consent",
     "wallet_provider",
     "wallet_provisioned",
+    "wallet_declined",
     "shipping_type",
     "rush_eligible",
     "replacement_ordered",
@@ -83,51 +84,6 @@ async def adopt_selected_card(context: ToolContext = None) -> ToolResult:
                 "ok": False,
                 "error": "no_selected_card",
                 "hint": "Run @skill.card_disambiguate first, then call this tool.",
-            }
-        )
-    card_changed = _commit_selected_card(context, str(selected_id))
-    card = _data.CARDS[selected_id]
-    response: dict = {
-        "ok": True,
-        "selected_card_id": selected_id,
-        "selected_card_label": card["label"],
-    }
-    if card_changed:
-        response["card_changed"] = True
-        response["hint"] = (
-            "Selected card changed. Re-run card eligibility and fraud review "
-            "(load_recent_transactions) for the new card. Do not reuse the "
-            "old card's charges, wallet, or shipping. A lock already "
-            "completed on the previous card stays completed, and you cannot "
-            "unlock it."
-        )
-    return ToolResult(llm_response=response)
-
-
-@tool(
-    description="Post-write hook: reset card-tied state when this skill's card id changes."
-)
-async def run_after_setting_selected_card_id(
-    context: ToolContext = None,
-) -> ToolResult:
-    selected_id = context.memory.get("selected_card_id")
-    if not selected_id or selected_id not in _data.CARDS:
-        context.memory.set("selected_card_id", None)
-        return ToolResult(
-            llm_response={
-                "ok": False,
-                "error": "invalid_card_id",
-                "hint": "Use a card id from the card list (e.g. VISA_001).",
-            }
-        )
-    # adopt_selected_card already committed this id; skip a second reset.
-    if context.memory.get("committed_card_id") == selected_id:
-        card = _data.CARDS[selected_id]
-        return ToolResult(
-            llm_response={
-                "ok": True,
-                "selected_card_id": selected_id,
-                "selected_card_label": card["label"],
             }
         )
     card_changed = _commit_selected_card(context, str(selected_id))
