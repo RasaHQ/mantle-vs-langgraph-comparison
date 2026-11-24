@@ -76,20 +76,23 @@ Both agents run the identical files.
 ./setup.sh          # creates .venv-rasa and .venv-langgraph from requirements/*.lock.txt, and .env
 # put OPENAI_API_KEY and RASA_LICENSE in .env
 ./run.sh --smoke    # optional: one short conversation per setup, results in logs/smoke
-./run.sh            # full benchmark, then writes results/README.md
+./run.sh --results-dir my-results   # full benchmark into my-results/, then writes my-results/README.md
 ```
 
-`./run.sh` runs one set per setup: all 31 scenarios 3 times, so every scenario gets 3 conversations per setup. All setups run 15 conversations at a time. With `--sets N`, sets are interleaved (set 1 of every setup, then set 2, and so on), so changes in the OpenAI API over the run affect all setups alike. The table is rebuilt from everything in `results/` at the end, and `python harness/compare.py` rebuilds it on its own. Other forms:
+`./run.sh` runs all 31 scenarios 3 times for each setup, 15 conversations at a time.
+
+The tables are built from every run under the results folder. `results/` already holds the published runs, so a plain `./run.sh` adds yours next to them and the tables would count 6 runs per scenario. Use `--results-dir` to keep your runs separate. `.venv-rasa/bin/python harness/compare.py my-results` rebuilds the tables on their own.
+
+Other forms:
 
 ```bash
-./run.sh lg-high                 # one setup
-./run.sh --sets 3                # 9 runs per scenario
-.venv-rasa/bin/python harness/run.py --help
+./run.sh lg-high --results-dir my-results    # one setup
+.venv-rasa/bin/python harness/run.py --help  # all options
 ```
 
-A full run takes about 35 minutes and costs about $50 in OpenAI usage. Per set, counting the agent, the simulated customer and the judge:
+A full run takes about 35 minutes and costs about $50 in OpenAI usage. Per setup (3 runs of every scenario), counting the agent, the simulated customer and the judge:
 
-| Setup | Time per set | Cost per set |
+| Setup | Time | Cost |
 |---|---:|---:|
 | `mantle` | ~8 min | ~$15 |
 | `lg` | ~7 min | ~$12 |
@@ -128,7 +131,7 @@ A **run** is one pass over the suite: one conversation for each of the 31 scenar
 - **Cost per reliably solved scenario**, the headline, is what one run over all scenarios costs, divided by the scenarios solved reliably. A scenario that passes only sometimes adds cost but does not count as solved.
 - **Cost per resolved conversation** is the total cost of all conversations, resolved or not, divided by the conversations resolved.
 
-Single runs vary: the same agent can pass a scenario in one run and fail it in the next, which is why the headline counts only scenarios solved every time. Use `--sets 3` for 9 runs per scenario.
+Single runs vary: the same agent can pass a scenario in one run and fail it in the next, which is why the headline counts only scenarios solved every time. The published numbers use 3 runs per scenario. `--sets` adds more runs, but "solved reliably" then means passing all of them, so those numbers are not comparable with ours.
 
 Cost also depends on OpenAI's prompt caching, which varies with time of day and load. In our testing the share of Mantle's prompt served from cache ranged from 13% to 38% on identical code, which moved its cost per conversation by up to about 25%. `results/README.md` reports the cache share next to the cost.
 

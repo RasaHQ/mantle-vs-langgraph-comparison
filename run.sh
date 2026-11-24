@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Runs the benchmark, then writes the comparison table to results/README.md.
 #
-#   ./run.sh                         all three setups, one set each (3 runs per scenario)
-#   ./run.sh lg-high                 one setup
-#   ./run.sh mantle lg --sets 3      more sets (9 runs per scenario)
-#   ./run.sh --smoke                 one short conversation per setup, results in logs/smoke
+#   ./run.sh --results-dir my-results          all three setups, 3 runs per scenario
+#   ./run.sh lg-high --results-dir my-results  one setup
+#   ./run.sh --smoke                           one short conversation per setup, results in logs/smoke
+#
+# Without --results-dir, runs go to results/ next to the published ones, and the
+# tables are built from all of them.
 set -euo pipefail
 cd "$(dirname "$0")"
 
