@@ -24,9 +24,6 @@ Definitions:
   not count as solved.
 - pass^k: the scenarios that passed in at least k of their runs. With 3 runs,
   pass^1 counts scenarios solved at least once, pass^3 those solved every time.
-- Head-to-head: in each run, Mantle's cost per conversation divided by the other
-  setup's, on the same scenarios: all of them, or only those both passed in that
-  run. Runs are paired in the order they ran (first with first).
 - Timeouts: "Conversations ended by a timeout" have a timeout as their error
   (the agent never answered a turn after 3 attempts, or the conversation hit its
   time limit). "Turns resent after a timeout" counts user messages the harness
@@ -51,7 +48,6 @@ SETUPS = {
     "lg": "LangGraph",
     "lg-high": "LangGraph, reasoning high",
 }
-BASELINE = "mantle"
 
 
 @dataclass
@@ -109,28 +105,9 @@ def load_setup(setup_dir: Path) -> Optional[SetupResults]:
 # --- metrics for one run -----------------------------------------------------
 
 
-def mean_cost(run: Run, names: list[str], passing_only: bool) -> Optional[float]:
-    costs = [
-        run[n].cost
-        for n in names
-        if n in run and run[n].cost is not None and (run[n].passed or not passing_only)
-    ]
-    return statistics.fmean(costs) if costs else None
-
-
 def cache_share(run: Run, names: list[str]) -> Optional[float]:
     prompt = sum(run[n].prompt_tokens for n in names if n in run)
     return sum(run[n].cached_tokens for n in names if n in run) / prompt if prompt else None
-
-
-def cost_ratio(a: Run, b: Run, names: list[str], passing_only: bool) -> Optional[float]:
-    if passing_only:
-        names = [n for n in names if n in a and n in b and a[n].passed and b[n].passed]
-    ca, cb = mean_cost(a, names, passing_only), mean_cost(b, names, passing_only)
-    return ca / cb if ca and cb else None
-
-
-# --- formatting --------------------------------------------------------------
 
 
 def mean_sd(values: list[Optional[float]]) -> tuple[Optional[float], Optional[float]]:
@@ -149,13 +126,6 @@ def show(values: list[Optional[float]], fmt) -> str:
 
 def money(v: float) -> str:
     return f"${v:.4f}"
-
-
-def ratio(v: float) -> str:
-    return f"{v:.2f}×"
-
-
-# --- tables ------------------------------------------------------------------
 
 
 def resolved_and_cost(results: SetupResults, names: list[str]) -> tuple[int, int, float]:
@@ -267,24 +237,6 @@ def health_table(loaded: dict[str, SetupResults], shared: list[str]) -> list[str
     return _table(loaded, rows)
 
 
-def head_to_head(loaded: dict[str, SetupResults], shared: list[str]) -> list[str]:
-    if BASELINE not in loaded:
-        return []
-    base = loaded[BASELINE]
-    lines = [
-        f"| {SETUPS[BASELINE]} cost ÷ other setup's cost | All {len(shared)} scenarios | "
-        "Scenarios both passed in that run |",
-        "|---|---:|---:|",
-    ]
-    for key, other in loaded.items():
-        if key == BASELINE:
-            continue
-        pairs = list(zip(base.runs, other.runs))
-        cells = [show([cost_ratio(a, b, shared, p) for a, b in pairs], ratio) for p in (False, True)]
-        lines.append(f"| vs {SETUPS[key]} ({len(pairs)} paired runs) | {cells[0]} | {cells[1]} |")
-    return lines
-
-
 def scenario_table(loaded: dict[str, SetupResults], shared: list[str]) -> list[str]:
     keys = list(loaded)
     lines = [
@@ -340,14 +292,6 @@ def main() -> None:
         "agent uses the same tokens.",
     ]
     out += ["", "## Run health", ""] + health_table(loaded, shared)
-    h2h = head_to_head(loaded, shared)
-    if h2h:
-        out += ["", "## Cost head-to-head", ""] + h2h
-        out += [
-            "",
-            "Below 1 means Mantle is cheaper. The second column only counts scenarios both "
-            "setups passed in that run, so both are measured on the same conversations.",
-        ]
     out += ["", "## Per scenario", ""] + scenario_table(loaded, shared)
     out += ["", "## Definitions", "", __doc__.split("Definitions:", 1)[1].strip(), ""]
 

@@ -48,15 +48,6 @@ Cost is the agent's own LLM spend; the simulated customer and the judge are not 
 | Agent LLM call timeouts | 0 | 0 | 0 |
 | Harness errors | 0 | 0 | 0 |
 
-## Cost head-to-head
-
-| Mantle cost ÷ other setup's cost | All 31 scenarios | Scenarios both passed in that run |
-|---|---:|---:|
-| vs LangGraph (3 paired runs) | 1.23× ± 0.08× | 1.29× ± 0.05× |
-| vs LangGraph, reasoning high (3 paired runs) | 0.51× ± 0.02× | 0.54× ± 0.01× |
-
-Below 1 means Mantle is cheaper. The second column only counts scenarios both setups passed in that run, so both are measured on the same conversations.
-
 ## Per scenario
 
 | Scenario | Mantle, runs passed | LangGraph, runs passed | LangGraph, reasoning high, runs passed |
@@ -111,9 +102,6 @@ Below 1 means Mantle is cheaper. The second column only counts scenarios both se
   not count as solved.
 - pass^k: the scenarios that passed in at least k of their runs. With 3 runs,
   pass^1 counts scenarios solved at least once, pass^3 those solved every time.
-- Head-to-head: in each run, Mantle's cost per conversation divided by the other
-  setup's, on the same scenarios: all of them, or only those both passed in that
-  run. Runs are paired in the order they ran (first with first).
 - Timeouts: "Conversations ended by a timeout" have a timeout as their error
   (the agent never answered a turn after 3 attempts, or the conversation hit its
   time limit). "Turns resent after a timeout" counts user messages the harness
