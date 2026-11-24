@@ -12,7 +12,12 @@ Every scenario runs 3 times per setup. A scenario counts as **reliably resolved*
 | LangGraph (reasoning: none) | 22/31 (71%) | $0.132 |
 | LangGraph (reasoning: high) | 22/31 (71%) | $0.294 |
 
-> **Main takeaway:** Mantle resolves more scenarios, and resolves them more consistently from run to run, at about the same cost per conversation as LangGraph without reasoning ($0.092 vs $0.093). LangGraph fails more of its conversations, so each scenario it resolves reliably costs more: $0.132 against $0.102 for Mantle. Turning LangGraph's reasoning up to high resolves the same 22 scenarios reliably and more than doubles its cost.
+> **Main takeaway**
+>
+> - Mantle resolves 28 of 31 scenarios in all 3 runs. LangGraph resolves 22, with reasoning set to none or high.
+> - A conversation costs about the same with Mantle and with LangGraph at reasoning none: $0.092 against $0.093.
+> - Mantle fails fewer conversations, so each reliably resolved scenario costs less: $0.102 against $0.132.
+> - Turning LangGraph's reasoning up to high doesn't make it more reliable, and more than doubles the cost to $0.294 per reliably resolved scenario.
 
 **Cost** (the agent's own LLM spend, `gpt-5.2`)
 
