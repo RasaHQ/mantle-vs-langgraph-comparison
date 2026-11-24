@@ -107,7 +107,7 @@ On macOS, `run.sh` keeps the machine awake with `caffeinate` while it runs. Slee
 1. Starts the MCP tool server.
 2. Starts the agent. For Mantle that means `rasa train` and `rasa run`. For LangGraph it starts `langgraph_native.server` in its own environment.
 3. Calls rasa-pro's evaluation harness (`rasa.builder.copilot.mcp_server.tools.evaluate_agent.run_scenarios`) with the scenarios and `harness/conftest.yml`. The simulated customer and the judge are `gpt-5.1` with no reasoning and no caching.
-4. Copies the results to `results/<setup>/<timestamp>/`.
+4. Copies the results to `<results folder>/<setup>/<timestamp>/` (`results/` unless you pass `--results-dir`).
 
 Server logs go to `logs/`, which is not committed.
 
@@ -128,8 +128,10 @@ A **run** is one pass over the suite: one conversation for each of the 31 scenar
 - **pass^k** counts the scenarios resolved in at least k of their runs. pass^1 shows what a setup can do; pass^3 shows what it does every time.
 - A scenario is **solved reliably** when it is resolved in every run.
 - **Cost** is the agent's own LLM spend per conversation (`engine_tokens.cost` in each conversation's JSON). It excludes the simulated customer and the judge.
-- **Cost per reliably solved scenario**, the headline, is what one run over all scenarios costs, divided by the scenarios solved reliably. A scenario that passes only sometimes adds cost but does not count as solved.
-- **Cost per resolved conversation** is the total cost of all conversations, resolved or not, divided by the conversations resolved.
+- **Total cost** is the cost of all of a setup's conversations, resolved or not.
+- **Cost per reliably solved scenario**, the headline, = (total cost ÷ runs) ÷ scenarios solved reliably. Total cost ÷ runs is what one run over all scenarios costs. A scenario that passes only sometimes adds cost but does not count as solved.
+- **Cost per resolved conversation** = total cost ÷ conversations resolved.
+- **Cost per conversation** = total cost ÷ number of conversations.
 
 Single runs vary: the same agent can pass a scenario in one run and fail it in the next, which is why the headline counts only scenarios solved every time. The published numbers use 3 runs per scenario. `--sets` adds more runs, but "solved reliably" then means passing all of them, so those numbers are not comparable with ours.
 
