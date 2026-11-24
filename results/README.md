@@ -101,13 +101,14 @@ Below 1 means Mantle is cheaper. The second column only counts scenarios both se
   The simulated user and the judge are not included.
 - Scenario solved reliably: a scenario that passed in every one of its runs
   (pass^3 with 3 runs).
-- Cost per reliably solved scenario (the headline): what one run over all
-  scenarios costs (cost per conversation × number of scenarios), divided by the
-  scenarios solved reliably. A scenario that passes only sometimes adds cost but
-  does not count as solved.
-- Cost per resolved conversation: the total cost of all of a setup's
-  conversations, resolved or not, divided by the number it resolved.
-- Cost per conversation: the mean cost over all of a setup's conversations.
+- Total cost: the agent's cost summed over all of a setup's conversations,
+  resolved or not.
+- Cost per conversation = total cost / number of conversations.
+- Cost per resolved conversation = total cost / conversations resolved.
+- Cost per reliably solved scenario (the headline) = (total cost / runs) /
+  scenarios solved reliably. Total cost / runs is what one run over all
+  scenarios costs. A scenario that passes only sometimes adds cost but does
+  not count as solved.
 - pass^k: the scenarios that passed in at least k of their runs. With 3 runs,
   pass^1 counts scenarios solved at least once, pass^3 those solved every time.
 - Head-to-head: in each run, Mantle's cost per conversation divided by the other

@@ -12,6 +12,8 @@ Every scenario runs 3 times per setup. A scenario counts as **solved reliably** 
 | LangGraph | 19/31 (61%) | $0.149 |
 | LangGraph, reasoning high | 21/31 (68%) | $0.323 |
 
+> **Main takeaway:** Mantle solves more scenarios, and solves them more consistently from run to run. LangGraph costs less per conversation, but fails more of them, so per scenario it solves reliably it costs more. Turning on high reasoning helps LangGraph a little and more than doubles its cost.
+
 **Accuracy**
 
 | | Mantle | LangGraph | LangGraph, reasoning high |
@@ -28,7 +30,19 @@ Every scenario runs 3 times per setup. A scenario counts as **solved reliably** 
 | Cost per resolved conversation | $0.119 | $0.118 | $0.271 |
 | Cost per conversation | $0.112 | $0.091 | $0.219 |
 
-Mantle solves more scenarios, and solves them more consistently from run to run. LangGraph costs less per conversation, but fails more of them, so per scenario it solves reliably it costs more. Turning on high reasoning helps LangGraph a little and more than doubles its cost.
+**How the cost rows are computed**
+
+Each setup ran 31 scenarios 3 times: 93 conversations. Total cost is the agent's LLM spend summed over all 93 conversations, resolved or not.
+
+| | Mantle | LangGraph | LangGraph, reasoning high |
+|---|---:|---:|---:|
+| Total cost, 93 conversations | $10.46 | $8.50 | $20.34 |
+| Conversations resolved | 88 | 72 | 75 |
+| Scenarios solved reliably (passed in all 3 runs) | 27 | 19 | 21 |
+
+- **Cost per conversation** = total cost ÷ 93 conversations. Mantle: $10.46 ÷ 93 = $0.112.
+- **Cost per resolved conversation** = total cost ÷ conversations resolved. Mantle: $10.46 ÷ 88 = $0.119.
+- **Cost per reliably solved scenario** = (total cost ÷ 3 runs) ÷ scenarios solved reliably. Total cost ÷ 3 is what one run over all 31 scenarios costs. Mantle: $10.46 ÷ 3 ÷ 27 = $0.129.
 
 The full tables, the per-scenario breakdown, and the definitions are in [`results/README.md`](results/README.md). Every conversation's transcript and judge verdicts are in [`results/`](results).
 
