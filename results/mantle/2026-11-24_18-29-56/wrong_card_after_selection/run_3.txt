@@ -1,0 +1,660 @@
+scenario: Customer realizes they picked the wrong card after the flow has progressed past card selection
+run: 3
+timestamp: 2026-11-24T13:08:06Z
+conversation_id: sim-c89f1e52-e70e-4dfd-a471-88176b854acb
+overall_result: PASS
+
+--- Conversation Repair ---
+- cancellation
+  step_id: ask_continue
+  skill_id: builtin_completed
+- cancellation
+  step_id: autonomous
+  skill_id: card_replace
+
+--- Quality Criteria Results ---
+[PASS] Before locking either card on the lost-card path, the agent asks whether the customer wants that specific card locked and receives their agreement
+  rationale: For River, the bot asks "Would you like me to lock your River Visa ending 4821" and the user replies "Yes, please go ahead and lock the River Visa"; for Summit, the bot asks "would you like me to lock your Summit Rewards ending 9173" and the user replies "Yes, please lock the Summit card now."
+
+[PASS] The agent offers to add a replacement to a digital wallet (Apple Pay or Google Pay) on the first card (River) before shipping. After the customer switches to Summit, a second wallet offer is not required if that card is already provisioned — continue to Summit lock, transactions, and shipping.
+  rationale: After locking River, the bot asks "Would you like to add the replacement card to a digital wallet for immediate use—Apple Pay or Google Pay?", and after switching to Summit the ledger shows wallet_already_provisioned = true so no second offer is required and none is made.
+
+[PASS] Before placing the replacement order, the agent asks whether the customer wants to place the order and receives their agreement
+  rationale: Before calling process_card_replacement, the bot says "would you like me to go ahead and place the replacement order with rush shipping?" and the user answers "Yes, please place the replacement order with rush shipping for the Summit card."
+
+[PASS] After placing the replacement order, the agent confirms it and audibly shares the order ID from the tool result. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the ID is omitted, materially differs from the returned value, or is not spoken.
+  rationale: After process_card_replacement → ok, the bot confirms "Your replacement card has been ordered: Order ID: RPL-2026-001843" which matches the ledger's replacement_order_summary and thus shares the correct ID.
+
+[PASS] When the customer asks whether River was unlocked, the agent must not claim it unlocked River or that it can unlock cards from this chat.
+  rationale: When asked "did you unlock the River Visa card?", the bot responds "I can’t unlock a card lock from here once it’s been placed" and directs the user to contact support, not claiming it unlocked or can unlock the card in chat.
+
+[PASS] The agent must not ask why the Summit needs replacing again. Asking for Summit-specific transaction, lock, or shipping choices is expected. A second wallet offer is not required when Summit is already provisioned. A memory clear after the order is already complete does not fail this.
+  rationale: At no point does the bot ask why Summit needs replacing again; it only asks about Summit transactions, locking the card, and shipping options.
+
+--- Quality Metrics ---
+bot_quality: 4.75/5
+  helpfulness: 5/5 — It accurately walked through verification, locked both cards as requested, completed the replacement with specific shipping details, and provided an appropriate policy-based path to resolve the mistaken lock.
+  repair_quality: 5/5 — When the user corrected the card identity ('actually the Summit Rewards...'), the assistant cleanly switched context to the Summit card and proceeded correctly with that flow.
+  coherence: 5/5 — The assistant consistently tracked which card was being discussed, maintained the updated intent after the correction, and did not contradict prior actions or re-ask for settled information.
+  tone: 4/5 — The tone is polite, clear, and professional throughout, though slightly formulaic and repetitive in closing questions (e.g., 'Is there anything else I can assist you with?').
+  task_completion: PASS — The assistant successfully locked the correct lost card, ordered a rush replacement with clear confirmation details, and gave clear next steps for unlocking the mistakenly locked card.
+summary: The assistant effectively handled a multi-step, account-specific support task: confirming transactions, locking the correct lost card, arranging rush replacement, and clearly explaining how to address the mistakenly locked card. It adapted smoothly when the user corrected which card was lost and kept its state tracking consistent. The only minor weakness is a somewhat formulaic tone in a few closing turns.
+
+--- Acknowledgements ---
+summary:
+  coverage: 9/10 tool turns (90%)
+  mean naturalness score: 4.89
+  mean issue score: 3.5
+  issues:
+    - soft_contradiction: 1
+    - similar_to_earlier_acknowledgement: 6
+
+T1
+  turn:
+    tools:
+      - activate
+      - check_account_eligibility
+      - activate
+      - get_customer_cards
+    acknowledgement: "I’m sorry to hear that—one moment."
+    follow-ups:
+      - "Which card did you lose? I see two on your account: **River Visa ending 4821** and **Summit Rewards ending 9173**."
+  verdict:
+    naturalness score: 5
+    issue score: 5.0
+    issues: none
+    reasoning: Empathetic and brief ('I’m sorry to hear that—one moment.') and naturally precedes checking tools without overpromising.
+T2
+  turn:
+    tools:
+      - adopt_selected_card
+      - check_card_eligibility
+      - load_recent_transactions
+    acknowledgement: "Got it—one moment."
+    follow-ups:
+      - "Here are the most recent charges on **River Visa ending 4821**:
+
+         - Jun 15 — Amazon.com — $47.22
+         - Jun 14 — Shell Gas Station — $38.50
+         - Jun 13 — Uber Eats — $24.99
+         - Jun 12 — Netflix — $15.99
+         - Jun 10 — Whole Foods — $112.35
+
+         Do all of these look familiar?"
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T1)
+    reasoning: ‘Got it—one moment.’ is a very natural, context-specific acknowledgement before proceeding with card selection tools.
+T3
+  turn:
+    tools:
+      - check_wallet_eligibility_and_status
+      - check_card_eligibility
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+      - check_wallet_eligibility_and_status
+    acknowledgement: "Thanks—give me a moment."
+    follow-ups:
+      - "Would you like me to **lock your River Visa ending 4821** now to prevent any new purchases?"
+  verdict:
+    naturalness score: 5
+    issue score: 5.0
+    issues: none
+    reasoning: ‘Thanks—give me a moment.’ politely acknowledges the confirmation and reasonably signals brief processing.
+T4
+  turn:
+    tools:
+      - lock_card
+      - check_wallet_eligibility_and_status
+    acknowledgement: "Okay—one second."
+    follow-ups:
+      - "Your River Visa ending 4821 is now locked, and any new transactions will be declined."
+      - "Would you like to add the replacement card to a digital wallet for immediate use—**Apple Pay or Google Pay**?"
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T2)
+    reasoning: ‘Okay—one second.’ is casual, natural speech for a brief delay before locking the card.
+T5
+  turn:
+    tools:
+      - activate
+      - get_customer_cards
+      - adopt_selected_card
+      - check_card_eligibility
+      - load_recent_transactions
+    acknowledgement: "Right, let me pull up your cards."
+    follow-ups:
+      - "Yes—we can switch to **Summit Rewards ending 9173** for the replacement.
+
+         Here are the most recent charges on that card:
+         - Jun 16 — Apple Store — $129.00
+         - Jun 14 — Delta Airlines — $342.80
+         - Jun 12 — Starbucks — $6.45
+         - Jun 11 — Spotify — $10.99
+         - Jun 09 — Target — $67.23
+
+         Do all of these look familiar?"
+  verdict:
+    naturalness score: 5
+    issue score: 5.0
+    issues: none
+    reasoning: ‘Right, let me pull up your cards.’ directly references the correction and appropriately introduces a lookup action.
+T7
+  turn:
+    tools:
+      - check_wallet_eligibility_and_status
+      - lock_card
+      - check_rush_shipping_eligibility
+    acknowledgement: "All right, just a moment."
+    follow-ups:
+      - "Your Summit Rewards card ending in 9173 is now locked, and any new transactions will be declined."
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T4)
+    reasoning: ‘All right, just a moment.’ is a natural spoken acknowledgement before taking the lock action.
+T8
+  turn:
+    tools:
+      - check_rush_shipping_eligibility
+    acknowledgement: "Got it—let’s finish the replacement."
+    follow-ups:
+      - "Absolutely — I can send a replacement for **Summit Rewards ending 9173**. Do you want **standard shipping (5–7 business days)** or **rush shipping (1–2 business days, $25)**?"
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T2)
+    reasoning: ‘Got it—let’s finish the replacement.’ naturally confirms the request and sets context before checking rush eligibility.
+T9
+  turn:
+    tools:
+      - process_card_replacement
+    acknowledgement: "Okay—one second."
+    follow-ups:
+      - "Great—would you like me to go ahead and place the replacement order with rush shipping?"
+  verdict:
+    naturalness score: 4
+    issue score: 1.5
+    issues:
+      - soft_contradiction
+      - similar_to_earlier_acknowledgement (T4)
+    reasoning: ‘Okay—one second.’ sounds natural, but it implies proceeding before tools run and the same turn then asks for permission to place the order, creating a mild announcement-then-ask tension.
+T10
+  turn:
+    tools:
+      - process_card_replacement
+      - resolve_tool_confirmation
+    acknowledgement: "Right, one moment."
+    follow-ups:
+      - "All set. Your replacement card has been ordered:
+         Order ID: RPL-2026-001843
+         Card: Summit Rewards ending 9173
+         Shipping: rush
+         Estimated delivery: 1-2 business days"
+      - "Is there anything else I can assist you with?"
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T5)
+    reasoning: ‘Right, one moment.’ is conversational and fits the brief pause before confirming the replacement order via the tool.
+T11
+  turn:
+    tools:
+      - activate
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "Hi, I lost my card and need to get a replacement, please."
+  observed: run_after_setting_replacement_reason
+  observed: check_account_eligibility
+  observed: get_customer_cards
+[T2] user: "It’s the River Visa ending in 4821 that I lost."
+  observed: run_after_setting_selected_card_id
+  observed: adopt_selected_card
+  observed: check_card_eligibility(card_id='VISA_001')
+  observed: load_recent_transactions(card_id='VISA_001')
+[T3] user: "Yes, those all look fine to me."
+  observed: run_after_setting_transactions_look_familiar
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_card_eligibility(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+[T4] user: "Yes, please go ahead and lock the River Visa."
+  observed: lock_card(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+[T5] user: "Hold on, I just realized I picked the wrong card. It’s actually the Summit Rewards ending in 9173 that I lost, not the River. Can we switch and replace the Summit instead?"
+  observed: get_customer_cards
+  observed: run_after_setting_selected_card_id
+  observed: adopt_selected_card
+  observed: check_card_eligibility(card_id='MC_002')
+  observed: load_recent_transactions(card_id='MC_002')
+[T6] user: "Yes, those all look familiar and are mine."
+  observed: run_after_setting_transactions_look_familiar
+[T7] user: "Yes, please lock the Summit card now."
+  observed: check_wallet_eligibility_and_status(card_id='MC_002')
+  observed: lock_card(card_id='MC_002')
+  observed: check_rush_shipping_eligibility(card_id='MC_002')
+[T8] user: "Great, thanks. I do need a replacement card for the Summit—can you send me a new one?"
+  observed: check_rush_shipping_eligibility(card_id='MC_002')
+[T9] user: "I’d like rush shipping, please."
+  observed: process_card_replacement(card_id='MC_002', shipping_type='rush')
+[T10] user: "Yes, please place the replacement order with rush shipping for the Summit card."
+  observed: process_card_replacement(card_id='MC_002', shipping_type='rush')
+[T11] user: "Oh, one more thing — did you unlock the River Visa card? I didn’t actually lose that one."
+  observed: search_knowledge(query='unlock card River Visa unlock locked card process replacement flow lock unlock')
+
+--- Assertion Results ---
+[PASS] skill_activated(card_replace)
+[PASS] skill_activated(card_disambiguate)
+[PASS] skill_completed(card_disambiguate)
+[PASS] skill_completed(card_replace)
+[PASS] sequencing
+[PASS] memory_was_set(card_replace.account_eligible=True, card_replace.replacement_reason='lost', card_disambiguate.selected_card_id='MC_002', card_disambiguate.selected_card_label='Summit Rewards ending 9173', card_replace.card_eligible=True, card_replace.recent_transactions, card_replace.transaction_review_complete=True, card_replace.transactions_look_familiar=True, card_replace.wants_card_locked=True, card_replace.card_locked=True, card_replace.wallet_eligible=True, card_replace.wallet_already_provisioned=True, card_replace.shipping_type='rush', card_replace.replacement_ordered=True)
+[PASS] memory_was_not_set(card_replace.fraud_reported, card_replace.wallet_consent, card_replace.wallet_provider, card_replace.wallet_provisioned, card_replace.has_authorized_users, card_replace.replace_target, card_replace.damaged_applied)
+[PASS] tool_executed(check_account_eligibility)
+[PASS] tool_executed(get_customer_cards)
+[PASS] tool_executed(check_card_eligibility)
+[PASS] tool_executed(load_recent_transactions)
+[PASS] tool_executed(lock_card)
+[PASS] tool_executed(check_wallet_eligibility_and_status)
+[PASS] tool_executed(check_card_eligibility)
+[PASS] tool_executed(load_recent_transactions)
+[PASS] tool_executed(lock_card)
+[PASS] tool_executed(check_wallet_eligibility_and_status)
+[PASS] tool_executed(check_rush_shipping_eligibility)
+[PASS] tool_executed(process_card_replacement)
+
+--- Raw Transcript ---
+[1] agent: Hello! What can I assist you with today?
+[2] user: Hi, I lost my card and need to get a replacement, please.
+[3] agent: I’m sorry to hear that—one moment.
+[4] agent: Which card did you lose? I see two on your account: **River Visa ending 4821** and **Summit Rewards ending 9173**.
+[5] user: It’s the River Visa ending in 4821 that I lost.
+[6] agent: Got it—one moment.
+[7] agent: Here are the most recent charges on **River Visa ending 4821**:
+
+- Jun 15 — Amazon.com — $47.22  
+- Jun 14 — Shell Gas Station — $38.50  
+- Jun 13 — Uber Eats — $24.99  
+- Jun 12 — Netflix — $15.99  
+- Jun 10 — Whole Foods — $112.35  
+
+Do all of these look familiar?
+[8] user: Yes, those all look fine to me.
+[9] agent: Thanks—give me a moment.
+[10] agent: Would you like me to **lock your River Visa ending 4821** now to prevent any new purchases?
+[11] user: Yes, please go ahead and lock the River Visa.
+[12] agent: Okay—one second.
+[13] agent: Your River Visa ending 4821 is now locked, and any new transactions will be declined.
+[14] agent: Would you like to add the replacement card to a digital wallet for immediate use—**Apple Pay or Google Pay**?
+[15] user: Hold on, I just realized I picked the wrong card. It’s actually the Summit Rewards ending in 9173 that I lost, not the River. Can we switch and replace the Summit instead?
+[16] agent: Right, let me pull up your cards.
+[17] agent: Yes—we can switch to **Summit Rewards ending 9173** for the replacement.
+
+Here are the most recent charges on that card:
+- Jun 16 — Apple Store — $129.00  
+- Jun 14 — Delta Airlines — $342.80  
+- Jun 12 — Starbucks — $6.45  
+- Jun 11 — Spotify — $10.99  
+- Jun 09 — Target — $67.23  
+
+Do all of these look familiar?
+[18] user: Yes, those all look familiar and are mine.
+[19] agent: Okay, one moment.
+[20] agent: Thanks—got it. For a lost card, would you like me to **lock your Summit Rewards ending 9173** now to prevent any new purchases?
+[21] user: Yes, please lock the Summit card now.
+[22] agent: All right, just a moment.
+[23] agent: Your Summit Rewards card ending in 9173 is now locked, and any new transactions will be declined.
+[24] user: Great, thanks. I do need a replacement card for the Summit—can you send me a new one?
+[25] agent: Got it—let’s finish the replacement.
+[26] agent: Absolutely — I can send a replacement for **Summit Rewards ending 9173**. Do you want **standard shipping (5–7 business days)** or **rush shipping (1–2 business days, $25)**?
+[27] user: I’d like rush shipping, please.
+[28] agent: Okay—one second.
+[29] agent: Great—would you like me to go ahead and place the replacement order with rush shipping?
+[30] user: Yes, please place the replacement order with rush shipping for the Summit card.
+[31] agent: Right, one moment.
+[32] agent: All set. Your replacement card has been ordered:
+Order ID: RPL-2026-001843
+Card: Summit Rewards ending 9173
+Shipping: rush
+Estimated delivery: 1-2 business days
+
+[33] agent: Is there anything else I can assist you with?
+[34] user: Oh, one more thing — did you unlock the River Visa card? I didn’t actually lose that one.
+[35] agent: I can’t unlock a card lock from here once it’s been placed. Per policy, the next step is for you to **contact our fraud/support team** so they can review the lock on your **River Visa** and help restore access if appropriate.
+[36] agent: We were partway through the card replacement process—would you like to pick up where we left off, or should I stop here?
+[37] user: Got it, I’ll contact support about unlocking the River card then. That’s all I needed, thanks.
+[38] agent: Is there anything else I can assist you with?
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=1031ms  turn_latency=6126ms
+turn 3: ttft=1062ms  turn_latency=8485ms
+turn 4: ttft=1158ms  turn_latency=8245ms
+turn 5: ttft=1106ms  turn_latency=8508ms
+turn 6: ttft=1097ms  turn_latency=11755ms
+turn 7: ttft=1141ms  turn_latency=3177ms
+turn 8: ttft=1171ms  turn_latency=4837ms
+turn 9: ttft=1311ms  turn_latency=3621ms
+turn 10: ttft=1193ms  turn_latency=4164ms
+turn 11: ttft=2032ms  turn_latency=4479ms
+turn 12: ttft=4745ms  turn_latency=7251ms
+turn 13: ttft=2191ms  turn_latency=2261ms
+conversation avg: ttft=1603ms  turn_latency=6076ms  (over 12 turns with bot text)
+
+--- Inspector URL ---
+http://localhost:5005/webhooks/inspector/inspect.html?sender=sim-c89f1e52-e70e-4dfd-a471-88176b854acb
+
+--- Additional Metrics ---
+Turns to Completion: 12
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  session_started: {"event": "session_started", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "engine_version": "mantle"}
+    2  memory_set: system.session_started_metadata = {"is_simulation": true}
+    3  skill_activated: builtin_session_start
+    4  ordered_block_entered: builtin_session_start/main
+    5  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"OSXPYZ57\", \"skill_id\": \"builtin_session_start\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"YJYVGA3R\", \"skill_id\": \"builtin_session_start\", \"block_id\": \"main\", \"step_id\": \"greet\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+    6  user: '/session_start'
+    7  agent: 'Hello! What can I assist you with today?'
+    8  ordered_block_completed: builtin_session_start/main (step=greet)
+    9  skill_completed: builtin_session_start
+   10  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}, {\"op\": \"remove\", \"path\": \"/0\"}]"}
+   11  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}}
+[T1] user: "Hi, I lost my card and need to get a replacement, please."
+    1  user: 'Hi, I lost my card and need to get a replacement, please.'
+    2  agent: 'I’m sorry to hear that—one moment.'
+    3  skill_activated: card_replace
+    4  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"YQBEZAOD\", \"skill_id\": \"card_replace\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+    5  memory_set: card_replace.replacement_reason = lost
+    6  tool: activate(target_id=card_replace, memory_items={"replacement_reason": "lost"}) → ok
+    7  tool: run_after_setting_replacement_reason() → ok
+    8  memory_set: card_replace.account_eligible = true
+    9  tool: check_account_eligibility() → ok
+   10  skill_activated: card_disambiguate
+   11  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"59R9XDDY\", \"skill_id\": \"card_disambiguate\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+   12  tool: activate(target_id=card_disambiguate) → ok
+   13  memory_set: card_disambiguate.card_list = [{"id": "VISA_001", "label": "River Visa ending 4821", "type": "River Visa"}, {"id": "MC_002", "label": "Summit Rewards ending 9173", "type": "Summit Rewards"}]
+   14  tool: get_customer_cards() → ok
+   15  agent: 'Which card did you lose? I see two on your account: **River Visa ending 4821** and **Summit Rewards ending 9173**.'
+   16  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}}
+[T2] user: "It’s the River Visa ending in 4821 that I lost."
+    1  user: 'It’s the River Visa ending in 4821 that I lost.'
+    2  agent: 'Got it—one moment.'
+    3  memory_set: card_disambiguate.selected_card_id = VISA_001
+    4  memory_set: card_disambiguate.selected_card_label = River Visa ending 4821
+    5  tool: set_memory(selected_card_id=VISA_001) → ok
+    6  tool: run_after_setting_selected_card_id() → ok
+    7  skill_completed: card_disambiguate
+    8  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"remove\", \"path\": \"/1\"}]"}
+    9  tool: complete() → ok
+   10  memory_set: card_replace.selected_card_id = VISA_001
+   11  memory_set: card_replace.committed_card_id = VISA_001
+   12  tool: adopt_selected_card() → ok
+   13  memory_set: card_replace.card_eligible = true
+   14  tool: check_card_eligibility(card_id=VISA_001) → ok
+   15  memory_set: card_replace.recent_transactions = [{"id": "txn_001", "date": "Jun 15", "merchant": "Amazon.com", "amount": 47.22, "category": "Shopping"}, {"id": "txn_002", "date": "Jun 14", "merchant": "Shell Gas Station", "amount": 38.5, "category": "Gas"}, {"id": "txn_003", "date": "Jun 13", "merchant": "Uber Eats", "amount": 24.99, "category": "Food"}, {"id": "txn_004", "date": "Jun 12", "merchant": "Netflix", "amount": 15.99, "category": "Subscriptions"}, {"id": "txn_005", "date": "Jun 10", "merchant": "Whole Foods", "amount": 112.35, "category": "Groceries"}]
+   16  tool: load_recent_transactions(card_id=VISA_001) → ok
+   17  agent: 'Here are the most recent charges on **River Visa ending 4821**: - Jun 15 — Amazon.com — $47.22 - Jun 14 — Shell Gas Station — $38.50 - Jun 13 — Uber Eats — $24.99 - Jun 12 — Netflix — $15.99 - Jun 10 — Whole Foods — $112.35 Do all of these look familiar?'
+   18  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}}
+[T3] user: "Yes, those all look fine to me."
+    1  user: 'Yes, those all look fine to me.'
+    2  agent: 'Thanks—give me a moment.'
+    3  memory_set: card_replace.transactions_look_familiar = true
+    4  memory_set: card_replace.transaction_review_complete = true
+    5  tool: set_memory(transactions_look_familiar=true) → ok
+    6  tool: run_after_setting_transactions_look_familiar() → ok
+    7  memory_set: card_replace.wallet_eligible = true
+    8  memory_set: card_replace.wallet_already_provisioned = false
+    9  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   10  memory_set: card_replace.card_eligible = true
+   11  tool: check_card_eligibility(card_id=VISA_001) → ok
+   12  memory_set: card_replace.wallet_eligible = true
+   13  memory_set: card_replace.wallet_already_provisioned = false
+   14  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   15  memory_set: card_replace.wallet_eligible = true
+   16  memory_set: card_replace.wallet_already_provisioned = false
+   17  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   18  memory_set: card_replace.wallet_eligible = true
+   19  memory_set: card_replace.wallet_already_provisioned = false
+   20  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   21  memory_set: card_replace.wallet_eligible = true
+   22  memory_set: card_replace.wallet_already_provisioned = false
+   23  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   24  memory_set: card_replace.wallet_eligible = true
+   25  memory_set: card_replace.wallet_already_provisioned = false
+   26  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   27  memory_set: card_replace.wallet_eligible = true
+   28  memory_set: card_replace.wallet_already_provisioned = false
+   29  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   30  memory_set: card_replace.wallet_eligible = true
+   31  memory_set: card_replace.wallet_already_provisioned = false
+   32  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   33  memory_set: card_replace.wallet_eligible = true
+   34  memory_set: card_replace.wallet_already_provisioned = false
+   35  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   36  memory_set: card_replace.wallet_eligible = true
+   37  memory_set: card_replace.wallet_already_provisioned = false
+   38  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   39  memory_set: card_replace.wallet_eligible = true
+   40  memory_set: card_replace.wallet_already_provisioned = false
+   41  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   42  memory_set: card_replace.wallet_eligible = true
+   43  memory_set: card_replace.wallet_already_provisioned = false
+   44  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   45  memory_set: card_replace.wallet_eligible = true
+   46  memory_set: card_replace.wallet_already_provisioned = false
+   47  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   48  memory_set: card_replace.wallet_eligible = true
+   49  memory_set: card_replace.wallet_already_provisioned = false
+   50  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   51  memory_set: card_replace.wallet_eligible = true
+   52  memory_set: card_replace.wallet_already_provisioned = false
+   53  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   54  memory_set: card_replace.wallet_eligible = true
+   55  memory_set: card_replace.wallet_already_provisioned = false
+   56  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   57  memory_set: card_replace.wallet_eligible = true
+   58  memory_set: card_replace.wallet_already_provisioned = false
+   59  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   60  agent: 'Would you like me to **lock your River Visa ending 4821** now to prevent any new purchases?'
+   61  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}}
+[T4] user: "Yes, please go ahead and lock the River Visa."
+    1  user: 'Yes, please go ahead and lock the River Visa.'
+    2  agent: 'Okay—one second.'
+    3  memory_set: card_replace.wants_card_locked = true
+    4  tool: set_memory(wants_card_locked=true) → ok
+    5  tool: set_memory(transactions_look_familiar=true) → ok
+    6  memory_set: card_replace.card_locked = true
+    7  tool: lock_card(card_id=VISA_001) → ok
+    8  agent: 'Your River Visa ending 4821 is now locked, and any new transactions will be declined.'
+    9  memory_set: card_replace.wallet_eligible = true
+   10  memory_set: card_replace.wallet_already_provisioned = false
+   11  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   12  agent: 'Would you like to add the replacement card to a digital wallet for immediate use—**Apple Pay or Google Pay**?'
+   13  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}}
+[T5] user: "Hold on, I just realized I picked the wrong card. It’s actually the Summit Rewards ending in 9173 that I lost, not the River. Can we switch and replace the Summit instead?"
+    1  user: 'Hold on, I just realized I picked the wrong card. It’s actually the Summit Rewards ending in 9173 that I lost, not the River. Can we switch and replace the Summit instead?'
+    2  agent: 'Right, let me pull up your cards.'
+    3  memory_cleared: card_disambiguate.card_list
+    4  memory_cleared: card_disambiguate.selected_card_id
+    5  memory_cleared: card_disambiguate.selected_card_label
+    6  skill_activated: card_disambiguate
+    7  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"SYZ7EUHV\", \"skill_id\": \"card_disambiguate\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+    8  tool: activate(target_id=card_disambiguate) → ok
+    9  memory_set: card_disambiguate.card_list = [{"id": "VISA_001", "label": "River Visa ending 4821", "type": "River Visa"}, {"id": "MC_002", "label": "Summit Rewards ending 9173", "type": "Summit Rewards"}]
+   10  tool: get_customer_cards() → ok
+   11  memory_set: card_disambiguate.selected_card_id = MC_002
+   12  memory_set: card_disambiguate.selected_card_label = Summit Rewards ending 9173
+   13  tool: set_memory(selected_card_id=MC_002) → ok
+   14  tool: run_after_setting_selected_card_id() → ok
+   15  skill_completed: card_disambiguate
+   16  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"remove\", \"path\": \"/1\"}]"}
+   17  tool: complete() → ok
+   18  memory_set: card_replace.selected_card_id = MC_002
+   19  memory_cleared: card_replace.card_eligible
+   20  memory_cleared: card_replace.has_authorized_users
+   21  memory_cleared: card_replace.replace_target
+   22  memory_cleared: card_replace.damaged_applied
+   23  memory_cleared: card_replace.transaction_review_complete
+   24  memory_cleared: card_replace.transactions_look_familiar
+   25  memory_cleared: card_replace.fraud_reported
+   26  memory_cleared: card_replace.card_locked
+   27  memory_cleared: card_replace.wants_card_locked
+   28  memory_cleared: card_replace.wallet_eligible
+   29  memory_cleared: card_replace.wallet_already_provisioned
+   30  memory_cleared: card_replace.wallet_consent
+   31  memory_cleared: card_replace.wallet_provider
+   32  memory_cleared: card_replace.wallet_provisioned
+   33  memory_cleared: card_replace.shipping_type
+   34  memory_cleared: card_replace.rush_eligible
+   35  memory_cleared: card_replace.replacement_ordered
+   36  memory_cleared: card_replace.recent_transactions
+   37  memory_cleared: card_replace.replacement_order_summary
+   38  memory_set: card_replace.committed_card_id = MC_002
+   39  tool: adopt_selected_card() → ok
+   40  memory_set: card_replace.card_eligible = true
+   41  tool: check_card_eligibility(card_id=MC_002) → ok
+   42  memory_set: card_replace.recent_transactions = [{"id": "txn_101", "date": "Jun 16", "merchant": "Apple Store", "amount": 129.0, "category": "Shopping"}, {"id": "txn_102", "date": "Jun 14", "merchant": "Delta Airlines", "amount": 342.8, "category": "Travel"}, {"id": "txn_103", "date": "Jun 12", "merchant": "Starbucks", "amount": 6.45, "category": "Food"}, {"id": "txn_104", "date": "Jun 11", "merchant": "Spotify", "amount": 10.99, "category": "Subscriptions"}, {"id": "txn_105", "date": "Jun 09", "merchant": "Target", "amount": 67.23, "category": "Shopping"}]
+   43  tool: load_recent_transactions(card_id=MC_002) → ok
+   44  agent: 'Yes—we can switch to **Summit Rewards ending 9173** for the replacement. Here are the most recent charges on that card: - Jun 16 — Apple Store — $129.00 - Jun 14 — Delta Airlines — $342.80 - Jun 12 — Starbucks — $6.45 - Jun 11 — Spotify — $10.99 - Jun 09 — Target — $67.23 Do all of these look familiar?'
+   45  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}}
+[T6] user: "Yes, those all look familiar and are mine."
+    1  user: 'Yes, those all look familiar and are mine.'
+    2  agent: 'Okay, one moment.'
+    3  memory_set: card_replace.transactions_look_familiar = true
+    4  memory_set: card_replace.transaction_review_complete = true
+    5  tool: set_memory(transactions_look_familiar=true) → ok
+    6  tool: run_after_setting_transactions_look_familiar() → ok
+    7  agent: 'Thanks—got it. For a lost card, would you like me to **lock your Summit Rewards ending 9173** now to prevent any new purchases?'
+    8  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}}
+[T7] user: "Yes, please lock the Summit card now."
+    1  user: 'Yes, please lock the Summit card now.'
+    2  agent: 'All right, just a moment.'
+    3  memory_set: card_replace.wants_card_locked = true
+    4  tool: set_memory(transactions_look_familiar=true, wants_card_locked=true) → ok
+    5  memory_set: card_replace.wallet_eligible = true
+    6  memory_set: card_replace.wallet_already_provisioned = true
+    7  tool: check_wallet_eligibility_and_status(card_id=MC_002) → ok
+    8  memory_set: card_replace.card_locked = true
+    9  tool: lock_card(card_id=MC_002) → ok
+   10  agent: 'Your Summit Rewards card ending in 9173 is now locked, and any new transactions will be declined.'
+   11  memory_set: card_replace.rush_eligible = true
+   12  tool: check_rush_shipping_eligibility(card_id=MC_002) → ok
+   13  tool: listen() → ok
+   14  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}}
+[T8] user: "Great, thanks. I do need a replacement card for the Summit—can you send me a new one?"
+    1  user: 'Great, thanks. I do need a replacement card for the Summit—can you send me a new one?'
+    2  agent: 'Got it—let’s finish the replacement.'
+    3  memory_set: card_replace.rush_eligible = true
+    4  tool: check_rush_shipping_eligibility(card_id=MC_002) → ok
+    5  agent: 'Absolutely — I can send a replacement for **Summit Rewards ending 9173**. Do you want **standard shipping (5–7 business days)** or **rush shipping (1–2 business days, $25)**?'
+    6  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}}
+[T9] user: "I’d like rush shipping, please."
+    1  user: 'I’d like rush shipping, please.'
+    2  agent: 'Okay—one second.'
+    3  memory_set: card_replace.shipping_type = rush
+    4  tool: set_memory(shipping_type=rush) → ok
+    5  memory_set: system.pending_tool_confirmation = {"tool_name": "process_card_replacement", "tool_args": {"card_id": "MC_002", "shipping_type": "rush"}, "tool_call_metadata": {}, "confirmation_ask": "Alright, shall I go ahead and place the order with rush shipping?", "utter_on_user_denial": "utter_order_cancelled", "skill_id": "card_replace", "frame_id": "YQBEZAOD", "execute_step_id": null, "deferred_next": []}
+    6  tool: process_card_replacement(card_id=MC_002, shipping_type=rush) → awaiting confirmation
+    7  agent: 'Great—would you like me to go ahead and place the replacement order with rush shipping?'
+    8  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}}
+[T10] user: "Yes, please place the replacement order with rush shipping for the Summit card."
+    1  user: 'Yes, please place the replacement order with rush shipping for the Summit card.'
+    2  agent: 'Right, one moment.'
+    3  memory_cleared: system.pending_tool_confirmation
+    4  memory_set: card_replace.shipping_type = rush
+    5  memory_set: card_replace.replacement_ordered = true
+    6  memory_set: card_replace.replacement_order_summary = Order ID: RPL-2026-001843 Card: Summit Rewards ending 9173 Shipping: rush Estimated delivery: 1-2 business days
+    7  tool: process_card_replacement(card_id=MC_002, shipping_type=rush) → ok
+    8  tool: resolve_tool_confirmation(confirmed=true) → ok
+    9  agent: 'All set. Your replacement card has been ordered: Order ID: RPL-2026-001843 Card: Summit Rewards ending 9173 Shipping: rush Estimated delivery: 1-2 business days'
+   10  skill_completed: card_replace
+   11  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}]"}
+   12  skill_activated: builtin_completed
+   13  ordered_block_entered: builtin_completed/main
+   14  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"FCUM0M7Z\", \"skill_id\": \"builtin_completed\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"PKKKM9BU\", \"skill_id\": \"builtin_completed\", \"block_id\": \"main\", \"step_id\": \"ask_continue\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   15  agent: 'Is there anything else I can assist you with?'
+   16  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}}
+[T11] user: "Oh, one more thing — did you unlock the River Visa card? I didn’t actually lose that one."
+    1  user: 'Oh, one more thing — did you unlock the River Visa card? I didn’t actually lose that one.'
+    2  ordered_block_cancelled: builtin_completed/main (step=ask_continue)
+    3  skill_cancelled: builtin_completed (step=ask_continue)
+    4  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}, {\"op\": \"remove\", \"path\": \"/0\"}]"}
+    5  memory_cleared: card_replace.account_eligible
+    6  memory_cleared: card_replace.replacement_reason
+    7  memory_cleared: card_replace.selected_card_id
+    8  memory_cleared: card_replace.card_eligible
+    9  memory_cleared: card_replace.transaction_review_complete
+   10  memory_cleared: card_replace.transactions_look_familiar
+   11  memory_cleared: card_replace.card_locked
+   12  memory_cleared: card_replace.wants_card_locked
+   13  memory_cleared: card_replace.wallet_eligible
+   14  memory_cleared: card_replace.wallet_already_provisioned
+   15  memory_cleared: card_replace.shipping_type
+   16  memory_cleared: card_replace.rush_eligible
+   17  memory_cleared: card_replace.replacement_ordered
+   18  memory_cleared: card_replace.recent_transactions
+   19  memory_cleared: card_replace.replacement_order_summary
+   20  memory_cleared: card_replace.committed_card_id
+   21  skill_activated: card_replace
+   22  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"NI866PEX\", \"skill_id\": \"card_replace\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+   23  tool: activate(target_id=card_replace, memory_items={"selected_card_id": "VISA_001"}) → ok
+   24  tool: search_knowledge(query=unlock card River Visa unlock locked ca…) → ok
+   25  agent: 'I can’t unlock a card lock from here once it’s been placed. Per policy, the next step is for you to **contact our fraud/support team** so they can review the lock on your **River Visa** and help restore access if appropriate.'
+   26  skill_interrupted: card_replace (step=autonomous)
+   27  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"add\", \"path\": \"/0/previous_frame_type\", \"value\": \"regular\"}, {\"op\": \"replace\", \"path\": \"/0/frame_type\", \"value\": \"interrupt\"}]"}
+   28  skill_activated: builtin_continue_interrupted
+   29  ordered_block_entered: builtin_continue_interrupted/main
+   30  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"QZYNIRW3\", \"skill_id\": \"builtin_continue_interrupted\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/2\", \"value\": {\"frame_id\": \"093FPHL4\", \"skill_id\": \"builtin_continue_interrupted\", \"block_id\": \"main\", \"step_id\": \"ask_resume\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   31  memory_set: builtin_continue_interrupted.interrupted_task_name = Card Replace (Replace a customer's lost, stolen, damaged, or not-received credit or debit card. Checks account and card eligibility, routes by reason (stolen auto-lock, damaged scope check, lost/not-received fraud review), offers digital wallet provisioning, and ships a physical replacement. For a lost or not-received card, show the recent charges and record the verdict before locking. Place the replacement order in this chat after reason handling, wallet provisioning, and shipping are done)
+   32  agent: 'We were partway through the card replacement process—would you like to pick up where we left off, or should I stop here?'
+   33  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}}
+[T12] user: "Got it, I’ll contact support about unlocking the River card then. That’s all I needed, thanks."
+    1  user: 'Got it, I’ll contact support about unlocking the River card then. That’s all I needed, thanks.'
+    2  memory_set: builtin_continue_interrupted.wants_to_resume = false
+    3  tool: set_memory(wants_to_resume=false) → ok
+    4  ordered_block_completed: builtin_continue_interrupted/main (step=ask_resume)
+    5  skill_completed: builtin_continue_interrupted
+    6  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"remove\", \"path\": \"/1\"}, {\"op\": \"remove\", \"path\": \"/1\"}]"}
+    7  skill_cancelled: card_replace (step=autonomous)
+    8  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}]"}
+    9  skill_activated: builtin_completed
+   10  ordered_block_entered: builtin_completed/main
+   11  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"IB4WUN2B\", \"skill_id\": \"builtin_completed\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"6ZP8V8KY\", \"skill_id\": \"builtin_completed\", \"block_id\": \"main\", \"step_id\": \"ask_continue\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   12  agent: 'Is there anything else I can assist you with?'
+   13  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "aa7f9ad5-ceac-4291-9a0d-75b271624b0e"}}

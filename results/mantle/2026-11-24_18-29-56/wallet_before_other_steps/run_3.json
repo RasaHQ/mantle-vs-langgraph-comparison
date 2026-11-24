@@ -1,0 +1,448 @@
+{
+  "scenario_name": "Customer in a hurry demands digital wallet before completing any other steps",
+  "scenario_slug": "wallet_before_other_steps",
+  "scenario_type": null,
+  "run_index": 3,
+  "timestamp": "2026-11-24T13:07:44Z",
+  "conversation_id": "sim-9dc11ec7-4d0e-4363-af23-503456ed265b",
+  "error": null,
+  "error_is_harness": false,
+  "metrics_error": null,
+  "judge_summary": "This conversation shows strong transactional handling: the assistant clearly executes each requested action (Apple Pay setup, card lock, and rush replacement) and confirms them with specific details. Context is tracked accurately across turns, and the tone remains polite and straightforward. Overall, the interaction is efficient and production-quality with no obvious gaps or missteps.",
+  "latency": {
+    "measured_via": "direct",
+    "per_turn": [
+      {
+        "turn": 1,
+        "ttft_ms": null,
+        "turn_latency_ms": null,
+        "gaps_ms": []
+      },
+      {
+        "turn": 2,
+        "ttft_ms": 1076.3447909994284,
+        "turn_latency_ms": 16964.242999994894,
+        "gaps_ms": []
+      },
+      {
+        "turn": 3,
+        "ttft_ms": 1011.7027500091353,
+        "turn_latency_ms": 2540.8915410080226,
+        "gaps_ms": []
+      },
+      {
+        "turn": 4,
+        "ttft_ms": 1028.235042002052,
+        "turn_latency_ms": 6781.557292008074,
+        "gaps_ms": []
+      },
+      {
+        "turn": 5,
+        "ttft_ms": 3677.538000003551,
+        "turn_latency_ms": 3842.4611250084126,
+        "gaps_ms": []
+      },
+      {
+        "turn": 6,
+        "ttft_ms": 1089.682375008124,
+        "turn_latency_ms": 2357.9107920086244,
+        "gaps_ms": []
+      },
+      {
+        "turn": 7,
+        "ttft_ms": 1166.5070000017295,
+        "turn_latency_ms": 1166.5070000017295,
+        "gaps_ms": []
+      }
+    ],
+    "avg_ttft_ms": 1508.3349930040033,
+    "avg_turn_latency_ms": 5608.928458338293,
+    "avg_gap_ms": null
+  },
+  "transcript": [
+    {
+      "user": "",
+      "bot": [
+        "Hello! What can I assist you with today?"
+      ]
+    },
+    {
+      "user": "I lost my River Visa while travelling and I\u2019m stuck abroad with no way to pay. Can you set up Apple Pay for it immediately? I need to buy food tonight.",
+      "bot": [
+        "I\u2019m sorry you\u2019re dealing with that\u2014one moment.",
+        "I\u2019ve added your River Visa ending **4821** to **Apple Pay**\u2014it should appear in your Wallet app within **2\u20133 minutes**.\n\nRecent charges on River Visa ending 4821:  \n- Jun 15 \u2014 Amazon.com \u2014 $47.22  \n- Jun 14 \u2014 Shell Gas Station \u2014 $38.50  \n- Jun 13 \u2014 Uber Eats \u2014 $24.99  \n- Jun 12 \u2014 Netflix \u2014 $15.99  \n- Jun 10 \u2014 Whole Foods \u2014 $112.35  \n\nDo all of these look familiar?"
+      ]
+    },
+    {
+      "user": "Yes, those all look familiar.",
+      "bot": [
+        "Got it\u2014one moment.",
+        "Thanks\u2014do you want me to **lock your River Visa ending 4821** now?"
+      ]
+    },
+    {
+      "user": "Yes, please lock it.",
+      "bot": [
+        "Okay, one moment.",
+        "Your River Visa ending 4821 is now locked, and any new transactions will be declined.",
+        "For the physical replacement card, would you like **rush shipping ($25, 1\u20132 business days)** or **standard shipping (5\u20137 business days)**?"
+      ]
+    },
+    {
+      "user": "Rush shipping, please.",
+      "bot": [
+        "Okay\u2014would you like me to place the replacement order with rush shipping now?"
+      ]
+    },
+    {
+      "user": "Yes, please go ahead and place the order with rush shipping.",
+      "bot": [
+        "All set. Your replacement card has been ordered:\nOrder ID: RPL-2026-001843\nCard: River Visa ending 4821\nShipping: rush\nEstimated delivery: 1-2 business days\n",
+        "Is there anything else you need help with?"
+      ]
+    },
+    {
+      "user": "No, that\u2019s all I needed. Thanks for your help.",
+      "bot": [
+        "Were you satisfied with the assistance you received today?"
+      ]
+    }
+  ],
+  "task_completion": true,
+  "task_completion_reasoning": "The assistant successfully added the card to Apple Pay, locked it, and placed a rush replacement order with clear confirmations.",
+  "eval_passed": true,
+  "criteria": [
+    {
+      "index": 0,
+      "criterion": "The agent asks the customer to confirm before locking the card, rather than locking it unprompted",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "Before locking, the bot asked \"do you want me to **lock your River Visa ending 4821** now?\" and only after the user replied \"Yes, please lock it.\" did the tool `lock_card` run, so it did not lock the card unprompted."
+    },
+    {
+      "index": 1,
+      "criterion": "The agent confirms Apple Pay or asks about adding the card to a digital wallet before provisioning it. If the customer already asked to add the card to a named wallet, that request counts as confirmation \u2014 do not require a second would-you-like-to-add ask.",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "The user explicitly requested \"Can you set up Apple Pay for it immediately?\", and then the tool `provision_digital_wallet(..., wallet_provider=apple_pay)` ran and the bot confirmed adding the card to Apple Pay, so provisioning followed a clear user request."
+    },
+    {
+      "index": 2,
+      "criterion": "Before placing the replacement order, the agent asks whether the customer wants to place the order and receives their agreement",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "After the user chose rush shipping, the bot asked \"would you like me to place the replacement order with rush shipping now?\" and only after the user replied \"Yes, please go ahead and place the order with rush shipping.\" did `process_card_replacement` proceed from `\u2192 awaiting confirmation` to `\u2192 ok`."
+    },
+    {
+      "index": 3,
+      "criterion": "After placing the replacement order, the agent confirms it and audibly shares the order ID from the tool result. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the ID is omitted, materially differs from the returned value, or is not spoken.",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "After `process_card_replacement(... ) \u2192 ok`, the bot said \"Your replacement card has been ordered: Order ID: RPL-2026-001843\", which exactly matches the order ID stored in `card_replace.replacement_order_summary`."
+    },
+    {
+      "index": 4,
+      "criterion": "The agent does not re-ask which card to replace or why it needs replacing after the customer has already named the River Visa and said it is lost. Asking for shipping speed or confirming the order is not a re-ask of those facts.",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "Once the user stated \"I lost my River Visa\" in T1, the bot never asked again which card to replace or why; subsequent questions were about transaction familiarity, locking, shipping speed, and order placement only."
+    }
+  ],
+  "criteria_summary": {
+    "passed": 5,
+    "total": 5,
+    "all_passed": true
+  },
+  "assertions": [
+    {
+      "index": 0,
+      "assertion": "skill_activated(card_replace)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 1,
+      "assertion": "skill_activated(card_disambiguate)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 2,
+      "assertion": "skill_completed(card_disambiguate)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 3,
+      "assertion": "skill_completed(card_replace)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 4,
+      "assertion": "sequencing",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 5,
+      "assertion": "memory_was_set(card_replace.account_eligible=True, card_replace.replacement_reason='lost', card_disambiguate.selected_card_id='VISA_001', card_disambiguate.selected_card_label='River Visa ending 4821', card_replace.card_eligible=True, card_replace.recent_transactions, card_replace.transaction_review_complete=True, card_replace.transactions_look_familiar=True, card_replace.wants_card_locked=True, card_replace.card_locked=True, card_replace.wallet_eligible=True, card_replace.wallet_already_provisioned=False, card_replace.wallet_consent=True, card_replace.wallet_provider='apple_pay', card_replace.wallet_provisioned=True, card_replace.shipping_type='rush', card_replace.replacement_ordered=True)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 6,
+      "assertion": "memory_was_not_set(card_replace.fraud_reported, card_replace.has_authorized_users, card_replace.replace_target, card_replace.damaged_applied)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 7,
+      "assertion": "tool_executed(check_account_eligibility)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 8,
+      "assertion": "tool_executed(get_customer_cards)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 9,
+      "assertion": "tool_executed(check_card_eligibility)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 10,
+      "assertion": "tool_executed(check_wallet_eligibility_and_status)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 11,
+      "assertion": "tool_executed(provision_digital_wallet)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 12,
+      "assertion": "tool_executed(load_recent_transactions)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 13,
+      "assertion": "tool_executed(lock_card)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 14,
+      "assertion": "tool_executed(check_rush_shipping_eligibility)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 15,
+      "assertion": "tool_executed(process_card_replacement)",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "assertions_summary": {
+    "passed": 16,
+    "total": 16,
+    "all_passed": true
+  },
+  "scale_metrics": {
+    "helpfulness": 5,
+    "repair_quality": 5,
+    "coherence": 5,
+    "tone": 5
+  },
+  "scale_metrics_reasoning": {
+    "helpfulness": "All user requests were handled accurately and completely, with concrete confirmations and relevant clarifications (fraud check, lock, shipping choice).",
+    "repair_quality": "There were no user corrections or signs of misunderstanding, so there was no need for repair and the flow remained smooth throughout.",
+    "coherence": "The assistant consistently tracked the specific card, its status, and the chosen shipping option without contradictions or re-asking for details.",
+    "tone": "The tone was clear, polite, and natural, with empathetic acknowledgment at the start and concise, easy-to-read confirmations thereafter."
+  },
+  "acknowledgements": {
+    "turns": [
+      {
+        "turn_number": 1,
+        "tools": [
+          "activate",
+          "check_account_eligibility",
+          "activate",
+          "get_customer_cards",
+          "adopt_selected_card",
+          "check_card_eligibility",
+          "check_wallet_eligibility_and_status",
+          "provision_digital_wallet",
+          "load_recent_transactions"
+        ],
+        "acknowledgement": "I\u2019m sorry you\u2019re dealing with that\u2014one moment.",
+        "follow_up": [
+          "I\u2019ve added your River Visa ending **4821** to **Apple Pay**\u2014it should appear in your Wallet app within **2\u20133 minutes**.\n\nRecent charges on River Visa ending 4821:  \n- Jun 15 \u2014 Amazon.com \u2014 $47.22  \n- Jun 14 \u2014 Shell Gas Station \u2014 $38.50  \n- Jun 13 \u2014 Uber Eats \u2014 $24.99  \n- Jun 12 \u2014 Netflix \u2014 $15.99  \n- Jun 10 \u2014 Whole Foods \u2014 $112.35  \n\nDo all of these look familiar?"
+        ]
+      },
+      {
+        "turn_number": 3,
+        "tools": [
+          "lock_card",
+          "check_rush_shipping_eligibility"
+        ],
+        "acknowledgement": "Okay, one moment.",
+        "follow_up": [
+          "Your River Visa ending 4821 is now locked, and any new transactions will be declined.",
+          "For the physical replacement card, would you like **rush shipping ($25, 1\u20132 business days)** or **standard shipping (5\u20137 business days)**?"
+        ]
+      },
+      {
+        "turn_number": 4,
+        "tools": [
+          "process_card_replacement"
+        ],
+        "acknowledgement": null,
+        "follow_up": [
+          "Okay\u2014would you like me to place the replacement order with rush shipping now?"
+        ]
+      },
+      {
+        "turn_number": 5,
+        "tools": [
+          "process_card_replacement",
+          "resolve_tool_confirmation"
+        ],
+        "acknowledgement": null,
+        "follow_up": [
+          "All set. Your replacement card has been ordered:\nOrder ID: RPL-2026-001843\nCard: River Visa ending 4821\nShipping: rush\nEstimated delivery: 1-2 business days",
+          "Is there anything else you need help with?"
+        ]
+      }
+    ],
+    "verdicts": [
+      {
+        "turn_number": 1,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": null,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "Empathetic and context-specific to the user\u2019s problem, followed by a brief pause marker that fits spoken help-desk style.",
+        "issue_score": 5.0
+      },
+      {
+        "turn_number": 3,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": 1,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "A very typical, natural confirmation plus brief delay phrase that a support agent would say before performing the lock action.",
+        "issue_score": 3.0
+      }
+    ],
+    "error": null,
+    "coverage": [
+      0.5,
+      2,
+      4
+    ],
+    "issue_counts": {
+      "hard_contradiction": 0,
+      "soft_contradiction": 0,
+      "commits_to_tool_outcome": 0,
+      "repeated_in_same_bot_turn": 0,
+      "similar_to_earlier_acknowledgement": 1,
+      "stock_opener": 0
+    },
+    "mean_issue_score": 4.0,
+    "mean_naturalness_score": 5.0
+  },
+  "engine_tokens": {
+    "status": "complete",
+    "session_id": "sim-9dc11ec7-4d0e-4363-af23-503456ed265b",
+    "prompt": 100460,
+    "completion": 718,
+    "cached": 49152,
+    "cache_write": 0,
+    "total": 101178,
+    "generations": 26,
+    "cost": 0.10844260000000001,
+    "cost_status": "complete",
+    "price_source": {
+      "provider": "litellm",
+      "version": "1.105.3"
+    },
+    "by_call_type": {
+      "rephrase": [
+        {
+          "model": "gpt-5.2",
+          "prompt": 5680,
+          "completion": 66,
+          "cached": 0,
+          "cache_write": 0,
+          "total": 5746,
+          "generations": 4,
+          "cost": 0.010863999999999999
+        }
+      ],
+      "main_orchestrator": [
+        {
+          "model": "gpt-5.2",
+          "prompt": 94780,
+          "completion": 652,
+          "cached": 49152,
+          "cache_write": 0,
+          "total": 95432,
+          "generations": 22,
+          "cost": 0.0975786
+        }
+      ]
+    },
+    "fetched_at": "2026-11-24T13:08:27.469060+00:00"
+  },
+  "evaluation_tokens": {
+    "simulator": [
+      {
+        "model": "gpt-5.1-2025-11-13",
+        "prompt": 7749,
+        "completion": 211,
+        "cached": 2176,
+        "cache_write": 0,
+        "total": 7960,
+        "generations": 6,
+        "cost": 0.00934825
+      }
+    ],
+    "judge": [
+      {
+        "model": "gpt-5.1-2025-11-13",
+        "prompt": 8352,
+        "completion": 1294,
+        "cached": 0,
+        "cache_write": 0,
+        "total": 9646,
+        "generations": 3,
+        "cost": 0.02338
+      }
+    ],
+    "cost": 0.03272825,
+    "cost_status": "complete",
+    "price_source": {
+      "provider": "litellm",
+      "version": "1.105.3"
+    }
+  }
+}

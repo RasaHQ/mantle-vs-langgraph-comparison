@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Creates the two Python environments the benchmark needs.
-#   .venv-rasa       rasa-pro 3.22.0.dev5: Mantle agent, mock tool server, evaluation harness
+#   .venv-rasa       rasa-pro 3.22.0.dev20261124122026: Mantle agent, mock tool server, evaluation harness
 #   .venv-langgraph  LangGraph agent
 # They are separate because rasa-pro and the LangGraph agent pin different
 # versions of litellm and websockets.

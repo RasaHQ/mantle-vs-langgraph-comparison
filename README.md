@@ -8,19 +8,19 @@ Every scenario runs 3 times per setup. A scenario counts as **reliably resolved*
 
 | Setup | Scenarios resolved in all 3 runs | Cost per reliably resolved scenario |
 |---|---:|---:|
-| **Mantle (reasoning: none)** | **27/31** (87%) | **$0.129** |
+| **Mantle (reasoning: none)** | **28/31** (90%) | **$0.102** |
 | LangGraph (reasoning: none) | 19/31 (61%) | $0.149 |
 | LangGraph (reasoning: high) | 21/31 (68%) | $0.323 |
 
-> **Main takeaway:** Mantle resolves more scenarios, and resolves them more consistently from run to run. LangGraph without reasoning costs less per conversation, but fails more of them, so per scenario it resolves reliably it costs more. Turning reasoning up to high helps LangGraph a little and more than doubles its cost.
+> **Main takeaway:** Mantle resolves more scenarios, and resolves them more consistently from run to run, at about the same cost per conversation as LangGraph without reasoning ($0.092 vs $0.091). LangGraph fails more of its conversations, so each scenario it resolves reliably costs more: $0.149 against $0.102 for Mantle. Turning reasoning up to high helps LangGraph a little and more than doubles its cost.
 
 **Cost** (the agent's own LLM spend, `gpt-5.2`)
 
 | | Mantle (reasoning: none) | LangGraph (reasoning: none) | LangGraph (reasoning: high) |
 |---|---:|---:|---:|
-| **Cost per reliably resolved scenario** | **$0.129** | $0.149 | $0.323 |
-| Cost per resolved conversation | $0.119 | $0.118 | $0.271 |
-| Cost per conversation | $0.112 | $0.091 | $0.219 |
+| **Cost per reliably resolved scenario** | **$0.102** | $0.149 | $0.323 |
+| Cost per resolved conversation | **$0.095** | $0.118 | $0.271 |
+| Cost per conversation | $0.092 | $0.091 | $0.219 |
 
 **How the cost rows are computed**
 
@@ -28,13 +28,13 @@ Each setup ran 31 scenarios 3 times: 93 conversations. Total cost is the agent's
 
 | | Mantle (reasoning: none) | LangGraph (reasoning: none) | LangGraph (reasoning: high) |
 |---|---:|---:|---:|
-| Total cost, 93 conversations | $10.46 | $8.50 | $20.34 |
-| Conversations resolved | 88 | 72 | 75 |
-| Scenarios resolved in all 3 runs | 27 | 19 | 21 |
+| Total cost, 93 conversations | $8.59 | $8.50 | $20.34 |
+| Conversations resolved | 90 | 72 | 75 |
+| Scenarios resolved in all 3 runs | 28 | 19 | 21 |
 
-- **Cost per conversation** = total cost ÷ 93 conversations. Mantle: $10.46 ÷ 93 = $0.112.
-- **Cost per resolved conversation** = total cost ÷ conversations resolved. Mantle: $10.46 ÷ 88 = $0.119.
-- **Cost per reliably resolved scenario** = (total cost ÷ 3 runs) ÷ scenarios resolved in all 3 runs. Total cost ÷ 3 is what one run over all 31 scenarios costs. Mantle: $10.46 ÷ 3 ÷ 27 = $0.129.
+- **Cost per conversation** = total cost ÷ 93 conversations. Mantle: $8.59 ÷ 93 = $0.092.
+- **Cost per resolved conversation** = total cost ÷ conversations resolved. Mantle: $8.59 ÷ 90 = $0.095.
+- **Cost per reliably resolved scenario** = (total cost ÷ 3 runs) ÷ scenarios resolved in all 3 runs. Total cost ÷ 3 is what one run over all 31 scenarios costs. Mantle: $8.59 ÷ 3 ÷ 28 = $0.102.
 
 The full tables, the per-scenario breakdown, and the definitions are in [`results/README.md`](results/README.md). Every conversation's transcript and judge verdicts are in [`results/`](results).
 
@@ -44,7 +44,7 @@ Both agents serve the same fictional bank and telecom company ("Acme Bank & Tele
 
 | Setup | Agent | Notes |
 |---|---|---|
-| `mantle` | [`agents/mantle_combined`](agents/mantle_combined) | Rasa Pro 3.22.0.dev5. Skills in `skills/*/skill.md`, agent rules in `agent.yml`. No reasoning (`reasoning_effort: "none"` in `integrations.yml`). |
+| `mantle` | [`agents/mantle_combined`](agents/mantle_combined) | Rasa Pro 3.22.0.dev20261124122026. Skills in `skills/*/skill.md`, agent rules in `agent.yml`. No reasoning (`reasoning_effort: "none"` in `integrations.yml`). |
 | `lg` | [`agents/langgraph_native`](agents/langgraph_native) | LangGraph supervisor with one specialist per task. A router picks the specialist on every message, and every model call sees the same skill descriptions Mantle uses (`routing` in `data/agent.yml`). No reasoning (`reasoning_effort="none"`), like Mantle. |
 | `lg-high` | same as `lg` | `reasoning_effort="high"`. Timeouts are raised so no run fails on a timeout (below). |
 

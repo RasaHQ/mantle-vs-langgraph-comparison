@@ -243,14 +243,15 @@ def stage(project: Path, only: Optional[list[str]]) -> None:
 
 
 async def evaluate(setup: Setup, project: Path, server_url: str, timestamp: str, runs: int) -> None:
-    from rasa.builder.copilot.mcp_server.tools import text_simulation
     from rasa.builder.copilot.mcp_server.tools.artifact_writer import write_experiment_summary
     from rasa.builder.copilot.mcp_server.tools.eval_config import build_llm_client, load_conftest
     from rasa.builder.copilot.mcp_server.tools.evaluate_agent import run_scenarios
     from rasa.builder.copilot.mcp_server.tools.scenario import load_scenario
 
+    from rasa.builder.runtime import client as runtime_client
+
     # The harness waits 30s for a reply to one user turn. Set it per setup.
-    text_simulation._send_message.__kwdefaults__["timeout"] = setup.turn_timeout_s
+    runtime_client._MESSAGE_TIMEOUT_S = setup.turn_timeout_s
     os.environ["EVAL_AGENT"] = setup.engine
 
     conftest = load_conftest(project)
@@ -326,7 +327,10 @@ def count_timeouts(log_dir: Path) -> dict:
     return {
         "turn_retries": count(
             log_dir / "harness.log",
-            lambda line: "send_message.failed" in line and "Timeout" in line,
+            # A turn timeout is logged as a TimeoutError, or as RuntimeUnavailable
+            # when no response headers arrived in time.
+            lambda line: "send_message.failed" in line
+            and ("Timeout" in line or "RuntimeUnavailable" in line),
         ),
         "agent_llm_timeouts": count(log_dir / "server.log", lambda line: bool(_AGENT_LLM_TIMEOUT.search(line))),
     }

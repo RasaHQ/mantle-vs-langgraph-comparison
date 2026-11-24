@@ -1,0 +1,296 @@
+scenario: Customer in a hurry demands digital wallet before completing any other steps
+run: 1
+timestamp: 2026-11-24T13:07:34Z
+conversation_id: sim-3efbc12e-a37f-44f9-b884-6f34f73bc885
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent asks the customer to confirm before locking the card, rather than locking it unprompted
+  rationale: Before locking, the bot asked, “Do you want me to lock your River Visa ending 4821 now?” and only after the user replied “Yes, please lock the River Visa ending 4821” did the tool `lock_card` run and the bot confirm the card was locked.
+
+[PASS] The agent confirms Apple Pay or asks about adding the card to a digital wallet before provisioning it. If the customer already asked to add the card to a named wallet, that request counts as confirmation — do not require a second would-you-like-to-add ask.
+  rationale: The user explicitly requested “Can you set up Apple Pay for it immediately?” at T1, and the ledger then shows `provision_digital_wallet(..., wallet_provider=apple_pay) → ok`, so provisioning followed a clear user request for Apple Pay.
+
+[PASS] Before placing the replacement order, the agent asks whether the customer wants to place the order and receives their agreement
+  rationale: The bot asked “Would you like me to go ahead and submit the replacement order with rush shipping?” and after the user replied “Yes, please submit the replacement order with rush shipping,” the pending `process_card_replacement` call was confirmed and executed.
+
+[PASS] After placing the replacement order, the agent confirms it and audibly shares the order ID from the tool result. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the ID is omitted, materially differs from the returned value, or is not spoken.
+  rationale: After `process_card_replacement(...) → ok`, the bot stated “Order ID: RPL-2026-001843,” which matches the order ID in `card_replace.replacement_order_summary`.
+
+[PASS] The agent does not re-ask which card to replace or why it needs replacing after the customer has already named the River Visa and said it is lost. Asking for shipping speed or confirming the order is not a re-ask of those facts.
+  rationale: Once the user said “I lost my River Visa…,” the bot never again asked which card or why it needed replacing, only referring to “your River Visa ending 4821” and asking about shipping and order submission.
+
+--- Quality Metrics ---
+bot_quality: 5.0/5
+  helpfulness: 5/5 — It executed all requested banking actions end-to-end and confirmed them with specific, actionable details (lock status, order ID, shipping speed, and ETA).
+  repair_quality: 5/5 — There were no user corrections or pushback, so no repair was needed or mishandled.
+  coherence: 5/5 — The assistant consistently remembered the specific card, the user's confirmations, and the chosen shipping option without contradictions or repeated questions.
+  tone: 5/5 — The tone was clear, polite, and professional throughout, with natural phrasing and appropriate empathy for the user's situation.
+  task_completion: PASS — The assistant successfully added the card to Apple Pay, locked the lost card, and submitted a rush replacement order with clear confirmation details.
+summary: This assistant handled the user's urgent banking issue smoothly: it added the card to Apple Pay, locked the lost card, and arranged a rush replacement with clear confirmations. The conversation was coherent, concise, and empathetic, leaving no loose ends or ambiguity about the completed actions.
+
+--- Acknowledgements ---
+summary:
+  coverage: 3/4 tool turns (75%)
+  mean naturalness score: 5.0
+  mean issue score: 4.33
+  issues:
+    - similar_to_earlier_acknowledgement: 1
+
+T1
+  turn:
+    tools:
+      - activate
+      - check_account_eligibility
+      - activate
+      - get_customer_cards
+      - adopt_selected_card
+      - check_card_eligibility
+      - check_wallet_eligibility_and_status
+      - provision_digital_wallet
+      - load_recent_transactions
+    acknowledgement: "I’m sorry you’re dealing with that—one moment."
+    follow-ups:
+      - "I’ve added your **River Visa ending 4821** to **Apple Pay**—it should show up in your Wallet app in about **2–3 minutes**.
+
+         Before we lock anything down, please review these recent charges and tell me if they all look familiar:
+         Recent charges on River Visa ending 4821:
+         - Jun 15 — Amazon.com — $47.22
+         - Jun 14 — Shell Gas Station — $38.50
+         - Jun 13 — Uber Eats — $24.99
+         - Jun 12 — Netflix — $15.99
+         - Jun 10 — Whole Foods — $112.35"
+  verdict:
+    naturalness score: 5
+    issue score: 5.0
+    issues: none
+    reasoning: Empathetic and brief, followed by a natural pause phrase that fits well before checking systems.
+T2
+  turn:
+    tools:
+      - check_rush_shipping_eligibility
+    acknowledgement: "Got it—one moment."
+    follow-ups:
+      - "Thanks—since those charges are familiar, the next step is locking the lost card to keep it safe. **Do you want me to lock your River Visa ending 4821 now?**
+
+         Also, for the replacement card shipment, do you want **standard (5–7 business days)** or **rush (1–2 business days, $25)**?"
+  verdict:
+    naturalness score: 5
+    issue score: 3.0
+    issues:
+      - similar_to_earlier_acknowledgement (T1)
+    reasoning: Short and conversational, acknowledges understanding and signals a quick check in a natural way, though similar in structure to the T1 acknowledgement.
+T3
+  turn:
+    tools:
+      - lock_card
+      - process_card_replacement
+    acknowledgement: "Okay—just a moment."
+    follow-ups:
+      - "Your River Visa ending 4821 is now locked, and any new transactions will be declined."
+      - "Would you like me to go ahead and submit the replacement order with rush shipping?"
+  verdict:
+    naturalness score: 5
+    issue score: 5.0
+    issues: none
+    reasoning: Sounds like something a support agent would casually say right before performing the requested actions.
+T4
+  turn:
+    tools:
+      - process_card_replacement
+      - resolve_tool_confirmation
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "I lost my River Visa while travelling and I’m stuck abroad with no way to pay. Can you set up Apple Pay for it immediately? I need to buy food tonight."
+  observed: run_after_setting_replacement_reason
+  observed: check_account_eligibility
+  observed: get_customer_cards
+  observed: run_after_setting_selected_card_id
+  observed: adopt_selected_card
+  observed: check_card_eligibility(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+  observed: provision_digital_wallet(card_id='VISA_001', wallet_provider='apple_pay')
+  observed: load_recent_transactions(card_id='VISA_001')
+[T2] user: "Thank you so much. Yes, all of those charges look familiar to me."
+  observed: run_after_setting_transactions_look_familiar
+  observed: check_rush_shipping_eligibility(card_id='VISA_001')
+[T3] user: "Yes, please lock the River Visa ending 4821, and I want rush shipping for the replacement card."
+  observed: lock_card(card_id='VISA_001')
+  observed: process_card_replacement(card_id='VISA_001', shipping_type='rush')
+[T4] user: "Yes, please submit the replacement order with rush shipping."
+  observed: process_card_replacement(card_id='VISA_001', shipping_type='rush')
+
+--- Assertion Results ---
+[PASS] skill_activated(card_replace)
+[PASS] skill_activated(card_disambiguate)
+[PASS] skill_completed(card_disambiguate)
+[PASS] skill_completed(card_replace)
+[PASS] sequencing
+[PASS] memory_was_set(card_replace.account_eligible=True, card_replace.replacement_reason='lost', card_disambiguate.selected_card_id='VISA_001', card_disambiguate.selected_card_label='River Visa ending 4821', card_replace.card_eligible=True, card_replace.recent_transactions, card_replace.transaction_review_complete=True, card_replace.transactions_look_familiar=True, card_replace.wants_card_locked=True, card_replace.card_locked=True, card_replace.wallet_eligible=True, card_replace.wallet_already_provisioned=False, card_replace.wallet_consent=True, card_replace.wallet_provider='apple_pay', card_replace.wallet_provisioned=True, card_replace.shipping_type='rush', card_replace.replacement_ordered=True)
+[PASS] memory_was_not_set(card_replace.fraud_reported, card_replace.has_authorized_users, card_replace.replace_target, card_replace.damaged_applied)
+[PASS] tool_executed(check_account_eligibility)
+[PASS] tool_executed(get_customer_cards)
+[PASS] tool_executed(check_card_eligibility)
+[PASS] tool_executed(check_wallet_eligibility_and_status)
+[PASS] tool_executed(provision_digital_wallet)
+[PASS] tool_executed(load_recent_transactions)
+[PASS] tool_executed(lock_card)
+[PASS] tool_executed(check_rush_shipping_eligibility)
+[PASS] tool_executed(process_card_replacement)
+
+--- Raw Transcript ---
+[1] agent: Hello! What can I assist you with today?
+[2] user: I lost my River Visa while travelling and I’m stuck abroad with no way to pay. Can you set up Apple Pay for it immediately? I need to buy food tonight.
+[3] agent: I’m sorry you’re dealing with that—one moment.
+[4] agent: I’ve added your **River Visa ending 4821** to **Apple Pay**—it should show up in your Wallet app in about **2–3 minutes**.
+
+Before we lock anything down, please review these recent charges and tell me if they all look familiar:  
+Recent charges on River Visa ending 4821:  
+- Jun 15 — Amazon.com — $47.22  
+- Jun 14 — Shell Gas Station — $38.50  
+- Jun 13 — Uber Eats — $24.99  
+- Jun 12 — Netflix — $15.99  
+- Jun 10 — Whole Foods — $112.35
+[5] user: Thank you so much. Yes, all of those charges look familiar to me.
+[6] agent: Got it—one moment.
+[7] agent: Thanks—since those charges are familiar, the next step is locking the lost card to keep it safe. **Do you want me to lock your River Visa ending 4821 now?**
+
+Also, for the replacement card shipment, do you want **standard (5–7 business days)** or **rush (1–2 business days, $25)**?
+[8] user: Yes, please lock the River Visa ending 4821, and I want rush shipping for the replacement card.
+[9] agent: Okay—just a moment.
+[10] agent: Your River Visa ending 4821 is now locked, and any new transactions will be declined.
+[11] agent: Would you like me to go ahead and submit the replacement order with rush shipping?
+[12] user: Yes, please submit the replacement order with rush shipping.
+[13] agent: All set. Your replacement card has been ordered:
+Order ID: RPL-2026-001843
+Card: River Visa ending 4821
+Shipping: rush
+Estimated delivery: 1-2 business days
+
+[14] agent: Is there anything else you need help with?
+[15] user: No, that’s perfect. Thanks, that’s all I needed.
+[16] agent: Were you satisfied with the assistance you received today?
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=921ms  turn_latency=17001ms
+turn 3: ttft=1162ms  turn_latency=5249ms
+turn 4: ttft=1208ms  turn_latency=6484ms
+turn 5: ttft=1220ms  turn_latency=2281ms
+turn 6: ttft=1329ms  turn_latency=1329ms
+conversation avg: ttft=1168ms  turn_latency=6469ms  (over 5 turns with bot text)
+
+--- Inspector URL ---
+http://localhost:5005/webhooks/inspector/inspect.html?sender=sim-3efbc12e-a37f-44f9-b884-6f34f73bc885
+
+--- Additional Metrics ---
+Turns to Completion: 5
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  session_started: {"event": "session_started", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}, "engine_version": "mantle"}
+    2  memory_set: system.session_started_metadata = {"is_simulation": true}
+    3  skill_activated: builtin_session_start
+    4  ordered_block_entered: builtin_session_start/main
+    5  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"0FPLE5AZ\", \"skill_id\": \"builtin_session_start\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"ACT2IL0O\", \"skill_id\": \"builtin_session_start\", \"block_id\": \"main\", \"step_id\": \"greet\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+    6  user: '/session_start'
+    7  agent: 'Hello! What can I assist you with today?'
+    8  ordered_block_completed: builtin_session_start/main (step=greet)
+    9  skill_completed: builtin_session_start
+   10  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}, {\"op\": \"remove\", \"path\": \"/0\"}]"}
+   11  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}}
+[T1] user: "I lost my River Visa while travelling and I’m stuck abroad with no way to pay. Can you set up Apple Pay for it immediately? I need to buy food tonight."
+    1  user: 'I lost my River Visa while travelling and I’m stuck abroad with no way to pay. Can you set up Apple Pay for it immediately? I need to buy food tonight.'
+    2  agent: 'I’m sorry you’re dealing with that—one moment.'
+    3  skill_activated: card_replace
+    4  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"IA2CSTJ0\", \"skill_id\": \"card_replace\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+    5  memory_set: card_replace.replacement_reason = lost
+    6  tool: activate(target_id=card_replace, memory_items={"replacement_reason": "lost"}) → ok
+    7  tool: run_after_setting_replacement_reason() → ok
+    8  memory_set: card_replace.account_eligible = true
+    9  tool: check_account_eligibility() → ok
+   10  skill_activated: card_disambiguate
+   11  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}, "update": "[{\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"OD5JKJCT\", \"skill_id\": \"card_disambiguate\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+   12  tool: activate(target_id=card_disambiguate, memory_items={"card_name": "River Visa"}) → ok
+   13  memory_set: card_disambiguate.card_list = [{"id": "VISA_001", "label": "River Visa ending 4821", "type": "River Visa"}, {"id": "MC_002", "label": "Summit Rewards ending 9173", "type": "Summit Rewards"}]
+   14  tool: get_customer_cards() → ok
+   15  memory_set: card_disambiguate.selected_card_id = VISA_001
+   16  memory_set: card_disambiguate.selected_card_label = River Visa ending 4821
+   17  tool: set_memory(selected_card_id=VISA_001) → ok
+   18  tool: run_after_setting_selected_card_id() → ok
+   19  skill_completed: card_disambiguate
+   20  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}, "update": "[{\"op\": \"remove\", \"path\": \"/1\"}]"}
+   21  tool: complete() → ok
+   22  memory_set: card_replace.selected_card_id = VISA_001
+   23  memory_set: card_replace.committed_card_id = VISA_001
+   24  tool: adopt_selected_card() → ok
+   25  memory_set: card_replace.card_eligible = true
+   26  tool: check_card_eligibility(card_id=VISA_001) → ok
+   27  memory_set: card_replace.wallet_eligible = true
+   28  memory_set: card_replace.wallet_already_provisioned = false
+   29  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   30  memory_set: card_replace.wallet_provider = apple_pay
+   31  memory_set: card_replace.wallet_consent = true
+   32  memory_set: card_replace.wallet_provisioned = true
+   33  tool: provision_digital_wallet(card_id=VISA_001, wallet_provider=apple_pay) → ok
+   34  memory_set: card_replace.recent_transactions = [{"id": "txn_001", "date": "Jun 15", "merchant": "Amazon.com", "amount": 47.22, "category": "Shopping"}, {"id": "txn_002", "date": "Jun 14", "merchant": "Shell Gas Station", "amount": 38.5, "category": "Gas"}, {"id": "txn_003", "date": "Jun 13", "merchant": "Uber Eats", "amount": 24.99, "category": "Food"}, {"id": "txn_004", "date": "Jun 12", "merchant": "Netflix", "amount": 15.99, "category": "Subscriptions"}, {"id": "txn_005", "date": "Jun 10", "merchant": "Whole Foods", "amount": 112.35, "category": "Groceries"}]
+   35  tool: load_recent_transactions(card_id=VISA_001) → ok
+   36  agent: 'I’ve added your **River Visa ending 4821** to **Apple Pay**—it should show up in your Wallet app in about **2–3 minutes**. Before we lock anything down, please review these recent charges and tell me if they all look familiar: Recent charges on River Visa ending 4821: - Jun 15 — Amazon.com — $47.22 - Jun 14 — Shell Gas Station — $38.50 - Jun 13 — Uber Eats — $24.99 - Jun 12 — Netflix — $15.99 - Jun 10 — Whole Foods — $112.35'
+   37  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}}
+[T2] user: "Thank you so much. Yes, all of those charges look familiar to me."
+    1  user: 'Thank you so much. Yes, all of those charges look familiar to me.'
+    2  agent: 'Got it—one moment.'
+    3  memory_set: card_replace.transactions_look_familiar = true
+    4  memory_set: card_replace.transaction_review_complete = true
+    5  tool: set_memory(transactions_look_familiar=true) → ok
+    6  tool: run_after_setting_transactions_look_familiar() → ok
+    7  memory_set: card_replace.rush_eligible = true
+    8  tool: check_rush_shipping_eligibility(card_id=VISA_001) → ok
+    9  agent: 'Thanks—since those charges are familiar, the next step is locking the lost card to keep it safe. **Do you want me to lock your River Visa ending 4821 now?** Also, for the replacement card shipment, do you want **standard (5–7 business days)** or **rush (1–2 business days, $25)**?'
+   10  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}}
+[T3] user: "Yes, please lock the River Visa ending 4821, and I want rush shipping for the replacement card."
+    1  user: 'Yes, please lock the River Visa ending 4821, and I want rush shipping for the replacement card.'
+    2  agent: 'Okay—just a moment.'
+    3  memory_set: card_replace.wants_card_locked = true
+    4  memory_set: card_replace.shipping_type = rush
+    5  tool: set_memory(wants_card_locked=true, shipping_type=rush) → ok
+    6  memory_set: card_replace.card_locked = true
+    7  tool: lock_card(card_id=VISA_001) → ok
+    8  agent: 'Your River Visa ending 4821 is now locked, and any new transactions will be declined.'
+    9  memory_set: system.pending_tool_confirmation = {"tool_name": "process_card_replacement", "tool_args": {"card_id": "VISA_001", "shipping_type": "rush"}, "tool_call_metadata": {}, "confirmation_ask": "Alright, shall I go ahead and place the order with rush shipping?", "utter_on_user_denial": "utter_order_cancelled", "skill_id": "card_replace", "frame_id": "IA2CSTJ0", "execute_step_id": null, "deferred_next": []}
+   10  tool: process_card_replacement(card_id=VISA_001, shipping_type=rush) → awaiting confirmation
+   11  agent: 'Would you like me to go ahead and submit the replacement order with rush shipping?'
+   12  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}}
+[T4] user: "Yes, please submit the replacement order with rush shipping."
+    1  user: 'Yes, please submit the replacement order with rush shipping.'
+    2  memory_cleared: system.pending_tool_confirmation
+    3  memory_set: card_replace.shipping_type = rush
+    4  memory_set: card_replace.replacement_ordered = true
+    5  memory_set: card_replace.replacement_order_summary = Order ID: RPL-2026-001843 Card: River Visa ending 4821 Shipping: rush Estimated delivery: 1-2 business days
+    6  tool: process_card_replacement(card_id=VISA_001, shipping_type=rush) → ok
+    7  tool: resolve_tool_confirmation(confirmed=true) → ok
+    8  agent: 'All set. Your replacement card has been ordered: Order ID: RPL-2026-001843 Card: River Visa ending 4821 Shipping: rush Estimated delivery: 1-2 business days'
+    9  skill_completed: card_replace
+   10  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}]"}
+   11  skill_activated: builtin_completed
+   12  ordered_block_entered: builtin_completed/main
+   13  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"YRL8WFIP\", \"skill_id\": \"builtin_completed\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"YU0YPVTY\", \"skill_id\": \"builtin_completed\", \"block_id\": \"main\", \"step_id\": \"ask_continue\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   14  agent: 'Is there anything else you need help with?'
+   15  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}}
+[T5] user: "No, that’s perfect. Thanks, that’s all I needed."
+    1  user: 'No, that’s perfect. Thanks, that’s all I needed.'
+    2  memory_set: builtin_completed.wants_to_continue = false
+    3  tool: set_memory(wants_to_continue=false) → ok
+    4  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}, "update": "[{\"op\": \"replace\", \"path\": \"/1/step_id\", \"value\": \"csat_link\"}]"}
+    5  ordered_block_completed: builtin_completed/main (step=csat_link)
+    6  skill_completed: builtin_completed
+    7  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}, {\"op\": \"remove\", \"path\": \"/0\"}]"}
+    8  skill_activated: builtin_customer_satisfaction
+    9  ordered_block_entered: builtin_customer_satisfaction/main
+   10  stack: {"event": "stack", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"HEQPW56K\", \"skill_id\": \"builtin_customer_satisfaction\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"K8K2ZV1Q\", \"skill_id\": \"builtin_customer_satisfaction\", \"block_id\": \"main\", \"step_id\": \"ask_csat\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+   11  agent: 'Were you satisfied with the assistance you received today?'
+   12  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "58c08b495410481696a7ef8987c6ef62", "model_name": "20261124-183004-thundering-map.tar.gz", "assistant_id": "mantle-combined", "session_id": "661480ca-370b-4616-85c4-57cfcf093138"}}
