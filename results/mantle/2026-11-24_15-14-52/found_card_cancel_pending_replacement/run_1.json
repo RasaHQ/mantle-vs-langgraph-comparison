@@ -1,0 +1,405 @@
+{
+  "scenario_name": "Found card mid-flow \u2014 cancel pending actions",
+  "scenario_slug": "found_card_cancel_pending_replacement",
+  "scenario_type": null,
+  "run_index": 1,
+  "timestamp": "2026-11-24T09:46:25Z",
+  "conversation_id": "sim-4ff6e2ae-615f-4257-ab9d-f33f1b25ebe3",
+  "error": null,
+  "error_is_harness": false,
+  "metrics_error": null,
+  "judge_summary": "The assistant successfully handled the core banking task: it locked the reported card, later clarified exactly what had been done, and explained what could or could not be reversed. It maintained good contextual coherence and a polite tone, but briefly ignored a key clarification request, requiring the user to restate their concern before receiving a direct explanation.",
+  "latency": {
+    "measured_via": "direct",
+    "per_turn": [
+      {
+        "turn": 1,
+        "ttft_ms": null,
+        "turn_latency_ms": null,
+        "gaps_ms": []
+      },
+      {
+        "turn": 2,
+        "ttft_ms": 880.0657909887377,
+        "turn_latency_ms": 12639.780999990762,
+        "gaps_ms": []
+      },
+      {
+        "turn": 3,
+        "ttft_ms": 1066.9252920051804,
+        "turn_latency_ms": 3404.9118340044515,
+        "gaps_ms": []
+      },
+      {
+        "turn": 4,
+        "ttft_ms": 1135.914792001131,
+        "turn_latency_ms": 6123.9244589960435,
+        "gaps_ms": []
+      },
+      {
+        "turn": 5,
+        "ttft_ms": 2160.772041999735,
+        "turn_latency_ms": 2215.9804589900887,
+        "gaps_ms": []
+      },
+      {
+        "turn": 6,
+        "ttft_ms": 3745.077375002438,
+        "turn_latency_ms": 5062.0850840059575,
+        "gaps_ms": []
+      },
+      {
+        "turn": 7,
+        "ttft_ms": 1917.826500008232,
+        "turn_latency_ms": 2026.2382920045638,
+        "gaps_ms": []
+      }
+    ],
+    "avg_ttft_ms": 1817.763632000909,
+    "avg_turn_latency_ms": 5245.4868546653115,
+    "avg_gap_ms": null
+  },
+  "transcript": [
+    {
+      "user": "",
+      "bot": [
+        "Hello! What can I assist you with today?"
+      ]
+    },
+    {
+      "user": "Hi, I think my River Visa card ending in 4821 is lost.",
+      "bot": [
+        "I\u2019m sorry\u2014let me pull up your card options.",
+        "Recent charges on River Visa ending 4821:\n- Jun 15 \u2014 Amazon.com \u2014 $47.22  \n- Jun 14 \u2014 Shell Gas Station \u2014 $38.50  \n- Jun 13 \u2014 Uber Eats \u2014 $24.99  \n- Jun 12 \u2014 Netflix \u2014 $15.99  \n- Jun 10 \u2014 Whole Foods \u2014 $112.35  \n\nDo all of these look familiar?"
+      ]
+    },
+    {
+      "user": "Yeah, those all look familiar to me.",
+      "bot": [
+        "Got it\u2014one moment.",
+        "Would you like me to lock your River Visa ending 4821 now to prevent any new charges?"
+      ]
+    },
+    {
+      "user": "Yes, please go ahead and lock that card.",
+      "bot": [
+        "Okay\u2014one moment.",
+        "Your River Visa ending in 4821 is now locked, and any new transactions will be declined.",
+        "Would you like to add the replacement card to a digital wallet for immediate use\u2014Apple Pay or Google Pay?"
+      ]
+    },
+    {
+      "user": "Wait \u2014 I just found it under the seat. Don't order a replacement, don't do anything else. Did you already do anything to the card?",
+      "bot": [
+        "Can I help you with anything else?"
+      ]
+    },
+    {
+      "user": "I still need to know what you already did to the card, and what can and can\u2019t be reversed.",
+      "bot": [
+        "I locked your River Visa ending 4821, effective immediately, so new transactions should be declined; I did not place a replacement order. I can help you unlock it, but I can\u2019t reverse any attempted charges that may have been declined while it was locked. If you want it unlocked now, tell me \u201cyes, unlock it,\u201d and I\u2019ll take care of that."
+      ]
+    },
+    {
+      "user": "Got it, thanks for explaining. Please don\u2019t unlock it or do anything else with the card\u2014I\u2019ll handle it later myself.",
+      "bot": [
+        "Can I help with anything else?"
+      ]
+    }
+  ],
+  "task_completion": true,
+  "task_completion_reasoning": "The user wanted to know what had already been done to the card and what could be reversed, and the assistant explicitly stated the card was locked, no replacement was ordered, and that unlocks are possible but declined charges are not reversible.",
+  "eval_passed": false,
+  "criteria": [
+    {
+      "index": 0,
+      "criterion": "The agent accurately states whether any action had already completed rather than guessing",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "When asked what had already been done, the bot replied \"I locked your River Visa ending 4821... I did not place a replacement order,\" which matches the ledger showing a successful lock_card tool call and no replacement order."
+    },
+    {
+      "index": 1,
+      "criterion": "When the customer asks what can be reversed, the agent does not offer to unlock the card and does not say the lock can be undone from this chat. Saying it cannot unlock the card, or that it has no way to undo the lock, passes.",
+      "passed": false,
+      "verdict": "failed",
+      "reasoning": "In response to the question about what can and can\u2019t be reversed, the agent explicitly offered to unlock the card from the chat: \"I can help you unlock it... If you want it unlocked now, tell me \u2018yes, unlock it,\u2019 and I\u2019ll take care of that.\""
+    },
+    {
+      "index": 2,
+      "criterion": "The agent does not perform any duplicate or compensating action the user did not request",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "The ledger shows the only card action performed was the single user-requested lock_card(VISA_001); after the user said not to do anything else and then reiterated not to unlock it, no further lock/unlock or compensating actions were executed."
+    }
+  ],
+  "criteria_summary": {
+    "passed": 2,
+    "total": 3,
+    "all_passed": false
+  },
+  "assertions": [
+    {
+      "index": 0,
+      "assertion": "skill_activated(card_replace)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 1,
+      "assertion": "skill_activated(card_disambiguate)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 2,
+      "assertion": "skill_completed(card_disambiguate)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 3,
+      "assertion": "skill_cancelled(card_replace)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 4,
+      "assertion": "sequencing",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 5,
+      "assertion": "memory_was_set(card_replace.account_eligible=True, card_replace.replacement_reason='lost', card_disambiguate.selected_card_id='VISA_001', card_disambiguate.selected_card_label='River Visa ending 4821', card_replace.card_eligible=True, card_replace.transaction_review_complete=True, card_replace.transactions_look_familiar=True, card_replace.wants_card_locked=True, card_replace.card_locked=True)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 6,
+      "assertion": "memory_was_not_set(card_replace.wallet_consent, card_replace.wallet_provider, card_replace.wallet_provisioned, card_replace.shipping_type, card_replace.replacement_ordered)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 7,
+      "assertion": "tool_executed(check_card_eligibility)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 8,
+      "assertion": "tool_executed(load_recent_transactions)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 9,
+      "assertion": "tool_executed(lock_card)",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "assertions_summary": {
+    "passed": 10,
+    "total": 10,
+    "all_passed": true
+  },
+  "scale_metrics": {
+    "helpfulness": 4,
+    "repair_quality": 3,
+    "coherence": 5,
+    "tone": 4
+  },
+  "scale_metrics_reasoning": {
+    "helpfulness": "The assistant clearly explained the actions taken (lock applied, no replacement ordered) and reversibility, but could have been more proactively reassuring right when the user said 'Wait \u2014 I just found it' instead of initially dodging the question.",
+    "repair_quality": "After the user\u2019s disfluency ('Wait \u2014 I just found it... Did you already do anything to the card?'), the bot first ignored the concern and asked 'Can I help you with anything else?' before only answering properly after the user repeated their need.",
+    "coherence": "The assistant consistently tracked that the card ending in 4821 was locked, that no replacement was ordered, and later respected the user\u2019s request not to unlock or change anything else.",
+    "tone": "The tone is polite and professional throughout, though slightly canned and terse at key moments (e.g., 'Can I help you with anything else?') rather than fully responsive to the user\u2019s evident concern."
+  },
+  "acknowledgements": {
+    "turns": [
+      {
+        "turn_number": 1,
+        "tools": [
+          "activate",
+          "check_account_eligibility",
+          "activate",
+          "get_customer_cards",
+          "adopt_selected_card",
+          "check_card_eligibility",
+          "load_recent_transactions"
+        ],
+        "acknowledgement": "I\u2019m sorry\u2014let me pull up your card options.",
+        "follow_up": [
+          "Recent charges on River Visa ending 4821:\n- Jun 15 \u2014 Amazon.com \u2014 $47.22  \n- Jun 14 \u2014 Shell Gas Station \u2014 $38.50  \n- Jun 13 \u2014 Uber Eats \u2014 $24.99  \n- Jun 12 \u2014 Netflix \u2014 $15.99  \n- Jun 10 \u2014 Whole Foods \u2014 $112.35  \n\nDo all of these look familiar?"
+        ]
+      },
+      {
+        "turn_number": 3,
+        "tools": [
+          "check_wallet_eligibility_and_status",
+          "check_card_eligibility",
+          "lock_card"
+        ],
+        "acknowledgement": "Okay\u2014one moment.",
+        "follow_up": [
+          "Your River Visa ending in 4821 is now locked, and any new transactions will be declined.",
+          "Would you like to add the replacement card to a digital wallet for immediate use\u2014Apple Pay or Google Pay?"
+        ]
+      },
+      {
+        "turn_number": 4,
+        "tools": [
+          "cancel"
+        ],
+        "acknowledgement": null,
+        "follow_up": [
+          "Can I help you with anything else?"
+        ]
+      },
+      {
+        "turn_number": 5,
+        "tools": [
+          "cancel",
+          "activate"
+        ],
+        "acknowledgement": null,
+        "follow_up": [
+          "I locked your River Visa ending 4821, effective immediately, so new transactions should be declined; I did not place a replacement order. I can help you unlock it, but I can\u2019t reverse any attempted charges that may have been declined while it was locked. If you want it unlocked now, tell me \u201cyes, unlock it,\u201d and I\u2019ll take care of that."
+        ]
+      },
+      {
+        "turn_number": 6,
+        "tools": [
+          "cancel"
+        ],
+        "acknowledgement": null,
+        "follow_up": [
+          "Can I help with anything else?"
+        ]
+      }
+    ],
+    "verdicts": [
+      {
+        "turn_number": 1,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": null,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "Sounds like a natural, empathetic response that appropriately indicates checking card options without assuming the outcome.",
+        "issue_score": 5.0
+      },
+      {
+        "turn_number": 3,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": null,
+          "stock_opener": false
+        },
+        "naturalness_score": 4,
+        "reasoning": "A brief, natural-sounding pause marker acknowledging the request and indicating it will act, without overcommitting.",
+        "issue_score": 5.0
+      }
+    ],
+    "error": null,
+    "coverage": [
+      0.4,
+      2,
+      5
+    ],
+    "issue_counts": {
+      "hard_contradiction": 0,
+      "soft_contradiction": 0,
+      "commits_to_tool_outcome": 0,
+      "repeated_in_same_bot_turn": 0,
+      "similar_to_earlier_acknowledgement": 0,
+      "stock_opener": 0
+    },
+    "mean_issue_score": 5.0,
+    "mean_naturalness_score": 4.5
+  },
+  "engine_tokens": {
+    "status": "complete",
+    "session_id": "sim-4ff6e2ae-615f-4257-ab9d-f33f1b25ebe3",
+    "prompt": 82421,
+    "completion": 691,
+    "cached": 4608,
+    "cache_write": 0,
+    "total": 83112,
+    "generations": 24,
+    "cost": 0.14665315,
+    "cost_status": "complete",
+    "price_source": {
+      "provider": "litellm",
+      "version": "1.105.3"
+    },
+    "by_call_type": {
+      "rephrase": [
+        {
+          "model": "gpt-5.2",
+          "prompt": 5373,
+          "completion": 57,
+          "cached": 0,
+          "cache_write": 0,
+          "total": 5430,
+          "generations": 4,
+          "cost": 0.010200750000000001
+        }
+      ],
+      "main_orchestrator": [
+        {
+          "model": "gpt-5.2",
+          "prompt": 77048,
+          "completion": 634,
+          "cached": 4608,
+          "cache_write": 0,
+          "total": 77682,
+          "generations": 20,
+          "cost": 0.1364524
+        }
+      ]
+    },
+    "fetched_at": "2026-11-24T09:47:09.339257+00:00"
+  },
+  "evaluation_tokens": {
+    "simulator": [
+      {
+        "model": "gpt-5.1-2025-11-13",
+        "prompt": 8188,
+        "completion": 246,
+        "cached": 4352,
+        "cache_write": 0,
+        "total": 8434,
+        "generations": 6,
+        "cost": 0.007799000000000002
+      }
+    ],
+    "judge": [
+      {
+        "model": "gpt-5.1-2025-11-13",
+        "prompt": 8257,
+        "completion": 1046,
+        "cached": 0,
+        "cache_write": 0,
+        "total": 9303,
+        "generations": 3,
+        "cost": 0.02078125
+      }
+    ],
+    "cost": 0.02858025,
+    "cost_status": "complete",
+    "price_source": {
+      "provider": "litellm",
+      "version": "1.105.3"
+    }
+  }
+}

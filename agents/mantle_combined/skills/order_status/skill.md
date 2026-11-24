@@ -24,6 +24,12 @@ Then handle follow-ups:
   (they named it, or you just looked it up), reuse that order ID. Do not
   ask them to repeat it. Only ask for an order ID if it is unclear.
 
-When the customer is satisfied, call @tool.complete after you have said
-the relevant order information to them.
 Never wrap up with "anything else"; that is the caller's job.
+
+## Finishing
+
+Answer the customer's question first. Never complete in place of an answer.
+Call @tool.complete when either of these happens:
+- The customer asks for something this skill cannot do, such as changing
+  an order or its address. Say you cannot, then complete.
+- The customer says they are done or thanks you.

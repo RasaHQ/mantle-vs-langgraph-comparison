@@ -105,51 +105,6 @@ async def adopt_selected_card(context: ToolContext = None) -> ToolResult:
 
 
 @tool(
-    description="Post-write hook: reset card-tied state when this skill's card id changes."
-)
-async def run_after_setting_selected_card_id(
-    context: ToolContext = None,
-) -> ToolResult:
-    selected_id = context.memory.get("selected_card_id")
-    if not selected_id or selected_id not in _data.CARDS:
-        context.memory.set("selected_card_id", None)
-        return ToolResult(
-            llm_response={
-                "ok": False,
-                "error": "invalid_card_id",
-                "hint": "Use a card id from the card list (e.g. VISA_001).",
-            }
-        )
-    # adopt_selected_card already committed this id; skip a second reset.
-    if context.memory.get("committed_card_id") == selected_id:
-        card = _data.CARDS[selected_id]
-        return ToolResult(
-            llm_response={
-                "ok": True,
-                "selected_card_id": selected_id,
-                "selected_card_label": card["label"],
-            }
-        )
-    card_changed = _commit_selected_card(context, str(selected_id))
-    card = _data.CARDS[selected_id]
-    response: dict = {
-        "ok": True,
-        "selected_card_id": selected_id,
-        "selected_card_label": card["label"],
-    }
-    if card_changed:
-        response["card_changed"] = True
-        response["hint"] = (
-            "Selected card changed. Re-run card eligibility and fraud review "
-            "(load_recent_transactions) for the new card. Do not reuse the "
-            "old card's charges, wallet, or shipping. A lock already "
-            "completed on the previous card stays completed, and you cannot "
-            "unlock it."
-        )
-    return ToolResult(llm_response=response)
-
-
-@tool(
     description="Check whether the customer's account is eligible for a card replacement."
 )
 async def check_account_eligibility(context: ToolContext = None) -> ToolResult:
@@ -413,13 +368,32 @@ async def check_wallet_eligibility_and_status(
     already = card.get("already_provisioned", False)
     context.memory.set("wallet_eligible", eligible)
     context.memory.set("wallet_already_provisioned", already)
-    return ToolResult(
-        llm_response={
-            "card_id": card_id,
-            "wallet_eligible": eligible,
-            "already_provisioned": already,
-        }
+    response: dict = {
+        "card_id": card_id,
+        "wallet_eligible": eligible,
+        "already_provisioned": already,
+    }
+    lock_question_open = (
+        context.memory.get("replacement_reason") in ("lost", "not_received")
+        and context.memory.get("card_locked") is not True
+        and context.memory.get("wants_card_locked") is None
     )
+    if eligible and not already and lock_question_open:
+        response["hint"] = (
+            "The lock question comes first. Ask whether they want this card "
+            "locked and wait for the answer. Offer the wallet after that, "
+            "unless they already asked for a wallet."
+        )
+    elif eligible and not already:
+        response["hint"] = (
+            "Next, ask only whether they want the new card added to Apple Pay "
+            "or Google Pay, then wait for the answer. Do not check or mention "
+            "shipping in this reply. If they already named a wallet, add it "
+            "with provision_digital_wallet instead of asking."
+        )
+    else:
+        response["hint"] = "No wallet offer for this card. Continue to shipping."
+    return ToolResult(llm_response=response)
 
 
 @tool(

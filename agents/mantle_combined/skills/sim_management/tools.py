@@ -28,10 +28,13 @@ _data = _load_mock_data()
     )
 )
 async def check_sim_status(context: ToolContext = None) -> ToolResult:
-    # The mock is process-wide. A block lives only in this conversation's memory.
+    # The mock is process-wide. A block lives only in this conversation's memory:
+    # project memory keeps it across runs of this skill.
     is_blocked = context.memory.get("sim_blocked")
     if is_blocked is None:
-        is_blocked = _data.SIM_STATUS["is_blocked"]
+        is_blocked = bool(context.memory.get("project.sim_blocked")) or _data.SIM_STATUS[
+            "is_blocked"
+        ]
         context.memory.set("sim_blocked", is_blocked)
     status = {**_data.SIM_STATUS, "is_blocked": is_blocked}
     return ToolResult(llm_response=status)
@@ -46,6 +49,7 @@ async def check_sim_status(context: ToolContext = None) -> ToolResult:
 )
 async def block_sim(context: ToolContext = None) -> ToolResult:
     context.memory.set("sim_blocked", True)
+    context.memory.set("project.sim_blocked", True)
     response = {
         "success": True,
         "number": _data.SIM_STATUS["number"],
@@ -107,6 +111,9 @@ async def order_replacement_sim(context: ToolContext = None) -> ToolResult:
         f"Next step: {response['next_step']}"
     )
     context.memory.set("sim_order_summary", summary)
+    line = f"{response['sim_type']}: order {response['order_id']}, confirmation {response['confirmation']}"
+    earlier = context.memory.get("project.sim_orders")
+    context.memory.set("project.sim_orders", f"{earlier}; {line}" if earlier else line)
     return ToolResult(llm_response=response)
 
 
@@ -123,6 +130,7 @@ async def get_device_info(context: ToolContext = None) -> ToolResult:
     context.memory.set("device_imei", info["imei"])
     context.memory.set("device_serial", info["serial_number"])
     context.memory.set("device_info_shared", True)
+    context.memory.set("project.sim_device_info_shared", True)
     return ToolResult(llm_response=info)
 
 

@@ -1,0 +1,225 @@
+scenario: Customer demands immediate card lock before anything else due to active fraud
+run: 2
+timestamp: 2026-11-24T10:22:10Z
+conversation_id: sim-6f0369d6-0b00-4c60-918e-8946d751d0c9
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] After locking the card, the agent explicitly confirms to the customer that the River card is locked (not only that a lock tool ran)
+  rationale: After the lock_card tool ran, the bot tells the user explicitly: "Your **River Visa ending 4821 is now locked**, so no further ATM withdrawals or card purchases should go through on it."
+
+[PASS] The agent asks whether the customer wants to add the new card to a digital wallet (Apple Pay or Google Pay)
+  rationale: The bot asks: "Would you like to add your new River Visa ending 4821 to Apple Pay or Google Pay so you can use it while the replacement card is on its way?"
+
+[PASS] Before placing the replacement order, the agent asks whether the customer wants to place the order and receives their agreement
+  rationale: Before processing the replacement, the bot asks "Alright, shall I go ahead and place the order with rush shipping?" and the user replies "Yes, please place the rush replacement order now."
+
+[PASS] After placing the replacement order, the agent confirms it and audibly shares the order ID from the tool result. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the ID is omitted, materially differs from the returned value, or is not spoken.
+  rationale: After process_card_replacement() → ok, the bot says: "Your order ID is RPL-2026-001843" which exactly matches the order ID in the tool result and then reiterates it in the summary.
+
+[PASS] The agent does not re-ask which card to replace or why it needs replacing after the customer has already named the River Visa and said it was stolen. Asking for shipping speed or confirming the order with the selected shipping type is not a re-ask of those facts.
+  rationale: Once the user specifies "The River Visa ending in 4821" and the reason is recorded as stolen in the ledger, the bot never asks again which card or why; it only asks about delivery options and order confirmation.
+
+--- Quality Metrics ---
+bot_quality: 5.0/5
+  helpfulness: 5/5 — It accurately identified the card, confirmed it was locked, explained that no further transactions would go through, and completed and confirmed the rush replacement with concrete details.
+  repair_quality: 5/5 — There were no user pushbacks or corrections; the assistant did not need to repair any misunderstandings.
+  coherence: 5/5 — The assistant consistently referred to the correct card, correctly tracked the lock status and shipping choice, and did not re-ask for already provided information.
+  tone: 5/5 — The tone is clear, calm, and appropriately reassuring and professional for an urgent fraud-related situation.
+  task_completion: PASS — The assistant clearly locked the specified card and placed a rush replacement order, providing confirmation and an order ID, which matches the user’s goals.
+summary: The assistant efficiently handled an urgent card-fraud scenario: it locked the correct card, offered but did not push extra services, and completed a rush replacement with clear confirmations and details. The conversation remained coherent, concise, and professional throughout, fully meeting the user’s needs without confusion or redundancy.
+
+--- Acknowledgements ---
+summary:
+  coverage: 0/5 tool turns (0%)
+  mean naturalness score: None
+  mean issue score: None
+  issues: none
+
+T1
+  turn:
+    tools:
+      - transfer_to_card_replace
+      - check_account_eligibility
+      - record_reason
+      - choose_card
+      - get_customer_cards
+    no acknowledgement
+T2
+  turn:
+    tools:
+      - transfer_to_card_replace
+      - choose_card
+      - select_card
+      - check_card_eligibility
+      - lock_card
+      - check_wallet_eligibility_and_status
+    no acknowledgement
+T3
+  turn:
+    tools:
+      - provision_digital_wallet
+      - check_rush_shipping_eligibility
+    no acknowledgement
+T4
+  turn:
+    tools:
+      - transfer_to_card_replace
+      - record_shipping_type
+    no acknowledgement
+T5
+  turn:
+    tools:
+      - process_card_replacement
+      - finish_task
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "Someone is using my card right now at an ATM! I need you to lock it immediately!"
+  observed: transfer_to_card_replace
+  observed: check_account_eligibility
+  observed: record_reason(reason='stolen')
+  observed: choose_card
+  observed: get_customer_cards
+[T2] user: "The River Visa ending in 4821. Please lock it right now before anything else."
+  observed: transfer_to_card_replace
+  observed: choose_card
+  observed: select_card(card_id='VISA_001')
+  observed: check_card_eligibility(card_id='VISA_001')
+  observed: lock_card(card_id='VISA_001')
+  observed: check_wallet_eligibility_and_status(card_id='VISA_001')
+[T3] user: "No, I don’t want to add it to a digital wallet. What happens next?"
+  observed: provision_digital_wallet → ERROR: customer_declined
+  observed: check_rush_shipping_eligibility(card_id='VISA_001')
+[T4] user: "Rush, 1–2 business days please."
+  observed: transfer_to_card_replace
+  observed: record_shipping_type(shipping_type='rush')
+[T5] user: "Yes, please place the rush replacement order now."
+  observed: process_card_replacement(card_id='VISA_001', shipping_type='rush')
+  observed: finish_task
+
+--- Assertion Results ---
+[PASS] skill_activated(card_replace)
+[PASS] skill_activated(card_disambiguate)
+[PASS] skill_completed(card_disambiguate)
+[PASS] skill_completed(card_replace)
+[PASS] sequencing
+[PASS] memory_was_set(card_replace.account_eligible=True, card_replace.replacement_reason='stolen', card_disambiguate.selected_card_id='VISA_001', card_disambiguate.selected_card_label='River Visa ending 4821', card_replace.card_eligible=True, card_replace.card_locked=True, card_replace.wallet_eligible=True, card_replace.wallet_already_provisioned=False, card_replace.shipping_type='rush', card_replace.replacement_ordered=True)
+[PASS] memory_was_not_set(card_replace.recent_transactions, card_replace.transaction_review_complete, card_replace.transactions_look_familiar, card_replace.fraud_reported, card_replace.wants_card_locked, card_replace.wallet_consent, card_replace.wallet_provider, card_replace.wallet_provisioned, card_replace.has_authorized_users, card_replace.replace_target, card_replace.damaged_applied)
+[PASS] tool_executed(check_account_eligibility)
+[PASS] tool_executed(get_customer_cards)
+[PASS] tool_executed(check_card_eligibility)
+[PASS] tool_executed(lock_card)
+[PASS] tool_executed(check_wallet_eligibility_and_status)
+[PASS] tool_executed(check_rush_shipping_eligibility)
+[PASS] tool_executed(process_card_replacement)
+
+--- Raw Transcript ---
+[1] agent: Hi! How can I help you today?
+[2] user: Someone is using my card right now at an ATM! I need you to lock it immediately!
+[3] agent: I can help lock and replace it right away—but I need to know which card is being used.
+
+Which one is it?
+- **River Visa ending 4821**
+- **Summit Rewards ending 9173**
+[4] user: The River Visa ending in 4821. Please lock it right now before anything else.
+[5] agent: Your card has been locked. No further transactions will be authorized.
+[6] agent: Would you like to add your new River Visa ending 4821 to Apple Pay or Google Pay so you can use it while the replacement card is on its way?
+[7] user: No, I don’t want to add it to a digital wallet. What happens next?
+[8] agent: No problem, I won't add it to a digital wallet.
+[9] agent: Your **River Visa ending 4821 is now locked**, so no further ATM withdrawals or card purchases should go through on it.
+
+For the replacement card delivery, which do you want?
+- **Rush (1–2 business days)** — **$25**
+- **Standard (5–7 business days)** — **$0**
+[10] user: Rush, 1–2 business days please.
+[11] agent: Alright, shall I go ahead and place the order with rush shipping?
+[12] user: Yes, please place the rush replacement order now.
+[13] agent: All set. Your replacement River Visa ending 4821 has been ordered with rush shipping. Your order ID is RPL-2026-001843, and it should arrive in 1-2 business days.
+[14] agent: Done — I’ve placed a **rush replacement** for your **River Visa ending 4821**.
+
+- **Order ID:** **RPL-2026-001843**  
+- **Delivery:** **1–2 business days**
+[15] user: Okay, thank you, that’s all I needed.
+[16] agent: Goodbye, and take care.
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=—  turn_latency=21437ms
+turn 3: ttft=—  turn_latency=41463ms
+turn 4: ttft=—  turn_latency=22778ms
+turn 5: ttft=—  turn_latency=7956ms
+turn 6: ttft=—  turn_latency=2885ms
+turn 7: ttft=—  turn_latency=1502ms
+conversation avg: turn_latency=16337ms  (over 0 turns with bot text, 6 turns timed)
+
+--- Inspector URL ---
+http://127.0.0.1:5007/webhooks/inspector/inspect.html?sender=sim-6f0369d6-0b00-4c60-918e-8946d751d0c9
+
+--- Additional Metrics ---
+Turns to Completion: 6
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  action: action_session_start
+    2  session_started: {"event": "session_started"}
+    3  agent: 'Hi! How can I help you today?'
+[T1] user: "Someone is using my card right now at an ATM! I need you to lock it immediately!"
+    1  user: 'Someone is using my card right now at an ATM! I need you to lock it immediately!'
+    2  tool: transfer_to_card_replace() → ok
+    3  skill_activated: card_replace
+    4  tool: check_account_eligibility() → ok
+    5  memory_set: card_replace.account_eligible = true
+    6  tool: record_reason(reason=stolen) → ok
+    7  memory_set: card_replace.replacement_reason = stolen
+    8  tool: choose_card() → ok
+    9  skill_activated: card_disambiguate
+   10  tool: get_customer_cards() → ok
+   11  memory_set: card_disambiguate.card_list = [{"id": "VISA_001", "label": "River Visa ending 4821", "type": "River Visa"}, {"id": "MC_002", "label": "Summit Rewards ending 9173", "type": "Summit Rewards"}]
+   12  agent: 'I can help lock and replace it right away—but I need to know which card is being used. Which one is it? - **River Visa ending 4821** - **Summit Rewards ending 9173**'
+[T2] user: "The River Visa ending in 4821. Please lock it right now before anything else."
+    1  user: 'The River Visa ending in 4821. Please lock it right now before anything else.'
+    2  tool: transfer_to_card_replace() → ok
+    3  tool: choose_card() → ok
+    4  tool: select_card(card_id=VISA_001) → ok
+    5  memory_set: card_disambiguate.selected_card_id = VISA_001
+    6  memory_set: card_disambiguate.selected_card_label = River Visa ending 4821
+    7  memory_set: card_replace.selected_card_id = VISA_001
+    8  skill_completed: card_disambiguate
+    9  tool: check_card_eligibility(card_id=VISA_001) → ok
+   10  memory_set: card_replace.card_eligible = true
+   11  tool: lock_card(card_id=VISA_001) → ok
+   12  memory_set: card_replace.card_locked = true
+   13  agent: 'Your card has been locked. No further transactions will be authorized.'
+   14  tool: check_wallet_eligibility_and_status(card_id=VISA_001) → ok
+   15  memory_set: card_replace.wallet_eligible = true
+   16  memory_set: card_replace.wallet_already_provisioned = false
+   17  agent: 'Would you like to add your new River Visa ending 4821 to Apple Pay or Google Pay so you can use it while the replacement card is on its way?'
+[T3] user: "No, I don’t want to add it to a digital wallet. What happens next?"
+    1  user: 'No, I don’t want to add it to a digital wallet. What happens next?'
+    2  tool: provision_digital_wallet() → ERROR: customer_declined
+    3  agent: "No problem, I won't add it to a digital wallet."
+    4  tool: check_rush_shipping_eligibility(card_id=VISA_001) → ok
+    5  memory_set: card_replace.rush_eligible = true
+    6  agent: 'Your **River Visa ending 4821 is now locked**, so no further ATM withdrawals or card purchases should go through on it. For the replacement card delivery, which do you want? - **Rush (1–2 business days)** — **$25** - **Standard (5–7 business days)** — **$0**'
+[T4] user: "Rush, 1–2 business days please."
+    1  user: 'Rush, 1–2 business days please.'
+    2  tool: transfer_to_card_replace() → ok
+    3  tool: record_shipping_type(shipping_type=rush) → ok
+    4  memory_set: card_replace.shipping_type = rush
+    5  agent: 'Alright, shall I go ahead and place the order with rush shipping?'
+[T5] user: "Yes, please place the rush replacement order now."
+    1  user: 'Yes, please place the rush replacement order now.'
+    2  tool: process_card_replacement(card_id=VISA_001, shipping_type=rush) → ok
+    3  memory_set: card_replace.replacement_ordered = true
+    4  memory_set: card_replace.replacement_order_summary = Order ID: RPL-2026-001843 Card: River Visa ending 4821 Shipping: rush Estimated delivery: 1-2 business days
+    5  agent: 'All set. Your replacement River Visa ending 4821 has been ordered with rush shipping. Your order ID is RPL-2026-001843, and it should arrive in 1-2 business days.'
+    6  tool: finish_task() → ok
+    7  skill_completed: card_replace
+    8  agent: 'Done — I’ve placed a **rush replacement** for your **River Visa ending 4821**. - **Order ID:** **RPL-2026-001843** - **Delivery:** **1–2 business days**'
+[T6] user: "Okay, thank you, that’s all I needed."
+    1  user: 'Okay, thank you, that’s all I needed.'
+    2  agent: 'Goodbye, and take care.'

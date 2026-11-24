@@ -1,0 +1,243 @@
+scenario: Customer checks SIM replacement order status then realizes they need to report the old SIM stolen
+run: 3
+timestamp: 2026-11-24T10:29:27Z
+conversation_id: sim-7fa996a3-f2a2-4dc9-a4d8-493efdf2ac15
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent answers the replacement SIM order question with concrete shipping status or delivery information rather than only saying it found the order
+  rationale: On the first bot reply, it gives detailed status including that the order is open and being prepared, estimated ship and delivery dates, tracking status, shipping address, and total cost.
+
+[PASS] The agent moves from the order status question to blocking the SIM without treating them as two unrelated conversations or making the customer start over
+  rationale: After answering the order status, when the user asks to block the SIM, the bot immediately continues with theft-related guidance and asks for consent to block without making the user restate context or treating it as separate.
+
+[PASS] After blocking the old SIM, the agent explicitly confirms the block to the customer
+  rationale: The bot states explicitly 'Your SIM is now blocked.' and later reiterates it has 'blocked the old SIM, so it can’t be used on the network anymore.'
+
+[PASS] The agent answers whether blocking affects the replacement that is already being shipped. Saying that this in-transit physical replacement is unaffected is allowed. Mentioning ANTARCTICA_SIM_FREEZE is allowed (it is real KB content) but not required. Fail only if the agent invents a different policy, or claims the freeze applies to this customer's in-transit physical replacement.
+  rationale: When asked, the bot answers 'No — blocking the old SIM won’t affect the replacement SIM that’s being shipped. The shipment continues as normal, and the block applies only to the old SIM,' correctly stating the replacement is unaffected.
+
+[PASS] The agent gives stolen-specific handling once the customer says the SIM was taken, rather than lost-device advice
+  rationale: After the user says the SIM was stolen ('never actually reported the old SIM as stolen'), the bot instructs to report the theft to the police, records the incident reason as stolen, and mentions sharing device details for the report, which is theft-specific handling.
+
+[PASS] The agent does not re-ask for information already provided (e.g., the customer already said it was stolen, and the replacement SIM order is already identified)
+  rationale: The bot never re-asks whether the SIM was stolen or for the order details; it proceeds using the existing stolen incident and known replacement order information.
+
+[PASS] When sharing device info, the agent gives the customer concrete IMEI and serial values, not a vague acknowledgment that details were retrieved. Pass if the spoken identifiers are consistent with IMEI 352345678901234 and serial F2LZK1HQGRX. Do not fail for voice-transcript (ASR) misspellings of spoken letters or digits (H/Z confusion, extra syllables, digit grouping). Fail only if it omits one of them, invents different identifiers, or never speaks the values.
+  rationale: The bot explicitly provides 'IMEI: 352345678901234' and 'Serial number: F2LZK1HQGRX', matching the device info in the ledger.
+
+--- Quality Metrics ---
+bot_quality: 5.0/5
+  helpfulness: 5/5 — All substantive answers (order status, SIM blocking, theft flagging, device details, and impact on the replacement SIM) were clear, specific, and directly addressed the user’s needs.
+  repair_quality: 5/5 — There were no user disfluencies or corrections; the user accepted each answer, so there were no repair opportunities to mishandle.
+  coherence: 5/5 — The assistant consistently tracked the order ID, the status of the old SIM, and the replacement SIM, and never contradicted earlier statements or re-asked for information.
+  tone: 5/5 — The tone was polite, concise, and natural throughout, ending with an appropriate and friendly closing.
+  task_completion: PASS — The assistant blocked the old SIM, recorded it as stolen, provided device details, clarified that the replacement SIM would not be affected, and the user explicitly confirmed that this was exactly what they needed.
+summary: The assistant delivered precise, actionable information about the SIM replacement order and successfully handled the blocking and theft-reporting of the old SIM. It maintained consistent context and a clear, polite tone, and the user explicitly indicated that their needs were fully met.
+
+--- Acknowledgements ---
+summary:
+  coverage: 0/5 tool turns (0%)
+  mean naturalness score: None
+  mean issue score: None
+  issues: none
+
+T1
+  turn:
+    tools:
+      - transfer_to_order_status
+      - get_orders
+      - get_order_details
+      - finish_task
+    no acknowledgement
+T2
+  turn:
+    tools:
+      - transfer_to_sim_management
+      - record_incident
+      - start_block_sim
+      - check_sim_status
+    no acknowledgement
+T3
+  turn:
+    tools:
+      - record_block_consent
+      - block_sim
+      - get_device_info
+    no acknowledgement
+T4
+  turn:
+    tools:
+      - transfer_to_sim_management
+      - finish_task
+      - transfer_to_bill_inquiry
+      - finish_task
+      - transfer_to_account_advisory
+      - get_accounts
+      - get_interest_rates
+    no acknowledgement
+T5
+  turn:
+    tools:
+      - transfer_to_account_advisory
+      - finish_task
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "Hi, what’s the status on my replacement SIM order?"
+  observed: transfer_to_order_status
+  observed: get_orders
+  observed: get_order_details(order_id='ORD-20260701-004')
+  observed: finish_task
+[T2] user: "Good, sounds like it’s on its way. I just realized I never actually reported the old SIM as stolen. Can you block it?"
+  observed: transfer_to_sim_management
+  observed: record_incident(reason='stolen')
+  observed: start_block_sim
+  observed: check_sim_status
+[T3] user: "Yes, please block it now."
+  observed: record_block_consent(wants_to_block=true)
+  observed: block_sim
+  observed: get_device_info
+[T4] user: "Thanks, that’s exactly the info I needed. One more thing: will blocking the old SIM affect the replacement that’s being shipped?"
+  observed: transfer_to_sim_management
+  observed: search_knowledge(query='Blocking a stolen/lost SIM: does blocking the old SIM affect a replacement SIM (physical nano-SIM) that is already ordered/shipping? When does replacement activate?')
+  observed: search_knowledge(query='Replacement physical nano-SIM activation timing activates when inserted policy')
+  observed: search_knowledge(query='physical replacement nano-SIM activates when inserted policy')
+  observed: search_knowledge(query='replacement nano-SIM activates when inserted into phone')
+  observed: search_knowledge(query='replacement SIM activation when inserted physical nano-SIM activates when inserted')
+  observed: finish_task
+  observed: transfer_to_bill_inquiry
+  observed: finish_task
+  observed: transfer_to_account_advisory
+  observed: get_accounts
+  observed: get_interest_rates
+[T5] user: "No, that’s all, thanks for your help."
+  observed: transfer_to_account_advisory
+  observed: finish_task
+
+--- Assertion Results ---
+[PASS] skill_activated(order_status)
+[PASS] skill_activated(sim_management)
+[PASS] sequencing
+[PASS] memory_was_set(order_status.orders_loaded=True, sim_management.incident_reason='stolen', sim_management.wants_to_block=True, sim_management.sim_blocked=True)
+[PASS] memory_was_not_set(sim_management.replacement_ordered, sim_management.replacement_complete, sim_management.sim_type, sim_management.sim_order_summary)
+[PASS] tool_executed(get_orders)
+[PASS] tool_executed(check_sim_status)
+[PASS] tool_executed(block_sim)
+[PASS] tool_executed(get_device_info)
+
+--- Raw Transcript ---
+[1] agent: Hi! How can I help you today?
+[2] user: Hi, what’s the status on my replacement SIM order?
+[3] agent: Your replacement nano‑SIM order **ORD-20260701-004** (placed **July 1, 2026**) is **open** and currently **being prepared for shipment** at the distribution center.
+
+- **Estimated ship date:** **July 2, 2026**  
+- **Estimated delivery:** **July 3–4, 2026** (Priority Post / Swiss Post)  
+- **Tracking:** Not available yet — it will be assigned once it ships  
+- **Shipping to:** Bahnhofstrasse 42, 8001 Zürich  
+- **Total:** CHF 0.00 (no charge)
+
+Do you want the status of any other order as well?
+[4] user: Good, sounds like it’s on its way. I just realized I never actually reported the old SIM as stolen. Can you block it?
+[5] agent: Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.
+[6] agent: This SIM is active. Do you want me to block it now to prevent any unauthorized use?
+[7] user: Yes, please block it now.
+[8] agent: Your SIM is now blocked.
+[9] agent: Here are the device details on file for your line:
+Device: iPhone 15 Pro
+IMEI: 352345678901234
+Serial number: F2LZK1HQGRX
+[10] agent: Done — I’ve now **recorded the SIM as stolen** and **blocked the old SIM**, so it can’t be used on the network anymore.
+
+You already have a **replacement nano‑SIM order (ORD-20260701-004)** being prepared for shipment. If you’d prefer to switch that to an **eSIM (QR code by email)** instead, tell me and I can help with that.
+[11] user: Thanks, that’s exactly the info I needed. One more thing: will blocking the old SIM affect the replacement that’s being shipped?
+[12] agent: No — **blocking the old SIM won’t affect the replacement SIM that’s being shipped.** The shipment continues as normal, and the block applies only to the old SIM so it can’t be used.
+
+Anything else you’d like me to check about the replacement order or your line?
+[13] user: No, that’s all, thanks for your help.
+[14] agent: Goodbye, and take care.
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=—  turn_latency=14381ms
+turn 3: ttft=—  turn_latency=5260ms
+turn 4: ttft=—  turn_latency=9283ms
+turn 5: ttft=—  turn_latency=82543ms
+turn 6: ttft=—  turn_latency=6418ms
+conversation avg: turn_latency=23577ms  (over 0 turns with bot text, 5 turns timed)
+
+--- Inspector URL ---
+http://127.0.0.1:5007/webhooks/inspector/inspect.html?sender=sim-7fa996a3-f2a2-4dc9-a4d8-493efdf2ac15
+
+--- Additional Metrics ---
+Turns to Completion: 5
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  action: action_session_start
+    2  session_started: {"event": "session_started"}
+    3  agent: 'Hi! How can I help you today?'
+[T1] user: "Hi, what’s the status on my replacement SIM order?"
+    1  user: 'Hi, what’s the status on my replacement SIM order?'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: get_orders() → ok
+    5  memory_set: order_status.orders_loaded = true
+    6  tool: get_order_details(order_id=ORD-20260701-004) → ok
+    7  tool: finish_task() → ok
+    8  skill_completed: order_status
+    9  agent: 'Your replacement nano‑SIM order **ORD-20260701-004** (placed **July 1, 2026**) is **open** and currently **being prepared for shipment** at the distribution center. - **Estimated ship date:** **July 2, 2026** - **Estimated delivery:** **July 3–4, 2026** (Priority Post / Swiss Post) - **Tracking:** Not available yet — it will be assigned once it ships - **Shipping to:** Bahnhofstrasse 42, 8001 Zürich - **Total:** CHF 0.00 (no charge) Do you want the status of any other order as well?'
+[T2] user: "Good, sounds like it’s on its way. I just realized I never actually reported the old SIM as stolen. Can you block it?"
+    1  user: 'Good, sounds like it’s on its way. I just realized I never actually reported the old SIM as stolen. Can you block it?'
+    2  tool: transfer_to_sim_management() → ok
+    3  skill_activated: sim_management
+    4  tool: record_incident(reason=stolen) → ok
+    5  memory_set: sim_management.incident_reason = stolen
+    6  agent: 'Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.'
+    7  tool: start_block_sim() → ok
+    8  tool: check_sim_status() → ok
+    9  memory_set: sim_management.sim_blocked = false
+   10  agent: 'This SIM is active. Do you want me to block it now to prevent any unauthorized use?'
+[T3] user: "Yes, please block it now."
+    1  user: 'Yes, please block it now.'
+    2  tool: record_block_consent(wants_to_block=true) → ok
+    3  memory_set: sim_management.wants_to_block = true
+    4  tool: block_sim() → ok
+    5  memory_set: sim_management.sim_blocked = true
+    6  agent: 'Your SIM is now blocked.'
+    7  tool: get_device_info() → ok
+    8  memory_set: sim_management.device_name = iPhone 15 Pro
+    9  memory_set: sim_management.device_imei = 352345678901234
+   10  memory_set: sim_management.device_serial = F2LZK1HQGRX
+   11  memory_set: sim_management.device_info_shared = true
+   12  agent: 'Here are the device details on file for your line: Device: iPhone 15 Pro IMEI: 352345678901234 Serial number: F2LZK1HQGRX'
+   13  agent: 'Done — I’ve now **recorded the SIM as stolen** and **blocked the old SIM**, so it can’t be used on the network anymore. You already have a **replacement nano‑SIM order (ORD-20260701-004)** being prepared for shipment. If you’d prefer to switch that to an **eSIM (QR code by email)** instead, tell me and I can help with that.'
+[T4] user: "Thanks, that’s exactly the info I needed. One more thing: will blocking the old SIM affect the replacement that’s being shipped?"
+    1  user: 'Thanks, that’s exactly the info I needed. One more thing: will blocking the old SIM affect the replacement that’s being shipped?'
+    2  tool: transfer_to_sim_management() → ok
+    3  tool: search_knowledge(query=Blocking a stolen/lost SIM: does blocki…) → ok
+    4  tool: search_knowledge(query=Replacement physical nano-SIM activatio…) → ok
+    5  tool: search_knowledge(query=physical replacement nano-SIM activates…) → ok
+    6  tool: search_knowledge(query=replacement nano-SIM activates when ins…) → ok
+    7  tool: search_knowledge(query=replacement SIM activation when inserte…) → ok
+    8  tool: finish_task() → ok
+    9  skill_completed: sim_management
+   10  tool: transfer_to_bill_inquiry() → ok
+   11  skill_activated: bill_inquiry
+   12  tool: finish_task() → ok
+   13  skill_completed: bill_inquiry
+   14  tool: transfer_to_account_advisory() → ok
+   15  skill_activated: account_advisory
+   16  tool: get_accounts() → ok
+   17  memory_set: account_advisory.accounts_loaded = true
+   18  tool: get_interest_rates() → ok
+   19  agent: 'No — **blocking the old SIM won’t affect the replacement SIM that’s being shipped.** The shipment continues as normal, and the block applies only to the old SIM so it can’t be used. Anything else you’d like me to check about the replacement order or your line?'
+[T5] user: "No, that’s all, thanks for your help."
+    1  user: 'No, that’s all, thanks for your help.'
+    2  tool: transfer_to_account_advisory() → ok
+    3  tool: finish_task() → ok
+    4  skill_completed: account_advisory
+    5  agent: 'Goodbye, and take care.'

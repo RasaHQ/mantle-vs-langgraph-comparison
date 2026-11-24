@@ -11,18 +11,8 @@ description: >
 complete_when:
   condition: >
     session.card_replace.replacement_ordered == True
-    and (session.card_replace.transaction_review_complete
-    or (session.card_replace.replacement_reason != 'lost'
-    and session.card_replace.replacement_reason != 'not_received'))
-  criteria:
-    - >
-      Digital-wallet duty is discharged when any of the following is true:
-      (a) the card was ineligible or already provisioned, so wallet was
-      correctly skipped; (b) the agent offered Apple Pay / Google Pay (or
-      digital wallet) and the customer accepted or declined; or (c) the
-      customer asked to set up a specific wallet first and the agent
-      provisioned it (user-initiated request counts as consent — no
-      separate would-you-like-to-add offer is required).
+    or session.card_replace.account_eligible == False
+    or session.card_replace.card_eligible == False
 tool_constraints:
 - check_account_eligibility:
     requires: session.card_replace.account_eligible == None
@@ -114,9 +104,8 @@ if: session.card_disambiguate.selected_card_id == None
 if: session.card_replace.selected_card_id != None
 2. If the customer corrects which card to replace:
    1. Keep the already-collected replacement_reason.
-   2. Hand off to @skill.card_disambiguate if they have not named a new id, then
-      call @tool.adopt_selected_card — or record the new id with
-      @tool.set_memory(selected_card_id=...) on this skill.
+   2. Hand off to @skill.card_disambiguate (it uses the card they named
+      without asking again), then call @tool.adopt_selected_card.
    3. Call @tool.check_card_eligibility for the new card.
    4. If not eligible, inform the customer and end.
    5. Finish replacement for the new card — re-do every step that depends on

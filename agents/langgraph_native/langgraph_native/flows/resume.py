@@ -1,6 +1,6 @@
 """Offers the most recently paused task once the current one is finished.
 
-The node is named ``default_continue_interrupted`` because the scenario
+The node is named ``builtin_continue_interrupted`` because the scenario
 assertions read that id. It is one question over the paused stack, not a
 skill with its own tools.
 """

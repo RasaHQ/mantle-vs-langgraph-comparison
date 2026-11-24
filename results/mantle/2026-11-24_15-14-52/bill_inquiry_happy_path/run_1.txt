@@ -1,0 +1,113 @@
+scenario: Current mobile bill inquiry
+run: 1
+timestamp: 2026-11-24T09:45:32Z
+conversation_id: sim-ee71f48d-ce8d-4604-80df-c8beb0eccaf7
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent reports that the current June 2026 mobile bill is $142.50
+  rationale: The bot explicitly states: "Your current phone bill (June 2026) is **$142.50**" in its reply to the user's question.
+
+[PASS] The agent reports that the bill is due on July 15, 2026
+  rationale: The bot explicitly reports: "and it’s **due July 15, 2026**" when describing the current bill.
+
+[PASS] The agent does not invent bill values or ask irrelevant questions about bank accounts, cards, orders, shipments, or SIM replacement
+  rationale: The bill amount and due date are supported by a successful `tool: get_current_bill() → ok`, and the bot does not ask anything about bank accounts, cards, orders, shipments, or SIM replacement anywhere in the transcript.
+
+--- Quality Metrics ---
+bot_quality: 4.75/5
+  helpfulness: 5/5 — It delivered precise, directly relevant billing details (amount, month, due date, status, and AutoPay) with no inaccuracies or gaps.
+  repair_quality: 5/5 — There were no user corrections or disfluencies, so there was no need for repair and no missed opportunities.
+  coherence: 5/5 — The assistant maintained a consistent understanding of the task (checking and reporting the bill) without contradictions or re-asking for information.
+  tone: 4/5 — The tone is polite and clear, though the extra 'Okay—one moment.' after the user already said they were done feels slightly formulaic and unnecessary.
+  task_completion: PASS — The assistant clearly provided the current bill amount and due date, which is exactly what the user requested.
+summary: The assistant answered the billing question accurately and completely, giving the user all requested details in a clear way. It stayed coherent and polite throughout. The only minor issue is an unnecessary follow-up 'one moment' after the user already indicated they were finished, which slightly detracts from the naturalness of the tone.
+
+--- Acknowledgements ---
+summary:
+  coverage: 1/1 tool turns (100%)
+  mean naturalness score: 5.0
+  mean issue score: 5.0
+  issues: none
+
+T1
+  turn:
+    tools:
+      - activate
+      - get_current_bill
+    acknowledgement: "Okay, one moment—I'll check your latest bill."
+    follow-ups:
+      - "Your current phone bill (June 2026) is **$142.50**, and it’s **due July 15, 2026**. It’s currently **Pending**, and **AutoPay is on**."
+  verdict:
+    naturalness score: 5
+    issue score: 5.0
+    issues: none
+    reasoning: This is a natural, specific response that acknowledges the request and indicates checking the latest bill without implying any outcome.
+
+--- Tool Call Metrics ---
+[T1] user: "How much is my current phone bill, and when is it due?"
+  observed: get_current_bill
+
+--- Assertion Results ---
+[PASS] skill_activated(bill_inquiry)
+[PASS] skill_completed(bill_inquiry)
+[PASS] tool_executed(get_current_bill)
+
+--- Raw Transcript ---
+[1] agent: Hello! What can I assist you with today?
+[2] user: How much is my current phone bill, and when is it due?
+[3] agent: Okay, one moment—I'll check your latest bill.
+[4] agent: Your current phone bill (June 2026) is **$142.50**, and it’s **due July 15, 2026**. It’s currently **Pending**, and **AutoPay is on**.
+[5] user: Thanks, that’s all I needed.
+[6] agent: Okay—one moment.
+[7] agent: Can I help you with anything else today?
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=918ms  turn_latency=4109ms
+turn 3: ttft=1026ms  turn_latency=2382ms
+conversation avg: ttft=972ms  turn_latency=3245ms  (over 2 turns with bot text)
+
+--- Inspector URL ---
+http://localhost:5005/webhooks/inspector/inspect.html?sender=sim-ee71f48d-ce8d-4604-80df-c8beb0eccaf7
+
+--- Additional Metrics ---
+Turns to Completion: 2
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  session_started: {"event": "session_started", "metadata": {"model_id": "c6a070378865416d957f9675cfd6e179", "model_name": "20261124-151502-district-tangerine.tar.gz", "assistant_id": "mantle-combined", "session_id": "eae39389-3516-435d-b264-0ebe7b32cb42"}, "engine_version": "mantle"}
+    2  memory_set: system.session_started_metadata = {"is_simulation": true}
+    3  skill_activated: builtin_session_start
+    4  ordered_block_entered: builtin_session_start/main
+    5  stack: {"event": "stack", "metadata": {"model_id": "c6a070378865416d957f9675cfd6e179", "model_name": "20261124-151502-district-tangerine.tar.gz", "assistant_id": "mantle-combined", "session_id": "eae39389-3516-435d-b264-0ebe7b32cb42"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"Y6KL5K96\", \"skill_id\": \"builtin_session_start\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"3VQNZ1TP\", \"skill_id\": \"builtin_session_start\", \"block_id\": \"main\", \"step_id\": \"greet\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+    6  slot: consecutive_silence_timeouts = 0.0
+    7  user: '/session_start'
+    8  agent: 'Hello! What can I assist you with today?'
+    9  ordered_block_completed: builtin_session_start/main (step=greet)
+   10  skill_completed: builtin_session_start
+   11  stack: {"event": "stack", "metadata": {"model_id": "c6a070378865416d957f9675cfd6e179", "model_name": "20261124-151502-district-tangerine.tar.gz", "assistant_id": "mantle-combined", "session_id": "eae39389-3516-435d-b264-0ebe7b32cb42"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}, {\"op\": \"remove\", \"path\": \"/0\"}]"}
+   12  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "c6a070378865416d957f9675cfd6e179", "model_name": "20261124-151502-district-tangerine.tar.gz", "assistant_id": "mantle-combined", "session_id": "eae39389-3516-435d-b264-0ebe7b32cb42"}}
+[T1] user: "How much is my current phone bill, and when is it due?"
+    1  user: 'How much is my current phone bill, and when is it due?'
+    2  agent: "Okay, one moment—I'll check your latest bill."
+    3  skill_activated: bill_inquiry
+    4  stack: {"event": "stack", "metadata": {"model_id": "c6a070378865416d957f9675cfd6e179", "model_name": "20261124-151502-district-tangerine.tar.gz", "assistant_id": "mantle-combined", "session_id": "eae39389-3516-435d-b264-0ebe7b32cb42"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"6YREG1A6\", \"skill_id\": \"bill_inquiry\", \"frame_type\": \"regular\", \"type\": \"skill\"}}]"}
+    5  tool: activate(target_id=bill_inquiry) → ok
+    6  tool: get_current_bill() → ok
+    7  agent: 'Your current phone bill (June 2026) is **$142.50**, and it’s **due July 15, 2026**. It’s currently **Pending**, and **AutoPay is on**.'
+    8  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "c6a070378865416d957f9675cfd6e179", "model_name": "20261124-151502-district-tangerine.tar.gz", "assistant_id": "mantle-combined", "session_id": "eae39389-3516-435d-b264-0ebe7b32cb42"}}
+[T2] user: "Thanks, that’s all I needed."
+    1  user: 'Thanks, that’s all I needed.'
+    2  agent: 'Okay—one moment.'
+    3  skill_completed: bill_inquiry
+    4  stack: {"event": "stack", "metadata": {"model_id": "c6a070378865416d957f9675cfd6e179", "model_name": "20261124-151502-district-tangerine.tar.gz", "assistant_id": "mantle-combined", "session_id": "eae39389-3516-435d-b264-0ebe7b32cb42"}, "update": "[{\"op\": \"remove\", \"path\": \"/0\"}]"}
+    5  skill_activated: builtin_completed
+    6  ordered_block_entered: builtin_completed/main
+    7  stack: {"event": "stack", "metadata": {"model_id": "c6a070378865416d957f9675cfd6e179", "model_name": "20261124-151502-district-tangerine.tar.gz", "assistant_id": "mantle-combined", "session_id": "eae39389-3516-435d-b264-0ebe7b32cb42"}, "update": "[{\"op\": \"add\", \"path\": \"/0\", \"value\": {\"frame_id\": \"Q09UJF90\", \"skill_id\": \"builtin_completed\", \"frame_type\": \"regular\", \"type\": \"skill\"}}, {\"op\": \"add\", \"path\": \"/1\", \"value\": {\"frame_id\": \"3FQ3TS8I\", \"skill_id\": \"builtin_completed\", \"block_id\": \"main\", \"step_id\": \"ask_continue\", \"frame_type\": \"regular\", \"type\": \"ordered_block\"}}]"}
+    8  tool: complete() → ok
+    9  agent: 'Can I help you with anything else today?'
+   10  bot_turn_ended: {"event": "bot_turn_ended", "metadata": {"model_id": "c6a070378865416d957f9675cfd6e179", "model_name": "20261124-151502-district-tangerine.tar.gz", "assistant_id": "mantle-combined", "session_id": "eae39389-3516-435d-b264-0ebe7b32cb42"}}

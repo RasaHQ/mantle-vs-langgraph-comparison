@@ -5,14 +5,9 @@ description: >
   customer explore replacement options (physical SIM vs eSIM), order a
   replacement, and provide device info (IMEI) for police or insurance.
 complete_when:
-  criteria:
-    - >
-      Do not complete while SIM blocking or replacement ordering is still
-      in progress, including while waiting for required confirmation. After
-      the SIM is blocked, make sure you offered a replacement SIM. If the
-      customer has declined a replacement or said they are done, completing
-      is allowed. A short acknowledgement before the closing reply is not
-      insisting on continuing.
+  condition: >
+    session.sim_management.replacement_ordered == True
+    or session.sim_management.replacement_declined == True
 tool_constraints:
 - block_sim:
     on_success: utter_sim_blocked
@@ -126,7 +121,7 @@ steps:
 - id: device_info_gate
   noop: true
   next:
-  - if: session.sim_management.device_info_shared
+  - if: session.sim_management.device_info_shared or session.project.sim_device_info_shared
     then: END
   - else: share_device_info
 
@@ -163,24 +158,24 @@ if: session.sim_management.incident_reason == 'lost' or session.sim_management.i
    If they want the other type as well, set sim_type to that type and
    call @tool.order_replacement_sim once. Leave the earlier order in
    place unless they ask you to cancel it. Speak the new order ID.
-5. Call @tool.complete only after you have spoken the order ID for the
-   latest SIM type they asked for, and they are not asking for another
-   type.
-6. If they don't want a replacement now, that's fine. Confirm that the
-   SIM is blocked and that no replacement has been ordered. If device
-   info has not been given yet, go to Device info first. Otherwise call
-   @tool.complete in that same turn — before answering any other
-   question in the same message, since that answer is handled outside
-   this skill.
+5. If they don't want a replacement now, that's fine. Confirm that the
+   SIM is blocked and that no replacement has been ordered, and set
+   replacement_declined to true. If device info has not been given yet,
+   go to Device info first.
+
+if: session.project.sim_orders
+Replacements already ordered in this conversation: @memory.project.sim_orders.
+Do not order the same SIM type again. If they ask for another one "just in
+case", say it is already ordered and repeat that order's ID.
 
 ## Device info
 
-if: not session.sim_management.device_info_shared
+if: not session.sim_management.device_info_shared and not session.project.sim_device_info_shared
 1. Invoke @block.deliver_device_info. Do not invent IMEI or serial, and do not
    only offer to share them later — the customer must hear the values from the
    tool utterance.
 
-if: session.sim_management.device_info_shared
+if: session.sim_management.device_info_shared or session.project.sim_device_info_shared
 1. Do not call get_device_info again or invent identifiers.
 2. After providing the device information, resume the unfinished part of SIM
    management that the customer interrupted: incident handling, blocking, or
@@ -192,7 +187,7 @@ steps:
 - id: device_info_gate
   noop: true
   next:
-  - if: session.sim_management.device_info_shared
+  - if: session.sim_management.device_info_shared or session.project.sim_device_info_shared
     then: END
   - else: fetch_device_info
 

@@ -170,7 +170,9 @@ def start_mcp(log_dir: Path) -> subprocess.Popen:
 
 
 def start_mantle(project: Path, log_dir: Path) -> subprocess.Popen:
-    rasa = str(Path(sys.executable).parent / "rasa")
+    # MANTLE_RASA_BIN runs the agent on another rasa-pro build (e.g. an engine
+    # branch) while the harness, simulated customer, and judge stay on this one.
+    rasa = os.environ.get("MANTLE_RASA_BIN") or str(Path(sys.executable).parent / "rasa")
     for cache in (REPO / ".rasa", project / ".rasa"):
         shutil.rmtree(cache, ignore_errors=True)
     log("training mantle_combined ...")
@@ -368,6 +370,7 @@ def run_set(setup: Setup, runs: int, only: Optional[list[str]], results_dir: Pat
         "finished": datetime.now().isoformat(timespec="seconds"),
         "repo_commit": git_commit(),
         "rasa_pro": package_version("rasa-pro"),
+        "mantle_rasa_bin": os.environ.get("MANTLE_RASA_BIN"),
         "langgraph": package_version("langgraph", LANGGRAPH_PYTHON) if setup.engine != "mantle_combined" else None,
         "langchain_core": package_version("langchain-core", LANGGRAPH_PYTHON) if setup.engine != "mantle_combined" else None,
         "python": platform.python_version(),

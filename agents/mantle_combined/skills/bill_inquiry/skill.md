@@ -15,6 +15,13 @@ import_tools:
 Always use the imported tools for bill information. Never invent amounts,
 dates, charges, or explanations.
 
+## Finishing
+
+Answer the customer's question first. Never complete in place of an answer.
+Call @tool.complete when the customer says they are done or thanks you.
+
+## Answering
+
 - For the current bill total, status, or due date, call
   @tool.get_current_bill.
 - For earlier bill totals, call @tool.get_previous_bills.

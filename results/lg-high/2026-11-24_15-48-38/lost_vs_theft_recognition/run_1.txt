@@ -1,0 +1,199 @@
+scenario: Customer says lost but describes a theft and the agent should treat it as stolen
+run: 1
+timestamp: 2026-11-24T10:23:29Z
+conversation_id: sim-c40004a8-78be-48ce-994c-968faa1816d5
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent gives stolen-specific advice (police report, watching for unauthorised charges) rather than lost-device advice such as checking Find My Device
+  rationale: In the first response the bot says, "Report the theft to the police" and "Check your account for any unauthorized charges," and does not mention lost-device steps like Find My Device.
+
+[PASS] After blocking the SIM, the agent explicitly confirms to the customer that the SIM is blocked before continuing
+  rationale: After the user consents, the bot says, "Your SIM is now blocked." before going on to share device details and next steps.
+
+[PASS] Before ordering the replacement eSIM, the agent asks whether the customer wants to place the order and receives their agreement
+  rationale: The bot says, "I'll order a eSIM (QR code) replacement for you. Shall I go ahead?" and the user replies, "Yes, please go ahead and order the eSIM."
+
+[PASS] After ordering the replacement eSIM, the agent confirms it, audibly shares its order ID or confirmation number, and explains that the QR code arrives by email. Judge the spoken identifier by whether it is recognizably consistent with the returned value; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the identifier is omitted, materially differs from the returned value, or is not spoken.
+  rationale: After ordering, the bot says, "Your replacement eSIM (QR code) is ordered. The order ID is ORD-20260702-005 and the confirmation number is SIM-RPL-2026-00201. Delivery: Instant (QR code via email). Check your email for the eSIM QR code and scan it with your device," clearly confirming and explaining email delivery.
+
+[PASS] The agent does not ask the customer to clarify whether the phone was lost or stolen, because the description already makes it clear. Confirming an already-chosen eSIM order is expected.
+  rationale: The user explains someone grabbed the phone and ran; the bot treats it as theft ("Report the theft to the police") and never asks whether it was lost or stolen.
+
+[PASS] When sharing device info, the agent gives the customer concrete IMEI and serial values, not a vague acknowledgment that details were retrieved. Pass if the spoken identifiers are consistent with IMEI 352345678901234 and serial F2LZK1HQGRX. Do not fail for voice-transcript (ASR) misspellings of spoken letters or digits (H/Z confusion, extra syllables, digit grouping). Fail only if it omits one of them, invents different identifiers, or never speaks the values.
+  rationale: The bot states, "IMEI: 352345678901234" and "Serial number: F2LZK1HQGRX," matching the required values exactly rather than giving a vague acknowledgment.
+
+--- Quality Metrics ---
+bot_quality: 5.0/5
+  helpfulness: 5/5 — It provided precise, actionable steps for blocking the SIM, gave full device details, and completed the eSIM order with clear next steps.
+  repair_quality: 5/5 — There were no user corrections or pushback, so no repair was needed or mishandled.
+  coherence: 5/5 — The assistant consistently tracked the situation (stolen phone), remembered the SIM status, and correctly followed through from blocking to replacement without contradiction.
+  tone: 5/5 — The tone was concise, clear, polite, and natural throughout, appropriate for a support-style interaction.
+  task_completion: PASS — The assistant clearly blocked the SIM, provided device details, and successfully ordered an eSIM as requested, with concrete confirmations and order details.
+summary: The assistant handled the theft scenario smoothly by blocking the SIM, supplying the necessary device information, and ordering a replacement eSIM with clear confirmations. Its responses were accurate, coherent, and politely worded, yielding a complete and well-structured resolution to the user's needs.
+
+--- Acknowledgements ---
+summary:
+  coverage: 0/4 tool turns (0%)
+  mean naturalness score: None
+  mean issue score: None
+  issues: none
+
+T1
+  turn:
+    tools:
+      - transfer_to_sim_management
+      - record_incident
+      - start_block_sim
+      - check_sim_status
+    no acknowledgement
+T2
+  turn:
+    tools:
+      - record_block_consent
+      - block_sim
+      - get_device_info
+    no acknowledgement
+T3
+  turn:
+    tools:
+      - transfer_to_sim_management
+      - record_sim_type
+    no acknowledgement
+T4
+  turn:
+    tools:
+      - order_replacement_sim
+      - finish_task
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "I lost my phone. Someone grabbed it out of my hand on the street and ran off."
+  observed: transfer_to_sim_management
+  observed: record_incident(reason='stolen')
+  observed: start_block_sim
+  observed: check_sim_status
+[T2] user: "Yes, please block the SIM right away."
+  observed: record_block_consent(wants_to_block=true)
+  observed: block_sim
+  observed: get_device_info
+[T3] user: "Thanks. I’d like an eSIM please."
+  observed: transfer_to_sim_management
+  observed: search_knowledge(query='order replacement eSIM after SIM blocked process how to obtain QR code')
+  observed: search_knowledge(query='replacement eSIM QR code email how customer can request via app or contact support')
+  observed: record_sim_type(sim_type='esim')
+[T4] user: "Yes, please go ahead and order the eSIM."
+  observed: order_replacement_sim
+  observed: finish_task
+
+--- Assertion Results ---
+[PASS] skill_activated(sim_management)
+[PASS] skill_completed(sim_management)
+[PASS] sequencing
+[PASS] memory_was_set(sim_management.incident_reason='stolen', sim_management.wants_to_block=True, sim_management.sim_blocked=True, sim_management.sim_type='esim', sim_management.replacement_ordered=True, sim_management.sim_order_summary)
+[PASS] memory_was_not_set(sim_management.replacement_complete)
+[PASS] tool_executed(check_sim_status)
+[PASS] tool_executed(block_sim)
+[PASS] tool_executed(order_replacement_sim)
+[PASS] tool_executed(get_device_info)
+
+--- Raw Transcript ---
+[1] agent: Hi! How can I help you today?
+[2] user: I lost my phone. Someone grabbed it out of my hand on the street and ran off.
+[3] agent: Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.
+[4] agent: This SIM is active. Do you want me to block it now to prevent any unauthorized use?
+[5] user: Yes, please block the SIM right away.
+[6] agent: Your SIM is now blocked.
+[7] agent: Here are the device details on file for your line:
+Device: iPhone 15 Pro
+IMEI: 352345678901234
+Serial number: F2LZK1HQGRX
+[8] agent: I’ve blocked your SIM now to stop any calls, texts, or mobile data use.
+
+If you’d like a replacement SIM, which type do you want?
+
+- **eSIM** (QR code by email; you’ll need **Wi‑Fi** and an **eSIM‑compatible** phone to scan it)
+- **Physical nano‑SIM** (posted to you; activates when you insert it)
+[9] user: Thanks. I’d like an eSIM please.
+[10] agent: I'll order a eSIM (QR code) replacement for you. Shall I go ahead?
+[11] user: Yes, please go ahead and order the eSIM.
+[12] agent: Your replacement eSIM (QR code) is ordered. The order ID is ORD-20260702-005 and the confirmation number is SIM-RPL-2026-00201. Delivery: Instant (QR code via email). Check your email for the eSIM QR code and scan it with your device.
+[13] agent: Done — I’ve placed your **replacement eSIM (QR code)** order.
+
+- **Order ID:** ORD-20260702-005  
+- **Confirmation:** SIM-RPL-2026-00201  
+- **Cost:** Free (replacement)  
+- **Delivery:** Instant (QR code via email)
+
+**Next step:** Check your email for the eSIM QR code, then scan it on your device to activate.
+[14] user: Got it, thanks for blocking the SIM and ordering the eSIM. That’s all I needed.
+[15] agent: Goodbye, and take care.
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=—  turn_latency=6393ms
+turn 3: ttft=—  turn_latency=7732ms
+turn 4: ttft=—  turn_latency=39561ms
+turn 5: ttft=—  turn_latency=5459ms
+turn 6: ttft=—  turn_latency=1440ms
+conversation avg: turn_latency=12117ms  (over 0 turns with bot text, 5 turns timed)
+
+--- Inspector URL ---
+http://127.0.0.1:5007/webhooks/inspector/inspect.html?sender=sim-c40004a8-78be-48ce-994c-968faa1816d5
+
+--- Additional Metrics ---
+Turns to Completion: 5
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  action: action_session_start
+    2  session_started: {"event": "session_started"}
+    3  agent: 'Hi! How can I help you today?'
+[T1] user: "I lost my phone. Someone grabbed it out of my hand on the street and ran off."
+    1  user: 'I lost my phone. Someone grabbed it out of my hand on the street and ran off.'
+    2  tool: transfer_to_sim_management() → ok
+    3  skill_activated: sim_management
+    4  tool: record_incident(reason=stolen) → ok
+    5  memory_set: sim_management.incident_reason = stolen
+    6  agent: 'Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.'
+    7  tool: start_block_sim() → ok
+    8  tool: check_sim_status() → ok
+    9  memory_set: sim_management.sim_blocked = false
+   10  agent: 'This SIM is active. Do you want me to block it now to prevent any unauthorized use?'
+[T2] user: "Yes, please block the SIM right away."
+    1  user: 'Yes, please block the SIM right away.'
+    2  tool: record_block_consent(wants_to_block=true) → ok
+    3  memory_set: sim_management.wants_to_block = true
+    4  tool: block_sim() → ok
+    5  memory_set: sim_management.sim_blocked = true
+    6  agent: 'Your SIM is now blocked.'
+    7  tool: get_device_info() → ok
+    8  memory_set: sim_management.device_name = iPhone 15 Pro
+    9  memory_set: sim_management.device_imei = 352345678901234
+   10  memory_set: sim_management.device_serial = F2LZK1HQGRX
+   11  memory_set: sim_management.device_info_shared = true
+   12  agent: 'Here are the device details on file for your line: Device: iPhone 15 Pro IMEI: 352345678901234 Serial number: F2LZK1HQGRX'
+   13  agent: 'I’ve blocked your SIM now to stop any calls, texts, or mobile data use. If you’d like a replacement SIM, which type do you want? - **eSIM** (QR code by email; you’ll need **Wi‑Fi** and an **eSIM‑compatible** phone to scan it) - **Physical nano‑SIM** (posted to you; activates when you insert it)'
+[T3] user: "Thanks. I’d like an eSIM please."
+    1  user: 'Thanks. I’d like an eSIM please.'
+    2  tool: transfer_to_sim_management() → ok
+    3  tool: search_knowledge(query=order replacement eSIM after SIM blocke…) → ok
+    4  tool: search_knowledge(query=replacement eSIM QR code email how cust…) → ok
+    5  tool: record_sim_type(sim_type=esim) → ok
+    6  memory_set: sim_management.sim_type = esim
+    7  agent: "I'll order a eSIM (QR code) replacement for you. Shall I go ahead?"
+[T4] user: "Yes, please go ahead and order the eSIM."
+    1  user: 'Yes, please go ahead and order the eSIM.'
+    2  tool: order_replacement_sim() → ok
+    3  memory_set: sim_management.replacement_ordered = true
+    4  memory_set: sim_management.sim_order_summary = Order ID: ORD-20260702-005 Confirmation: SIM-RPL-2026-00201 SIM type: eSIM (QR code) Delivery: Instant (QR code via email) Next step: Check your email for the eSIM QR code and scan it with your device.
+    5  agent: 'Your replacement eSIM (QR code) is ordered. The order ID is ORD-20260702-005 and the confirmation number is SIM-RPL-2026-00201. Delivery: Instant (QR code via email). Check your email for the eSIM QR code and scan it with your device.'
+    6  tool: finish_task() → ok
+    7  skill_completed: sim_management
+    8  agent: 'Done — I’ve placed your **replacement eSIM (QR code)** order. - **Order ID:** ORD-20260702-005 - **Confirmation:** SIM-RPL-2026-00201 - **Cost:** Free (replacement) - **Delivery:** Instant (QR code via email) **Next step:** Check your email for the eSIM QR code, then scan it on your device to activate.'
+[T5] user: "Got it, thanks for blocking the SIM and ordering the eSIM. That’s all I needed."
+    1  user: 'Got it, thanks for blocking the SIM and ordering the eSIM. That’s all I needed.'
+    2  agent: 'Goodbye, and take care.'

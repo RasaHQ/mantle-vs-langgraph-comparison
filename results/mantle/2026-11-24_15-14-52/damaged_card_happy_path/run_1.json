@@ -1,0 +1,487 @@
+{
+  "scenario_name": "Damaged card replacement follows the damaged path without a fraud review",
+  "scenario_slug": "damaged_card_happy_path",
+  "scenario_type": null,
+  "run_index": 1,
+  "timestamp": "2026-11-24T09:45:32Z",
+  "conversation_id": "sim-05158a84-653c-4987-89f5-79e8d1b3d5c1",
+  "error": null,
+  "error_is_harness": false,
+  "metrics_error": null,
+  "judge_summary": "This conversation shows a smooth, end-to-end handling of a card replacement request, including shipping selection and digital wallet setup, with clear confirmations and final details. The assistant tracks context well, stays polite and efficient, and does not introduce confusion or redundancy. Overall, it delivers a production-quality, transaction-focused interaction with no evident issues.",
+  "latency": {
+    "measured_via": "direct",
+    "per_turn": [
+      {
+        "turn": 1,
+        "ttft_ms": null,
+        "turn_latency_ms": null,
+        "gaps_ms": []
+      },
+      {
+        "turn": 2,
+        "ttft_ms": 867.7335829997901,
+        "turn_latency_ms": 13098.346792001394,
+        "gaps_ms": []
+      },
+      {
+        "turn": 3,
+        "ttft_ms": 999.3198329902953,
+        "turn_latency_ms": 4237.562750000507,
+        "gaps_ms": []
+      },
+      {
+        "turn": 4,
+        "ttft_ms": 1199.7067079937551,
+        "turn_latency_ms": 6044.470124994405,
+        "gaps_ms": []
+      },
+      {
+        "turn": 5,
+        "ttft_ms": 1057.6592919969698,
+        "turn_latency_ms": 3719.3749580037547,
+        "gaps_ms": []
+      },
+      {
+        "turn": 6,
+        "ttft_ms": 1195.5577089975122,
+        "turn_latency_ms": 2724.7015000029933,
+        "gaps_ms": []
+      },
+      {
+        "turn": 7,
+        "ttft_ms": 1132.3743749962887,
+        "turn_latency_ms": 1132.3743749962887,
+        "gaps_ms": []
+      }
+    ],
+    "avg_ttft_ms": 1075.3919166624353,
+    "avg_turn_latency_ms": 5159.471749999891,
+    "avg_gap_ms": null
+  },
+  "transcript": [
+    {
+      "user": "",
+      "bot": [
+        "Hello! What can I assist you with today?"
+      ]
+    },
+    {
+      "user": "Hi, my dog chewed up my River Visa ending in 4821 and I need a replacement card, please.",
+      "bot": [
+        "Got it\u2014let me pull up the right card.",
+        "Thanks \u2014 I can replace your River Visa ending 4821 (replacement fee: $0). I also see there\u2019s an authorized user on this card (Mike Chen); who needs a replacement card: you, Mike, or both?"
+      ]
+    },
+    {
+      "user": "Just me, not Mike.",
+      "bot": [
+        "Okay\u2014thanks, one moment.",
+        "Perfect\u2014replacement will be for you only. Would you like to add the new card to a digital wallet for immediate use (Apple Pay or Google Pay)?"
+      ]
+    },
+    {
+      "user": "Yes, please add it to Apple Pay.",
+      "bot": [
+        "Alright\u2014one moment while I set that up.",
+        "Done \u2014 your replacement card has been added to Apple Pay and should appear in your Wallet app within **2\u20133 minutes**. For the physical card, do you want **standard shipping (5\u20137 business days)** or **rush (1\u20132 business days, $25)**?"
+      ]
+    },
+    {
+      "user": "Standard shipping is fine, thanks.",
+      "bot": [
+        "Got it\u2014just a second.",
+        "Okay\u2014would you like me to place the replacement order with standard shipping now?"
+      ]
+    },
+    {
+      "user": "Yes, please go ahead and place the order.",
+      "bot": [
+        "Alright\u2014one moment.",
+        "All set. Your replacement card has been ordered:\nOrder ID: RPL-2026-001843\nCard: River Visa ending 4821\nShipping: standard\nEstimated delivery: 5-7 business days\n",
+        "Can I help you with anything else today?"
+      ]
+    },
+    {
+      "user": "No, that\u2019s everything I needed. Thanks for your help!",
+      "bot": [
+        "Were you satisfied with the assistance you received today?"
+      ]
+    }
+  ],
+  "task_completion": true,
+  "task_completion_reasoning": "The assistant successfully ordered a replacement card with standard shipping, added it to Apple Pay, and provided a concrete order ID and delivery window.",
+  "eval_passed": true,
+  "criteria": [
+    {
+      "index": 0,
+      "criterion": "Before provisioning a digital wallet, the agent asks whether the customer wants to add the new card to Apple Pay or Google Pay and receives their agreement",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "The bot asks, \u201cWould you like to add the new card to a digital wallet for immediate use (Apple Pay or Google Pay)?\u201d and the user replies, \u201cYes, please add it to Apple Pay,\u201d before the tool `provision_digital_wallet` is called."
+    },
+    {
+      "index": 1,
+      "criterion": "Before placing the replacement order, the agent asks whether the customer wants to place the order and receives their agreement",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "After setting standard shipping, the bot asks, \u201cOkay\u2014would you like me to place the replacement order with standard shipping now?\u201d and the user answers, \u201cYes, please go ahead and place the order,\u201d before `process_card_replacement` runs with `\u2192 ok`."
+    },
+    {
+      "index": 2,
+      "criterion": "After placing the replacement order, the agent confirms it and audibly shares the order ID from the tool result. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the ID is omitted, materially differs from the returned value, or is not spoken.",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "After `process_card_replacement(...) \u2192 ok`, the bot confirms the order and explicitly shares \u201cOrder ID: RPL-2026-001843,\u201d which matches the order ID in `card_replace.replacement_order_summary`."
+    },
+    {
+      "index": 3,
+      "criterion": "The agent does not re-ask which card to replace or why it needs replacing after the customer has already named the River Visa and said it is damaged. A brief confirmation of that already-named card is not a re-ask. Asking the customer to choose between the cards on the account is a re-ask. Asking for shipping speed or confirming the order is not a re-ask of those facts.",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "Once the user says \u201cmy dog chewed up my River Visa ending in 4821,\u201d the bot only briefly confirms that specific card and never asks again which card to replace or why it needs replacing, instead moving on to authorized user scope, wallet, and shipping questions."
+    }
+  ],
+  "criteria_summary": {
+    "passed": 4,
+    "total": 4,
+    "all_passed": true
+  },
+  "assertions": [
+    {
+      "index": 0,
+      "assertion": "skill_activated(card_replace)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 1,
+      "assertion": "skill_activated(card_disambiguate)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 2,
+      "assertion": "skill_completed(card_disambiguate)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 3,
+      "assertion": "skill_completed(card_replace)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 4,
+      "assertion": "sequencing",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 5,
+      "assertion": "memory_was_set(card_replace.account_eligible=True, card_replace.replacement_reason='damaged', card_disambiguate.selected_card_id='VISA_001', card_disambiguate.selected_card_label='River Visa ending 4821', card_replace.card_eligible=True, card_replace.has_authorized_users=True, card_replace.replace_target='customer', card_replace.damaged_applied=True, card_replace.wallet_eligible=True, card_replace.wallet_already_provisioned=False, card_replace.wallet_consent=True, card_replace.wallet_provider='apple_pay', card_replace.wallet_provisioned=True, card_replace.shipping_type='standard', card_replace.replacement_ordered=True)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 6,
+      "assertion": "memory_was_not_set(card_replace.transaction_review_complete, card_replace.transactions_look_familiar, card_replace.fraud_reported, card_replace.card_locked, card_replace.wants_card_locked, card_replace.recent_transactions)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 7,
+      "assertion": "tool_executed(check_account_eligibility)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 8,
+      "assertion": "tool_executed(get_customer_cards)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 9,
+      "assertion": "tool_executed(check_card_eligibility)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 10,
+      "assertion": "tool_executed(check_damaged_replacement_scope)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 11,
+      "assertion": "tool_executed(check_wallet_eligibility_and_status)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 12,
+      "assertion": "tool_executed(provision_digital_wallet)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 13,
+      "assertion": "tool_executed(check_rush_shipping_eligibility)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 14,
+      "assertion": "tool_executed(process_card_replacement)",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "assertions_summary": {
+    "passed": 15,
+    "total": 15,
+    "all_passed": true
+  },
+  "scale_metrics": {
+    "helpfulness": 5,
+    "repair_quality": 5,
+    "coherence": 5,
+    "tone": 5
+  },
+  "scale_metrics_reasoning": {
+    "helpfulness": "Each step directly progressed the replacement-card task, with clear confirmation of digital wallet setup and shipping choice plus final order details.",
+    "repair_quality": "The user never expressed confusion or correction, so there were no repair opportunities mishandled.",
+    "coherence": "The assistant consistently tracked that only the primary cardholder needed a replacement, captured the Apple Pay preference, and maintained the chosen standard shipping without contradiction or re-asking.",
+    "tone": "The tone is clear, polite, concise, and natural throughout, with appropriate confirmations and a straightforward closing question about satisfaction."
+  },
+  "acknowledgements": {
+    "turns": [
+      {
+        "turn_number": 1,
+        "tools": [
+          "activate",
+          "check_account_eligibility",
+          "activate",
+          "get_customer_cards",
+          "adopt_selected_card",
+          "check_card_eligibility",
+          "check_damaged_replacement_scope"
+        ],
+        "acknowledgement": "Got it\u2014let me pull up the right card.",
+        "follow_up": [
+          "Thanks \u2014 I can replace your River Visa ending 4821 (replacement fee: $0). I also see there\u2019s an authorized user on this card (Mike Chen); who needs a replacement card: you, Mike, or both?"
+        ]
+      },
+      {
+        "turn_number": 2,
+        "tools": [
+          "check_wallet_eligibility_and_status",
+          "check_card_eligibility",
+          "check_damaged_replacement_scope"
+        ],
+        "acknowledgement": "Okay\u2014thanks, one moment.",
+        "follow_up": [
+          "Perfect\u2014replacement will be for you only. Would you like to add the new card to a digital wallet for immediate use (Apple Pay or Google Pay)?"
+        ]
+      },
+      {
+        "turn_number": 3,
+        "tools": [
+          "provision_digital_wallet",
+          "check_rush_shipping_eligibility"
+        ],
+        "acknowledgement": "Alright\u2014one moment while I set that up.",
+        "follow_up": [
+          "Done \u2014 your replacement card has been added to Apple Pay and should appear in your Wallet app within **2\u20133 minutes**. For the physical card, do you want **standard shipping (5\u20137 business days)** or **rush (1\u20132 business days, $25)**?"
+        ]
+      },
+      {
+        "turn_number": 4,
+        "tools": [
+          "process_card_replacement"
+        ],
+        "acknowledgement": "Got it\u2014just a second.",
+        "follow_up": [
+          "Okay\u2014would you like me to place the replacement order with standard shipping now?"
+        ]
+      },
+      {
+        "turn_number": 5,
+        "tools": [
+          "process_card_replacement",
+          "resolve_tool_confirmation"
+        ],
+        "acknowledgement": "Alright\u2014one moment.",
+        "follow_up": [
+          "All set. Your replacement card has been ordered:\nOrder ID: RPL-2026-001843\nCard: River Visa ending 4821\nShipping: standard\nEstimated delivery: 5-7 business days",
+          "Can I help you with anything else today?"
+        ]
+      }
+    ],
+    "verdicts": [
+      {
+        "turn_number": 1,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": null,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "Casual and specific to pulling up the card details, matching the subsequent tools that look up the right card.",
+        "issue_score": 5.0
+      },
+      {
+        "turn_number": 2,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": 1,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "Acknowledges the user choice and briefly signals a short wait, which fits the follow-up checks being run.",
+        "issue_score": 3.0
+      },
+      {
+        "turn_number": 3,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": 2,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "Sounds like natural spoken dialogue and accurately foreshadows provisioning the card to Apple Pay.",
+        "issue_score": 3.0
+      },
+      {
+        "turn_number": 4,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": 3,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "Comfortably conversational and aligned with initiating the standard-shipping processing tool.",
+        "issue_score": 3.0
+      },
+      {
+        "turn_number": 5,
+        "issues": {
+          "hard_contradiction": false,
+          "soft_contradiction": false,
+          "commits_to_tool_outcome": false,
+          "repeated_in_same_bot_turn": false,
+          "similar_to_earlier_acknowledgement": 3,
+          "stock_opener": false
+        },
+        "naturalness_score": 5,
+        "reasoning": "A natural-sounding brief pause marker before actually placing the replacement order.",
+        "issue_score": 3.0
+      }
+    ],
+    "error": null,
+    "coverage": [
+      1.0,
+      5,
+      5
+    ],
+    "issue_counts": {
+      "hard_contradiction": 0,
+      "soft_contradiction": 0,
+      "commits_to_tool_outcome": 0,
+      "repeated_in_same_bot_turn": 0,
+      "similar_to_earlier_acknowledgement": 4,
+      "stock_opener": 0
+    },
+    "mean_issue_score": 3.4,
+    "mean_naturalness_score": 5.0
+  },
+  "engine_tokens": {
+    "status": "complete",
+    "session_id": "sim-05158a84-653c-4987-89f5-79e8d1b3d5c1",
+    "prompt": 83823,
+    "completion": 713,
+    "cached": 34304,
+    "cache_write": 0,
+    "total": 84536,
+    "generations": 23,
+    "cost": 0.10264345,
+    "cost_status": "complete",
+    "price_source": {
+      "provider": "litellm",
+      "version": "1.105.3"
+    },
+    "by_call_type": {
+      "rephrase": [
+        {
+          "model": "gpt-5.2",
+          "prompt": 3750,
+          "completion": 44,
+          "cached": 0,
+          "cache_write": 0,
+          "total": 3794,
+          "generations": 3,
+          "cost": 0.007178500000000001
+        }
+      ],
+      "main_orchestrator": [
+        {
+          "model": "gpt-5.2",
+          "prompt": 80073,
+          "completion": 669,
+          "cached": 34304,
+          "cache_write": 0,
+          "total": 80742,
+          "generations": 20,
+          "cost": 0.09546494999999999
+        }
+      ]
+    },
+    "fetched_at": "2026-11-24T09:46:15.897556+00:00"
+  },
+  "evaluation_tokens": {
+    "simulator": [
+      {
+        "model": "gpt-5.1-2025-11-13",
+        "prompt": 6774,
+        "completion": 203,
+        "cached": 2048,
+        "cache_write": 0,
+        "total": 6977,
+        "generations": 6,
+        "cost": 0.008193500000000001
+      }
+    ],
+    "judge": [
+      {
+        "model": "gpt-5.1-2025-11-13",
+        "prompt": 8220,
+        "completion": 1520,
+        "cached": 0,
+        "cache_write": 0,
+        "total": 9740,
+        "generations": 3,
+        "cost": 0.025475
+      }
+    ],
+    "cost": 0.033668500000000004,
+    "cost_status": "complete",
+    "price_source": {
+      "provider": "litellm",
+      "version": "1.105.3"
+    }
+  }
+}

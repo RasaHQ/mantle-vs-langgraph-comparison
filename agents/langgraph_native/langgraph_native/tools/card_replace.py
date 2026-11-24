@@ -37,6 +37,7 @@ _CARD_DEPENDENT_FIELDS = (
     "wallet_consent",
     "wallet_provider",
     "wallet_provisioned",
+    "wallet_declined",
     "shipping_type",
     "rush_eligible",
     "replacement_ordered",
@@ -186,8 +187,19 @@ def record_lock_consent(memory: Memory, wants_lock: bool) -> Outcome:
     )
 
 
+def record_lock_declined(memory: Memory) -> Outcome:
+    return Outcome(
+        result={"ok": True, "wants_card_locked": False},
+        memory=CardReplace.changes(wants_card_locked=False),
+    )
+
+
 def lock_card(memory: Memory, card_id: str) -> Outcome:
+    """Locks the card. For a lost or not-received card the tool asked first."""
     card = _card(card_id)
+    update = CardReplace.changes(card_locked=True)
+    if _view(memory).reviews_charges:
+        update.update(CardReplace.changes(wants_card_locked=True))
     return Outcome(
         result={
             "success": True,
@@ -195,7 +207,7 @@ def lock_card(memory: Memory, card_id: str) -> Outcome:
             "card_label": card["label"] if card else card_id,
             "locked": True,
         },
-        memory=CardReplace.changes(card_locked=True),
+        memory=update,
         say=[Utterance(name="utter_card_locked")],
     )
 
@@ -218,14 +230,34 @@ def check_wallet_eligibility_and_status(memory: Memory, card_id: str) -> Outcome
     )
 
 
+def named_wallet(text: str) -> WalletProvider | None:
+    """Returns the wallet the customer named in *text*, if any."""
+    lowered = text.lower()
+    if "apple" in lowered:
+        return "apple_pay"
+    if "google" in lowered:
+        return "google_pay"
+    return None
+
+
 def provision_digital_wallet(
-    memory: Memory, card_id: str, wallet_provider: WalletProvider
+    memory: Memory, card_id: str, wallet_provider: WalletProvider | None = None
 ) -> Outcome:
+    """Adds the card to a wallet. The tool asked the customer first."""
     card = _card(card_id)
     if card is None:
         return _unknown_card(card_id)
     if not card.get("digital_wallet_eligible") or card.get("already_provisioned"):
         return error("wallet_not_available", hint="Skip to shipping.")
+    if wallet_provider is None:
+        return error(
+            "wallet_not_named",
+            hint=(
+                "The customer wants a wallet but did not say which. Ask whether "
+                "Apple Pay or Google Pay, then call provision_digital_wallet "
+                "with it."
+            ),
+        )
     wallet = _WALLET_NAMES[wallet_provider]
     return Outcome(
         result={
@@ -239,6 +271,13 @@ def provision_digital_wallet(
             wallet_consent=True,
             wallet_provisioned=True,
         ),
+    )
+
+
+def record_wallet_declined(memory: Memory) -> Outcome:
+    return Outcome(
+        result={"ok": True, "wallet": "declined"},
+        memory=CardReplace.changes(wallet_declined=True),
     )
 
 
@@ -324,10 +363,34 @@ def _view(memory: Memory) -> CardReplace:
 def _can_lock(state: CardReplace) -> bool:
     if state.replacement_reason == "stolen":
         return True
+    # lock_card asks the customer itself, so the model cannot give consent.
     return (
         state.reviews_charges
-        and state.wants_card_locked is True
+        and state.wants_card_locked is not False
         and state.transactions_look_familiar is not None
+    )
+
+
+def lock_needs_consent(memory: Memory) -> bool:
+    """Test if lock_card must ask first: every reason but stolen."""
+    return _view(memory).replacement_reason != "stolen"
+
+
+def _lock_settled(state: CardReplace) -> bool:
+    """Test if the lock step is done, as Mantle's order constraint requires."""
+    if state.replacement_reason == "damaged":
+        return True
+    if state.card_locked is True:
+        return True
+    return state.wants_card_locked is False and state.replacement_reason != "stolen"
+
+
+def _wallet_settled(state: CardReplace) -> bool:
+    """Test if the wallet step is done, so shipping can start."""
+    return state.wallet_eligible is False or bool(
+        state.wallet_already_provisioned
+        or state.wallet_provisioned
+        or state.wallet_declined
     )
 
 
@@ -362,23 +425,31 @@ GATES: dict[str, Gate] = {
             and _view(m).has_authorized_users is True
         )
     ),
-    "record_lock_consent": lambda m: _view(m).reviews_charges,
+    "record_lock_declined": (
+        lambda m: _view(m).reviews_charges and _view(m).card_locked is not True
+    ),
     "lock_card": lambda m: _can_lock(_view(m)),
     "check_wallet_eligibility_and_status": lambda m: _view(m).card_eligible is True,
-    "provision_digital_wallet": lambda m: _view(m).wallet_eligible is True,
-    "check_rush_shipping_eligibility": (
-        lambda m: (
-            _view(m).card_eligible is True and _view(m).wallet_eligible is not None
-        )
+    "provision_digital_wallet": (
+        lambda m: _view(m).wallet_eligible is True and not _wallet_settled(_view(m))
     ),
-    "record_shipping_type": lambda m: _view(m).rush_eligible is not None,
+    "record_wallet_declined": (
+        lambda m: _view(m).wallet_eligible is True and not _wallet_settled(_view(m))
+    ),
+    "check_rush_shipping_eligibility": (
+        lambda m: _view(m).card_eligible is True and _wallet_settled(_view(m))
+    ),
+    "record_shipping_type": (
+        lambda m: _view(m).rush_eligible is not None and _wallet_settled(_view(m))
+    ),
     "process_card_replacement": (
         lambda m: (
             _view(m).card_eligible is True
-            and _view(m).wallet_eligible is not None
+            and _wallet_settled(_view(m))
             and _view(m).shipping_type is not None
             and _view(m).rush_eligible is not None
             and _view(m).replacement_ordered is not True
+            and _lock_settled(_view(m))
         )
     ),
     "finish_task": can_finish,

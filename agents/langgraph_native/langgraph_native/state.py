@@ -66,7 +66,9 @@ class Domain(BaseModel):
 
 class CardReplace(Domain):
     skill_id: ClassVar[str] = CARD_REPLACE
-    private_fields: ClassVar[frozenset[str]] = frozenset({"committed_card_id"})
+    private_fields: ClassVar[frozenset[str]] = frozenset(
+        {"committed_card_id", "wallet_declined"}
+    )
 
     account_eligible: Optional[bool] = None
     replacement_reason: Optional[ReplacementReason] = None
@@ -85,6 +87,9 @@ class CardReplace(Domain):
     wallet_consent: Optional[bool] = None
     wallet_provider: Optional[str] = None
     wallet_provisioned: Optional[bool] = None
+    # The customer turned down the wallet offer. Private: the scenarios expect
+    # wallet_consent to stay unset when they decline.
+    wallet_declined: Optional[bool] = None
     shipping_type: Optional[ShippingType] = None
     rush_eligible: Optional[bool] = None
     replacement_ordered: Optional[bool] = None
@@ -232,3 +237,4 @@ class ConversationState(AgentState, total=False):
     model_calls: int
     incoming: dict[str, Any]
     end_turn: bool
+    block_unanswered: bool

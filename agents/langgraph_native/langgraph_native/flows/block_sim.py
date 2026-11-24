@@ -15,7 +15,7 @@ from langgraph.graph import StateGraph
 from langgraph.types import interrupt
 
 from langgraph_native import events
-from langgraph_native.consent import is_yes
+from langgraph_native.consent import classify
 from langgraph_native.responses import Utterance, default_responses
 from langgraph_native.state import SimManagement, memory_set_events
 from langgraph_native.tooling import note, speak
@@ -26,6 +26,7 @@ ASK = "block_ask"
 APPLY = "block_apply"
 DECLINE = "block_decline"
 DEVICE = "block_device"
+DEFER = "block_defer"
 
 
 def add_block_flow(graph: StateGraph, sim_agent: str) -> None:
@@ -35,11 +36,13 @@ def add_block_flow(graph: StateGraph, sim_agent: str) -> None:
     graph.add_node(APPLY, block_apply)
     graph.add_node(DECLINE, block_decline)
     graph.add_node(DEVICE, block_device)
+    graph.add_node(DEFER, block_defer)
     graph.add_conditional_edges(CHECK, _after_check, [ASK, DEVICE])
-    graph.add_conditional_edges(ASK, _after_ask, [APPLY, DECLINE])
+    graph.add_conditional_edges(ASK, _after_ask, [APPLY, DECLINE, DEFER])
     graph.add_edge(APPLY, DEVICE)
     graph.add_edge(DEVICE, sim_agent)
     graph.add_edge(DECLINE, sim_agent)
+    graph.add_edge(DEFER, sim_agent)
 
 
 async def block_check(state: dict) -> dict:
@@ -51,11 +54,19 @@ async def block_check(state: dict) -> dict:
 async def block_ask(state: dict, config: RunnableConfig) -> dict:
     question = default_responses().render(Utterance(name="utter_ask_block_sim"))
     answer = interrupt(question)
-    wants = await is_yes(str(answer), config["configurable"]["chat_model"])
+    kind = await classify(str(answer), config["configurable"]["chat_model"], question)
+    channel = state.get("channel") or "rest"
+    if kind == "other":
+        # Neither yes nor no: nothing is recorded, and the SIM agent answers.
+        return {
+            "block_unanswered": True,
+            "events": [events.bot(question), events.user(str(answer), channel)],
+        }
+    wants = kind == "yes"
     before = state.get("memory") or {}
     outcome = sim.record_block_consent(before, wants)
-    channel = state.get("channel") or "rest"
     return {
+        "block_unanswered": False,
         "memory": outcome.memory,
         "events": [
             events.bot(question),
@@ -106,6 +117,19 @@ async def block_device(state: dict) -> dict:
     }
 
 
+async def block_defer(state: dict) -> dict:
+    return {
+        "block_unanswered": False,
+        "messages": [
+            note(
+                "SIM block flow paused. The customer did not say whether to "
+                "block the SIM, so it was not blocked. Answer what they said, "
+                "then call start_block_sim again to ask once more."
+            )
+        ],
+    }
+
+
 def _after_check(state: dict) -> str:
     if SimManagement.view(state.get("memory") or {}).sim_blocked:
         return DEVICE
@@ -113,6 +137,8 @@ def _after_check(state: dict) -> str:
 
 
 def _after_ask(state: dict) -> str:
+    if state.get("block_unanswered"):
+        return DEFER
     if SimManagement.view(state.get("memory") or {}).wants_to_block:
         return APPLY
     return DECLINE

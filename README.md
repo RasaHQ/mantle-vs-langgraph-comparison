@@ -2,7 +2,35 @@
 
 This repo compares two customer-service agents that do the same job: a **Mantle** agent built with Rasa Pro, and a **LangGraph** agent written by hand. Both are scored on the same 31 multi-turn conversations. Each conversation is driven by an LLM playing the customer and graded by an LLM judge plus rule-based assertions.
 
-The latest numbers are in [`results/README.md`](results/README.md).
+## Results
+
+Every scenario runs 3 times per setup. A scenario counts as **solved reliably** when it passes in all 3 runs.
+
+| Setup | Scenarios solved reliably | Cost per reliably solved scenario |
+|---|---:|---:|
+| **Mantle** | **27/31** (87%) | **$0.129** |
+| LangGraph | 19/31 (61%) | $0.149 |
+| LangGraph, reasoning high | 21/31 (68%) | $0.323 |
+
+**Accuracy**
+
+| | Mantle | LangGraph | LangGraph, reasoning high |
+|---|---:|---:|---:|
+| pass^1: scenarios passed in at least 1 of 3 runs | **31/31** | 28/31 | 28/31 |
+| pass^2: scenarios passed in at least 2 of 3 runs | **30/31** | 25/31 | 26/31 |
+| pass^3: scenarios passed in all 3 runs | **27/31** | 19/31 | 21/31 |
+
+**Cost** (the agent's own LLM spend, `gpt-5.2`)
+
+| | Mantle | LangGraph | LangGraph, reasoning high |
+|---|---:|---:|---:|
+| **Cost per reliably solved scenario** | **$0.129** | $0.149 | $0.323 |
+| Cost per resolved conversation | $0.119 | $0.118 | $0.271 |
+| Cost per conversation | $0.112 | $0.091 | $0.219 |
+
+Mantle solves more scenarios, and solves them more consistently from run to run. LangGraph costs less per conversation, but fails more of them, so per scenario it solves reliably it costs more. Turning on high reasoning helps LangGraph a little and more than doubles its cost.
+
+The full tables, the per-scenario breakdown, and the definitions are in [`results/README.md`](results/README.md). Every conversation's transcript and judge verdicts are in [`results/`](results).
 
 ## What is compared
 
@@ -79,14 +107,16 @@ All settings are in `SETUPS` at the top of `harness/run.py`.
 
 A **run** is one pass over the suite: one conversation for each of the 31 scenarios. A default benchmark gives each setup 3 runs.
 
-- A **conversation passes** when the judge passes every criterion and every assertion holds.
-- **Scenarios passed per run** counts the passing conversations in one run.
+- A conversation is **resolved** when the judge passes every criterion and every assertion holds.
+- **pass^k** counts the scenarios resolved in at least k of their runs. pass^1 shows what a setup can do; pass^3 shows what it does every time.
+- A scenario is **solved reliably** when it is resolved in every run.
 - **Cost** is the agent's own LLM spend per conversation (`engine_tokens.cost` in each conversation's JSON). It excludes the simulated customer and the judge.
-- The **cost head-to-head** divides Mantle's cost per conversation by the other setup's in each run, on the same scenarios: all of them, or only those both passed in that run. Per-setup "passing only" costs cover different scenarios for each agent, so don't compare them across columns.
+- **Cost per reliably solved scenario**, the headline, is what one run over all scenarios costs, divided by the scenarios solved reliably. A scenario that passes only sometimes adds cost but does not count as solved.
+- **Cost per resolved conversation** is the total cost of all conversations, resolved or not, divided by the conversations resolved.
 
-Every metric is computed per run, and the table shows the mean ± the sample standard deviation across runs. For example, `26.1/31 ± 1.5` means a run passes 26.1 scenarios on average, and a typical run lands within about 1.5 of that. Single runs vary a lot: in our testing, one set of 3 runs of the `lg-high` setup passed anywhere from 21 to 26 of 31 scenarios on the same code. Use `--sets 3` for tighter numbers.
+Single runs vary: the same agent can pass a scenario in one run and fail it in the next, which is why the headline counts only scenarios solved every time. Use `--sets 3` for 9 runs per scenario.
 
-Cost also depends on OpenAI's prompt caching, which varies with time of day and load. In our runs the share of Mantle's prompt served from cache ranged from 13% to 38% on identical code, which moved its cost per conversation by up to about 25%. The table reports the cache share next to the cost so you can see it.
+Cost also depends on OpenAI's prompt caching, which varies with time of day and load. In our testing the share of Mantle's prompt served from cache ranged from 13% to 38% on identical code, which moved its cost per conversation by up to about 25%. `results/README.md` reports the cache share next to the cost.
 
 ## Layout
 
