@@ -33,8 +33,10 @@ from langgraph_native.state import (
 from langgraph_native.state import (
     CARD_ADVISORY as CARD_ADVISORY_ID,
 )
+from langgraph_native import mock_data
 from langgraph_native.state import (
     CARD_DISAMBIGUATE,
+    CardReplace,
     ConversationState,
     IncidentReason,
     ReplacementReason,
@@ -112,13 +114,12 @@ class _Target(BaseModel):
     target: ReplaceTarget = Field(description="customer, authorized_user, or both")
 
 
-class _Consent(BaseModel):
-    wants_lock: bool
-
-
 class _Wallet(BaseModel):
     card_id: str
-    wallet_provider: WalletProvider = Field(description="apple_pay or google_pay")
+    wallet_provider: WalletProvider | None = Field(
+        default=None,
+        description="apple_pay or google_pay, only if the customer named one",
+    )
 
 
 class _Shipping(BaseModel):
@@ -294,13 +295,26 @@ def build_specialists(
             _Target,
         ),
         _spec(
-            "record_lock_consent",
-            "Record whether the customer wants the card locked.",
+            "record_lock_declined",
+            "Record that the customer does not want the card locked.",
             CARD_ID,
-            card_replace.record_lock_consent,
-            _Consent,
+            card_replace.record_lock_declined,
         ),
-        _spec("lock_card", "Lock the card.", CARD_ID, card_replace.lock_card, _Card),
+        _spec(
+            "lock_card",
+            "Lock the card. For a lost or not-received card the tool asks the "
+            "customer first; do not ask yourself.",
+            CARD_ID,
+            card_replace.lock_card,
+            _Card,
+            confirm="utter_confirm_lock",
+            denial="utter_lock_declined",
+            confirm_values=_lock_confirm_values,
+            confirm_when=card_replace.lock_needs_consent,
+            on_decline=lambda memory, args: CardReplace.changes(
+                wants_card_locked=False
+            ),
+        ),
         _spec(
             "check_wallet_eligibility_and_status",
             "Check digital-wallet eligibility for this card.",
@@ -310,10 +324,29 @@ def build_specialists(
         ),
         _spec(
             "provision_digital_wallet",
-            "Add the card to Apple Pay or Google Pay.",
+            "Offer to add the card to Apple Pay or Google Pay, and add it if "
+            "the customer agrees. The tool asks; do not ask yourself.",
             CARD_ID,
             card_replace.provision_digital_wallet,
             _Wallet,
+            confirm="utter_offer_wallet",
+            denial="utter_wallet_declined",
+            confirm_values=_wallet_confirm_values,
+            on_decline=lambda memory, args: CardReplace.changes(wallet_declined=True),
+            override_answer=lambda text: (
+                "yes" if card_replace.named_wallet(text) else None
+            ),
+            use_answer=lambda args, text: {
+                **args,
+                "wallet_provider": card_replace.named_wallet(text)
+                or args.get("wallet_provider"),
+            },
+        ),
+        _spec(
+            "record_wallet_declined",
+            "Record that the customer does not want a digital wallet.",
+            CARD_ID,
+            card_replace.record_wallet_declined,
         ),
         _spec(
             "check_rush_shipping_eligibility",
@@ -592,6 +625,21 @@ def _tool_events(before: dict, name: str, outcome: Any) -> list:
         ),
         *memory_set_events(before, outcome.memory),
     ]
+
+
+def _lock_confirm_values(memory: dict, arguments: dict) -> dict:
+    card = mock_data.CARDS.get(arguments.get("card_id") or "") or {}
+    return {"card_label": card.get("label", "this card")}
+
+
+def _wallet_confirm_values(memory: dict, arguments: dict) -> dict:
+    card = mock_data.CARDS.get(arguments.get("card_id") or "") or {}
+    names = {"apple_pay": "Apple Pay", "google_pay": "Google Pay"}
+    return {
+        "card_label": card.get("label", "card"),
+        "wallet": names.get(arguments.get("wallet_provider") or "")
+        or "Apple Pay or Google Pay",
+    }
 
 
 def _sim_confirm_values(memory: dict, arguments: dict) -> dict:

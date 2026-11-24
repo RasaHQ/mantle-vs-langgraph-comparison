@@ -25,7 +25,7 @@ from langgraph.types import Command
 from pydantic import BaseModel, ConfigDict, Field
 
 from langgraph_native import events
-from langgraph_native.consent import is_yes
+from langgraph_native.consent import Answer, classify
 from langgraph_native.events import Event
 from langgraph_native.responses import Utterance, default_responses
 from langgraph_native.state import memory_set_events
@@ -34,7 +34,7 @@ from langgraph_native.tools import Memory, Outcome
 logger = logging.getLogger(__name__)
 
 SUPERVISOR = "supervisor"
-CONTINUE = "default_continue_interrupted"
+CONTINUE = "builtin_continue_interrupted"
 _MCP_SERVER = "mock_tools"
 
 
@@ -55,6 +55,15 @@ class ToolSpec(BaseModel):
     confirm: str | None = None
     denial: str | None = None
     confirm_values: Callable[[Memory, dict[str, Any]], dict[str, Any]] | None = None
+    # Ask only when this returns true. Without it, a tool with ``confirm``
+    # always asks.
+    confirm_when: Callable[[Memory], bool] | None = None
+    # Memory to write when the customer declines.
+    on_decline: Callable[[Memory, dict[str, Any]], dict[str, Any]] | None = None
+    # Decides the answer before the classifier, when the text settles it.
+    override_answer: Callable[[str], Answer | None] | None = None
+    # Fills arguments from the customer's answer after they agree.
+    use_answer: Callable[[dict[str, Any], str], dict[str, Any]] | None = None
     goto: str | None = None
     completes: bool = False
 
@@ -90,35 +99,44 @@ def make_tool(spec: ToolSpec) -> BaseTool:
     async def run(runtime: ToolRuntime, **kwargs: Any) -> Command:
         memory: Memory = runtime.state.get("memory") or {}
         arguments = spec.args_schema.model_validate(kwargs).model_dump()
-        new_events: list[Event] = []
-        if spec.confirm:
-            agreed, consent_events = await _confirm(spec, runtime, memory, arguments)
-            new_events.extend(consent_events)
-            if not agreed:
+        # The question and the answer come before the tool's own event, so the
+        # tracker shows the customer agreeing before the action ran.
+        consent: list[Event] = []
+        said: list[Event] = []
+        if spec.confirm and (spec.confirm_when is None or spec.confirm_when(memory)):
+            answer, consent, text = await _confirm(spec, runtime, memory, arguments)
+            if answer == "yes" and spec.use_answer:
+                arguments = spec.use_answer(arguments, text)
+            if answer == "other":
+                return _not_answered(runtime, spec, consent, text)
+            if answer == "no":
                 denial = default_responses().render(Utterance(name=spec.denial or ""))
                 speak(denial)
-                new_events.append(events.bot(denial))
+                said.append(events.bot(denial))
+                declined = spec.on_decline(memory, arguments) if spec.on_decline else {}
                 return _result(
                     runtime,
                     spec,
                     {"ok": False, "error": "customer_declined"},
-                    {},
-                    new_events,
+                    declined,
+                    said,
                     is_error=True,
                     error_message="customer_declined",
+                    lead_events=consent,
                 )
         outcome = spec.run(memory, arguments)
         for utterance in outcome.say:
             text = default_responses().render(utterance)
             speak(text)
-            new_events.append(events.bot(text))
+            said.append(events.bot(text))
         if spec.goto and _succeeded(outcome.result):
             return _handoff(
                 runtime,
                 json.dumps(outcome.result),
                 spec.goto,
                 memory=outcome.memory,
-                extra_events=new_events,
+                extra_events=said,
+                lead_events=consent,
                 tool=(spec, outcome.result, arguments, False, None),
                 complete=spec.skill_id if spec.completes else None,
             )
@@ -127,10 +145,11 @@ def make_tool(spec: ToolSpec) -> BaseTool:
             spec,
             outcome.result,
             outcome.memory,
-            new_events,
+            said,
             is_error=not _succeeded(outcome.result),
             error_message=_error_message(outcome.result),
             arguments=arguments,
+            lead_events=consent,
         )
 
     return _Tool.from_function(
@@ -281,17 +300,49 @@ async def _confirm(
     runtime: ToolRuntime,
     memory: Memory,
     arguments: dict[str, Any],
-) -> tuple[bool, list[Event]]:
+) -> tuple[Answer, list[Event], str]:
     values = spec.confirm_values(memory, arguments) if spec.confirm_values else {}
     question = default_responses().render(
         Utterance(name=spec.confirm or "", values=values)
     )
     # The question is spoken by the service when the run pauses. Recording it
     # here would speak it twice, because this function restarts on resume.
-    answer = interrupt_value(question)
-    agreed = await is_yes(str(answer), runtime.config["configurable"]["chat_model"])
+    answer = str(interrupt_value(question))
+    kind = spec.override_answer(answer) if spec.override_answer else None
+    if kind is None:
+        kind = await classify(
+            answer, runtime.config["configurable"]["chat_model"], question
+        )
     channel = runtime.state.get("channel") or "rest"
-    return agreed, [events.bot(question), events.user(str(answer), channel)]
+    return kind, [events.bot(question), events.user(answer, channel)], answer
+
+
+def _not_answered(
+    runtime: ToolRuntime, spec: ToolSpec, consent: list[Event], answer: str
+) -> Command:
+    """Hands the turn back to the model when the customer did not answer.
+
+    Nothing ran, so no tool event is recorded. The model answers what the
+    customer said and calls the tool again when they want to go ahead.
+    """
+    result = {
+        "ok": False,
+        "error": "not_answered",
+        "customer_said": answer,
+        "hint": (
+            "The customer did not say yes or no, so nothing was done. Respond "
+            f"to what they said. Call {spec.name} again only when they want "
+            "to go ahead; it will ask them again."
+        ),
+    }
+    return Command(
+        update={
+            "events": consent,
+            "messages": [
+                ToolMessage(content=json.dumps(result), tool_call_id=runtime.tool_call_id)
+            ],
+        }
+    )
 
 
 def interrupt_value(question: str) -> Any:
@@ -311,9 +362,11 @@ def _result(
     is_error: bool,
     error_message: str | None,
     arguments: dict[str, Any] | None = None,
+    lead_events: list[Event] | None = None,
 ) -> Command:
     before: Memory = runtime.state.get("memory") or {}
     tracker = [
+        *(lead_events or []),
         events.tool_executed(
             spec.name,
             arguments or {},
@@ -345,6 +398,7 @@ def _handoff(
     *,
     memory: dict[str, Any] | None = None,
     extra_events: list[Event] | None = None,
+    lead_events: list[Event] | None = None,
     tool: tuple[ToolSpec, dict[str, Any], dict[str, Any], bool, str | None]
     | None = None,
     tool_name: str | None = None,
@@ -358,8 +412,7 @@ def _handoff(
     tracker = list(extra_events or [])
     if tool is not None:
         spec, result, arguments, is_error, error_message = tool
-        tracker.insert(
-            0,
+        tracker[:0] = [
             events.tool_executed(
                 spec.name,
                 arguments,
@@ -368,8 +421,8 @@ def _handoff(
                 error_message=error_message,
                 skill_id=spec.skill_id,
             ),
-        )
-        tracker[1:1] = memory_set_events(state.get("memory") or {}, memory or {})
+            *memory_set_events(state.get("memory") or {}, memory or {}),
+        ]
     elif tool_name:
         tracker.append(
             events.tool_executed(
@@ -380,6 +433,7 @@ def _handoff(
                 skill_id=skill_id,
             )
         )
+    tracker[:0] = list(lead_events or [])
     started = dict(state.get("started") or {})
     active = state.get("active")
     if complete:

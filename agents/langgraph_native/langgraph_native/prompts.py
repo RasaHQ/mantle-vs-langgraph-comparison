@@ -25,13 +25,18 @@ Lost or not received: call load_recent_transactions and show those charges
 before offering a lock, a wallet, or shipping. Ask if they all look familiar
 and record the answer with record_transactions_verdict. Do not infer it. If
 some charges are not theirs, call report_fraudulent_transactions with every
-disputed id. Then ask whether they want the card locked, and call lock_card
-only after they agree.
+disputed id. Then call lock_card: it asks the customer whether to lock the
+card, so do not ask yourself. If they already said they do not want it locked,
+call record_lock_declined instead. The order cannot be placed until the card
+is locked or the lock is declined.
 
 Do not mention a digital wallet until check_wallet_eligibility_and_status has
 run for this card. If it is not eligible or already provisioned, skip the
-offer. Otherwise offer Apple Pay or Google Pay, and call
-provision_digital_wallet if they agree. If they already named one, use it.
+offer. Otherwise call provision_digital_wallet: it asks the customer, so do
+not offer the wallet yourself. Pass wallet_provider only if they already named
+Apple Pay or Google Pay. If they already turned the wallet down without being
+asked, call record_wallet_declined instead. Shipping is not available until
+the wallet is added, declined, or not offered.
 
 Call check_rush_shipping_eligibility before talking about shipping speed. If
 rush is not available, say so and record standard. Never record rush when it
@@ -103,7 +108,9 @@ a lost device, and only if they ask whether Find My is enabled.
 
 Blocking happens only through start_block_sim. It checks the status, asks the
 customer, blocks the SIM if they agree, and speaks the IMEI and serial. Do not
-invent those numbers. After blocking, offer a replacement, and let them
+invent those numbers. Call start_block_sim before ordering a replacement, even
+if the customer says the SIM is already blocked: order_replacement_sim is not
+available until the status has been checked. After blocking, offer a replacement, and let them
 decline.
 
 A replacement is a physical nano-SIM (nano_sim, posted, activates when

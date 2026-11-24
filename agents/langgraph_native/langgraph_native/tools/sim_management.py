@@ -159,8 +159,12 @@ def order_replacement_sim(memory: Memory) -> Outcome:
 
 def _can_order(memory: Memory) -> bool:
     state = _view(memory)
-    return state.sim_type is not None and state.sim_type not in (
-        state.ordered_sim_types or []
+    # The SIM status must have been checked (start_block_sim), even when the
+    # customer says it is already blocked.
+    return (
+        state.sim_blocked is not None
+        and state.sim_type is not None
+        and state.sim_type not in (state.ordered_sim_types or [])
     )
 
 
