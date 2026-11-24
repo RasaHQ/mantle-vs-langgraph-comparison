@@ -4,19 +4,19 @@ This repo compares two customer-service agents that do the same job: a **Mantle*
 
 ## Results
 
-Every scenario runs 3 times per setup. A scenario counts as **solved reliably** when it passes in all 3 runs.
+Every scenario runs 3 times per setup. A scenario counts as **solved reliably** when it passes in all 3 runs. All setups use `gpt-5.2`. Mantle and the first LangGraph setup run with reasoning set to none; the last setup turns reasoning up to high.
 
 | Setup | Scenarios solved reliably | Cost per reliably solved scenario |
 |---|---:|---:|
-| **Mantle** | **27/31** (87%) | **$0.129** |
-| LangGraph | 19/31 (61%) | $0.149 |
-| LangGraph, reasoning high | 21/31 (68%) | $0.323 |
+| **Mantle (reasoning: none)** | **27/31** (87%) | **$0.129** |
+| LangGraph (reasoning: none) | 19/31 (61%) | $0.149 |
+| LangGraph (reasoning: high) | 21/31 (68%) | $0.323 |
 
-> **Main takeaway:** Mantle solves more scenarios, and solves them more consistently from run to run. LangGraph costs less per conversation, but fails more of them, so per scenario it solves reliably it costs more. Turning on high reasoning helps LangGraph a little and more than doubles its cost.
+> **Main takeaway:** Mantle solves more scenarios, and solves them more consistently from run to run. LangGraph without reasoning costs less per conversation, but fails more of them, so per scenario it solves reliably it costs more. Turning reasoning up to high helps LangGraph a little and more than doubles its cost.
 
 **Accuracy**
 
-| | Mantle | LangGraph | LangGraph, reasoning high |
+| | Mantle (reasoning: none) | LangGraph (reasoning: none) | LangGraph (reasoning: high) |
 |---|---:|---:|---:|
 | pass^1: scenarios passed in at least 1 of 3 runs | **31/31** | 28/31 | 28/31 |
 | pass^2: scenarios passed in at least 2 of 3 runs | **30/31** | 25/31 | 26/31 |
@@ -24,7 +24,7 @@ Every scenario runs 3 times per setup. A scenario counts as **solved reliably** 
 
 **Cost** (the agent's own LLM spend, `gpt-5.2`)
 
-| | Mantle | LangGraph | LangGraph, reasoning high |
+| | Mantle (reasoning: none) | LangGraph (reasoning: none) | LangGraph (reasoning: high) |
 |---|---:|---:|---:|
 | **Cost per reliably solved scenario** | **$0.129** | $0.149 | $0.323 |
 | Cost per resolved conversation | $0.119 | $0.118 | $0.271 |
@@ -34,7 +34,7 @@ Every scenario runs 3 times per setup. A scenario counts as **solved reliably** 
 
 Each setup ran 31 scenarios 3 times: 93 conversations. Total cost is the agent's LLM spend summed over all 93 conversations, resolved or not.
 
-| | Mantle | LangGraph | LangGraph, reasoning high |
+| | Mantle (reasoning: none) | LangGraph (reasoning: none) | LangGraph (reasoning: high) |
 |---|---:|---:|---:|
 | Total cost, 93 conversations | $10.46 | $8.50 | $20.34 |
 | Conversations resolved | 88 | 72 | 75 |
@@ -52,7 +52,7 @@ Both agents serve the same fictional bank and telecom company ("Acme Bank & Tele
 
 | Setup | Agent | Notes |
 |---|---|---|
-| `mantle` | [`agents/mantle_combined`](agents/mantle_combined) | Rasa Pro 3.22.0.dev5. Skills in `skills/*/skill.md`, agent rules in `agent.yml`. |
+| `mantle` | [`agents/mantle_combined`](agents/mantle_combined) | Rasa Pro 3.22.0.dev5. Skills in `skills/*/skill.md`, agent rules in `agent.yml`. No reasoning (`reasoning_effort: "none"` in `integrations.yml`). |
 | `lg` | [`agents/langgraph_native`](agents/langgraph_native) | LangGraph supervisor with one specialist per task. A router picks the specialist on every message, and every model call sees the same skill descriptions Mantle uses (`routing` in `data/agent.yml`). No reasoning (`reasoning_effort="none"`), like Mantle. |
 | `lg-high` | same as `lg` | `reasoning_effort="high"`. Timeouts are raised so no run fails on a timeout (below). |
 

@@ -44,9 +44,9 @@ from typing import Optional
 REPO = Path(__file__).resolve().parents[1]
 RESULTS_DIR = REPO / "results"
 SETUPS = {
-    "mantle": "Mantle",
-    "lg": "LangGraph",
-    "lg-high": "LangGraph, reasoning high",
+    "mantle": "Mantle (reasoning: none)",
+    "lg": "LangGraph (reasoning: none)",
+    "lg-high": "LangGraph (reasoning: high)",
 }
 
 
