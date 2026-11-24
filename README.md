@@ -10,17 +10,17 @@ Every scenario runs 3 times per setup. A scenario counts as **reliably resolved*
 |---|---:|---:|
 | **Mantle (reasoning: none)** | **28/31** (90%) | **$0.102** |
 | LangGraph (reasoning: none) | 22/31 (71%) | $0.132 |
-| LangGraph (reasoning: high) | 21/31 (68%) | $0.323 |
+| LangGraph (reasoning: high) | 22/31 (71%) | $0.294 |
 
-> **Main takeaway:** Mantle resolves more scenarios, and resolves them more consistently from run to run, at about the same cost per conversation as LangGraph without reasoning ($0.092 vs $0.093). LangGraph fails more of its conversations, so each scenario it resolves reliably costs more: $0.132 against $0.102 for Mantle. Turning LangGraph's reasoning up to high does not make it more reliable here, and more than doubles its cost.
+> **Main takeaway:** Mantle resolves more scenarios, and resolves them more consistently from run to run, at about the same cost per conversation as LangGraph without reasoning ($0.092 vs $0.093). LangGraph fails more of its conversations, so each scenario it resolves reliably costs more: $0.132 against $0.102 for Mantle. Turning LangGraph's reasoning up to high resolves the same 22 scenarios reliably and more than doubles its cost.
 
 **Cost** (the agent's own LLM spend, `gpt-5.2`)
 
 | | Mantle (reasoning: none) | LangGraph (reasoning: none) | LangGraph (reasoning: high) |
 |---|---:|---:|---:|
-| **Cost per reliably resolved scenario** | **$0.102** | $0.132 | $0.323 |
-| Cost per resolved conversation | **$0.095** | $0.114 | $0.271 |
-| Cost per conversation | $0.092 | $0.093 | $0.219 |
+| **Cost per reliably resolved scenario** | **$0.102** | $0.132 | $0.294 |
+| Cost per resolved conversation | **$0.095** | $0.114 | $0.248 |
+| Cost per conversation | $0.092 | $0.093 | $0.208 |
 
 **How the cost rows are computed**
 
@@ -28,9 +28,9 @@ Each setup ran 31 scenarios 3 times: 93 conversations. Total cost is the agent's
 
 | | Mantle (reasoning: none) | LangGraph (reasoning: none) | LangGraph (reasoning: high) |
 |---|---:|---:|---:|
-| Total cost, 93 conversations | $8.59 | $8.69 | $20.34 |
-| Conversations resolved | 90 | 76 | 75 |
-| Scenarios resolved in all 3 runs | 28 | 22 | 21 |
+| Total cost, 93 conversations | $8.59 | $8.69 | $19.38 |
+| Conversations resolved | 90 | 76 | 78 |
+| Scenarios resolved in all 3 runs | 28 | 22 | 22 |
 
 - **Cost per conversation** = total cost ÷ 93 conversations. Mantle: $8.59 ÷ 93 = $0.092.
 - **Cost per resolved conversation** = total cost ÷ conversations resolved. Mantle: $8.59 ÷ 90 = $0.095.
@@ -82,13 +82,15 @@ Other forms:
 .venv-rasa/bin/python harness/run.py --help  # all options
 ```
 
-A full run takes about 35 minutes and costs about $50 in OpenAI usage. Per setup (3 runs of every scenario), counting the agent, the simulated customer and the judge:
+A full run takes about 40 minutes and costs about $45 in OpenAI usage. Per setup (3 runs of every scenario), counting the agent, the simulated customer and the judge, from the published runs:
 
 | Setup | Time | Cost |
 |---|---:|---:|
-| `mantle` | ~8 min | ~$15 |
-| `lg` | ~7 min | ~$12 |
-| `lg-high` | ~20 min | ~$22 |
+| `mantle` | ~10 min | ~$12 |
+| `lg` | ~6 min | ~$11 |
+| `lg-high` | ~25 min | ~$22 |
+
+`results/README.md` has the exact time and cost of each published run.
 
 On macOS, `run.sh` keeps the machine awake with `caffeinate` while it runs. Sleep freezes the timeouts and drops the open connections to OpenAI, which would ruin the conversations in flight. Closing the lid still sleeps the machine, so keep it open.
 

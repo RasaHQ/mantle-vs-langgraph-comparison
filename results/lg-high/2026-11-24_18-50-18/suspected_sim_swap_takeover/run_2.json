@@ -1,0 +1,320 @@
+{
+  "scenario_name": "Suspected SIM swap / account takeover",
+  "scenario_slug": "suspected_sim_swap_takeover",
+  "scenario_type": null,
+  "run_index": 2,
+  "timestamp": "2026-11-24T13:31:52Z",
+  "conversation_id": "sim-6db9e558-0f49-46b7-949e-913c97f65673",
+  "error": null,
+  "error_is_harness": false,
+  "metrics_error": null,
+  "judge_summary": "The assistant handled a potential SIM-swap security incident effectively: it confirmed and executed the SIM block, provided device details, and offered clear follow-up steps for securing accounts. It maintained consistent context throughout and responded appropriately to the user\u2019s choices, though the tone could have been a bit warmer and more empathetic in places.",
+  "latency": {
+    "measured_via": "direct",
+    "per_turn": [
+      {
+        "turn": 1,
+        "ttft_ms": null,
+        "turn_latency_ms": null,
+        "gaps_ms": []
+      },
+      {
+        "turn": 2,
+        "ttft_ms": null,
+        "turn_latency_ms": 10214.58333299961,
+        "gaps_ms": []
+      },
+      {
+        "turn": 3,
+        "ttft_ms": null,
+        "turn_latency_ms": 16658.39275000326,
+        "gaps_ms": []
+      },
+      {
+        "turn": 4,
+        "ttft_ms": null,
+        "turn_latency_ms": 4225.130625010934,
+        "gaps_ms": []
+      }
+    ],
+    "avg_ttft_ms": null,
+    "avg_turn_latency_ms": 10366.035569337933,
+    "avg_gap_ms": null
+  },
+  "transcript": [
+    {
+      "user": "",
+      "bot": [
+        "Hi! How can I help you today?"
+      ]
+    },
+    {
+      "user": "I think someone may have moved my number to another SIM. I still have my phone right here, but it suddenly lost service a few minutes ago, and I\u2019m getting password reset emails I didn\u2019t request. Please secure my account immediately.",
+      "bot": [
+        "Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.",
+        "This SIM is active. Do you want me to block it now to prevent any unauthorized use?"
+      ]
+    },
+    {
+      "user": "Yes, please block this SIM right now to stop any unauthorized use.",
+      "bot": [
+        "Your SIM is now blocked.",
+        "Here are the device details on file for your line:\nDevice: iPhone 15 Pro\nIMEI: 352345678901234\nSerial number: F2LZK1HQGRX",
+        "I\u2019ve secured your mobile number by **blocking the SIM** on your line. That prevents anyone else from using your number on another SIM for calls/texts and also stops service on your current SIM.\n\nGiven the password\u2011reset emails, I also recommend right now (over Wi\u2011Fi):\n- **Change your email password first**, then your banking/app passwords\n- Turn on **2\u2011step verification** where available\n- Review recent sign-in/security alerts and any unfamiliar activity\n\nNext: would you like a **replacement SIM** so you can get service back?\n- **eSIM** (QR code by email; needs Wi\u2011Fi), or\n- **Physical nano\u2011SIM** (posted to you; activates when inserted)"
+      ]
+    },
+    {
+      "user": "Thanks for blocking it and for the info. I don\u2019t want a replacement SIM right now, I\u2019ll stay without service for the moment and take care of the account security first. That\u2019s all I needed, thanks.",
+      "bot": [
+        "Goodbye, and take care."
+      ]
+    }
+  ],
+  "task_completion": true,
+  "task_completion_reasoning": "The assistant blocked the SIM as requested, provided relevant device and security guidance, and the user confirmed that was all they needed.",
+  "eval_passed": true,
+  "criteria": [
+    {
+      "index": 0,
+      "criterion": "The agent classifies the incident as stolen and the customer hears the matching stolen-SIM advice before the SIM is blocked",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "In T1 the ledger shows record_incident(reason=stolen), and before the user consents to blocking, the bot says \"Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report,\" which is stolen\u2011SIM matching advice given before the SIM is blocked at T2."
+    },
+    {
+      "index": 1,
+      "criterion": "The agent prioritizes security containment (blocking the SIM) over pushing the customer toward ordering a replacement before the security concern is addressed",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "The bot first offers to block the SIM (\"Do you want me to block it now to prevent any unauthorized use?\") and only after confirming and executing the block does it ask \"Next: would you like a replacement SIM...\", so blocking is clearly prioritized over replacement."
+    },
+    {
+      "index": 2,
+      "criterion": "The agent does not reveal account-specific information before the SIM is blocked. Sharing device IMEI or serial after the block is expected.",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "The SIM is blocked at T2 (tool: block_sim() and \"Your SIM is now blocked.\"), and only afterward does the bot share device-specific IMEI and serial; no account-specific information is revealed prior to the block."
+    },
+    {
+      "index": 3,
+      "criterion": "The agent avoids actions that could make recovery harder without explaining their impact",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "The main impactful security action is blocking the SIM, and the bot explains its impact explicitly (\"That prevents anyone else from using your number on another SIM for calls/texts and also stops service on your current SIM\"), so it does not take impactful steps without explanation."
+    },
+    {
+      "index": 4,
+      "criterion": "The agent clearly explains the immediate security steps it completed or could not complete",
+      "passed": true,
+      "verdict": "passed",
+      "reasoning": "After blocking, the bot clearly states \"I\u2019ve secured your mobile number by **blocking the SIM** on your line\" and explains what that does, and then gives explicit follow-up security steps like changing passwords and enabling 2-step verification."
+    }
+  ],
+  "criteria_summary": {
+    "passed": 5,
+    "total": 5,
+    "all_passed": true
+  },
+  "assertions": [
+    {
+      "index": 0,
+      "assertion": "skill_activated(sim_management)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 1,
+      "assertion": "skill_completed(sim_management)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 2,
+      "assertion": "sequencing",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 3,
+      "assertion": "bot_uttered",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 4,
+      "assertion": "memory_was_set(sim_management.incident_reason='stolen', sim_management.wants_to_block=True, sim_management.sim_blocked=True)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 5,
+      "assertion": "memory_was_not_set(sim_management.replacement_ordered, sim_management.replacement_complete, sim_management.sim_type, sim_management.sim_order_summary)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 6,
+      "assertion": "tool_executed(check_sim_status)",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "index": 7,
+      "assertion": "tool_executed(block_sim)",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "assertions_summary": {
+    "passed": 8,
+    "total": 8,
+    "all_passed": true
+  },
+  "scale_metrics": {
+    "helpfulness": 5,
+    "repair_quality": 5,
+    "coherence": 5,
+    "tone": 4
+  },
+  "scale_metrics_reasoning": {
+    "helpfulness": "It immediately moved to secure the line, explicitly confirmed blocking the SIM, shared device details, and gave concrete, prioritized account-security steps tailored to the SIM\u2011swap risk.",
+    "repair_quality": "There were no user corrections or pushback; every assistant action aligned with the user\u2019s expressed intent, so no repair was needed.",
+    "coherence": "It consistently tracked that the issue was possible SIM hijack, confirmed and executed the block after user consent, and later correctly remembered the user\u2019s choice not to get a replacement SIM.",
+    "tone": "The tone was concise, calm, and professional, though slightly clipped and transactional rather than warmly conversational."
+  },
+  "acknowledgements": {
+    "turns": [
+      {
+        "turn_number": 1,
+        "tools": [
+          "transfer_to_sim_management",
+          "record_incident",
+          "start_block_sim",
+          "check_sim_status"
+        ],
+        "acknowledgement": null,
+        "follow_up": [
+          "Report the theft to the police. After the SIM is blocked, I will share the device details on file for your report. Check your account for any unauthorized charges.",
+          "This SIM is active. Do you want me to block it now to prevent any unauthorized use?"
+        ]
+      },
+      {
+        "turn_number": 2,
+        "tools": [
+          "record_block_consent",
+          "block_sim",
+          "get_device_info"
+        ],
+        "acknowledgement": null,
+        "follow_up": [
+          "Your SIM is now blocked.",
+          "Here are the device details on file for your line:\nDevice: iPhone 15 Pro\nIMEI: 352345678901234\nSerial number: F2LZK1HQGRX",
+          "I\u2019ve secured your mobile number by **blocking the SIM** on your line. That prevents anyone else from using your number on another SIM for calls/texts and also stops service on your current SIM.\n\nGiven the password\u2011reset emails, I also recommend right now (over Wi\u2011Fi):\n- **Change your email password first**, then your banking/app passwords\n- Turn on **2\u2011step verification** where available\n- Review recent sign-in/security alerts and any unfamiliar activity\n\nNext: would you like a **replacement SIM** so you can get service back?\n- **eSIM** (QR code by email; needs Wi\u2011Fi), or\n- **Physical nano\u2011SIM** (posted to you; activates when inserted)"
+        ]
+      },
+      {
+        "turn_number": 3,
+        "tools": [
+          "transfer_to_sim_management",
+          "finish_task"
+        ],
+        "acknowledgement": null,
+        "follow_up": [
+          "Goodbye, and take care."
+        ]
+      }
+    ],
+    "verdicts": [],
+    "error": null,
+    "coverage": [
+      0.0,
+      0,
+      3
+    ],
+    "issue_counts": {
+      "hard_contradiction": 0,
+      "soft_contradiction": 0,
+      "commits_to_tool_outcome": 0,
+      "repeated_in_same_bot_turn": 0,
+      "similar_to_earlier_acknowledgement": 0,
+      "stock_opener": 0
+    },
+    "mean_issue_score": null,
+    "mean_naturalness_score": null
+  },
+  "engine_tokens": {
+    "status": "complete",
+    "session_id": "sim-6db9e558-0f49-46b7-949e-913c97f65673",
+    "prompt": 11471,
+    "completion": 1367,
+    "cached": 0,
+    "cache_write": 0,
+    "total": 12838,
+    "generations": 7,
+    "cost": 0.03921224999999999,
+    "cost_status": "complete",
+    "price_source": {
+      "provider": "litellm",
+      "version": "1.101.0"
+    },
+    "by_call_type": {
+      "supervisor": [
+        {
+          "model": "gpt-5.2",
+          "prompt": 4965,
+          "completion": 125,
+          "cached": 0,
+          "cache_write": 0,
+          "generations": 3,
+          "cost": 0.01043875,
+          "total": 5090
+        }
+      ],
+      "sim_management": [
+        {
+          "model": "gpt-5.2",
+          "prompt": 6506,
+          "completion": 1242,
+          "cached": 0,
+          "cache_write": 0,
+          "generations": 4,
+          "cost": 0.028773499999999994,
+          "total": 7748
+        }
+      ]
+    },
+    "fetched_at": "2026-11-24T13:32:28.864718+00:00"
+  },
+  "evaluation_tokens": {
+    "simulator": [
+      {
+        "model": "gpt-5.1-2025-11-13",
+        "prompt": 3129,
+        "completion": 172,
+        "cached": 0,
+        "cache_write": 0,
+        "total": 3301,
+        "generations": 3,
+        "cost": 0.005631250000000001
+      }
+    ],
+    "judge": [
+      {
+        "model": "gpt-5.1-2025-11-13",
+        "prompt": 5578,
+        "completion": 926,
+        "cached": 0,
+        "cache_write": 0,
+        "total": 6504,
+        "generations": 2,
+        "cost": 0.016232500000000004
+      }
+    ],
+    "cost": 0.021863750000000005,
+    "cost_status": "complete",
+    "price_source": {
+      "provider": "litellm",
+      "version": "1.105.3"
+    }
+  }
+}

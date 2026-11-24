@@ -1,0 +1,278 @@
+scenario: Order status followed by unsupported address change
+run: 1
+timestamp: 2026-11-24T13:32:30Z
+conversation_id: sim-fdb2befb-836b-4326-9460-38650112bbd7
+overall_result: FAIL
+
+--- Conversation Repair ---
+- cancellation
+  skill_id: card_replace
+- cancellation
+  skill_id: account_advisory
+- cancellation
+  skill_id: card_replace
+- cancellation
+  skill_id: sim_management
+
+--- Quality Criteria Results ---
+[PASS] The agent answers the order-status question before or while addressing the change request
+  rationale: In the first bot reply (before any change request), it provides the status and ETA: the order is being prepared for shipment with an estimated ship date and delivery window, satisfying the order-status question before the later address-change request.
+
+[PASS] The agent does not offer to change the delivery address, does not try to change it, and does not claim it was changed. Telling the customer to contact support or ask the carrier is allowed.
+  rationale: The bot consistently says it cannot change or update the delivery address and directs the user to contact orders/shipping support, and there is no claim or attempt to change the address (the ledger shows no address-modification tools were called).
+
+[FAIL] The agent does not perform an unrelated or substitute action without the user's authorization
+  rationale: The system activates card_replace, sim_management, account_advisory, and bill_inquiry skills and responds with irrelevant card/account/SIM continuity prompts, which are unrelated substitute actions the user did not authorize for this order-address request.
+
+[FAIL] The agent clearly distinguishes information it retrieved from any action it actually completed
+  rationale: When the user repeatedly asks whether anything was changed on the order, the bot replies only with stock messages about being in the middle of replacing a card or SIM and never clearly states that no changes were performed, so it does not clearly distinguish between retrieved info and completed actions.
+
+--- Quality Metrics ---
+bot_quality: 1.75/5
+  helpfulness: 2/5 — The bot gave one useful initial answer and a final partial clarification about address-change limits, but most middle turns were irrelevant to the user's questions and failed to address their core concern.
+  repair_quality: 1/5 — Despite multiple explicit corrections like “I’m not talking about my card” and repeated clarifications, the bot kept repeating the same canned responses and never adjusted to the user’s clarified intent.
+  coherence: 1/5 — The assistant repeatedly reverted to unrelated flows about replacing a card or SIM and ignored the established context of the Galaxy Watch order, showing persistent failure to track the conversation state.
+  tone: 3/5 — The wording is polite and readable but also canned and repetitively framed (“we were still in the middle...”), making it feel mechanical and slightly awkward.
+  task_completion: FAIL — The user never received a clear, consistent answer about whether anything on order ORD-20260628-001 had been changed, and the bot repeatedly deflected with irrelevant card/SIM messages.
+summary: The assistant started with a clear, helpful order-status response but quickly devolved into irrelevant, scripted replies about card and SIM replacement that did not match the user’s intent. It failed to incorporate repeated user corrections, did not coherently track the order-related context, and never clearly answered whether any changes had been made to the order, leading to an overall unsatisfactory interaction despite a generally polite tone.
+
+--- Acknowledgements ---
+summary:
+  coverage: 0/5 tool turns (0%)
+  mean naturalness score: None
+  mean issue score: None
+  issues: none
+
+T1
+  turn:
+    tools:
+      - transfer_to_order_status
+      - get_orders
+      - get_order_details
+      - finish_task
+    no acknowledgement
+T2
+  turn:
+    tools:
+      - transfer_to_order_status
+      - finish_task
+      - transfer_to_card_replace
+      - transfer_back
+      - transfer_to_sim_management
+    no acknowledgement
+T3
+  turn:
+    tools:
+      - transfer_to_order_status
+      - finish_task
+    no acknowledgement
+T4
+  turn:
+    tools:
+      - transfer_to_order_status
+      - finish_task
+      - transfer_to_card_replace
+      - transfer_back
+      - transfer_to_account_advisory
+      - get_accounts
+      - get_interest_rates
+      - transfer_back
+      - transfer_to_bill_inquiry
+      - finish_task
+    no acknowledgement
+T7
+  turn:
+    tools:
+      - transfer_to_order_status
+      - finish_task
+      - transfer_to_account_advisory
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "Hey, I just ordered a Galaxy Watch—can you check the order status and ETA for delivery?"
+  observed: transfer_to_order_status
+  observed: get_orders
+  observed: get_order_details(order_id='ORD-20260628-001')
+  observed: finish_task
+[T2] user: "Thanks. Since it’s still being prepared, can you change the delivery address for this order?"
+  observed: transfer_to_order_status
+  observed: search_knowledge(query='change delivery address for device order being prepared for shipment distribution center address change policy')
+  observed: search_knowledge(query='delivery address change for open device order prepared for shipment reroute')
+  observed: search_knowledge(query='change shipping address after order placed Galaxy Watch device order address update before shipment')
+  observed: finish_task
+  observed: transfer_to_card_replace
+  observed: search_knowledge(query='policy change shipping address open order address correction reroute Swiss Post')
+  observed: transfer_back
+  observed: transfer_to_sim_management
+  observed: search_knowledge(query='change delivery address device order before shipment can Acme change shipping address')
+  observed: search_knowledge(query='address change request for unshipped order change shipping address before it ships')
+  observed: search_knowledge(query='change delivery address after order placed redirect parcel Swiss Post address change Acme')
+[T3] user: "Got it. Even if you can’t actually change where it’s going, can you at least update the new address in your system for this order on your side?"
+  observed: transfer_to_order_status
+  observed: finish_task
+[T4] user: "No, I’m not talking about my card. I just want to know if you can update a different delivery address in your system for order ORD-20260628-001, even if the shipment itself won’t change."
+  observed: transfer_to_order_status
+  observed: search_knowledge(query='Swiss Post redirect hold at post office change delivery address once shipped Acme order')
+  observed: finish_task
+  observed: transfer_to_card_replace
+  observed: transfer_back
+  observed: transfer_to_account_advisory
+  observed: get_accounts
+  observed: get_interest_rates
+  observed: transfer_back
+  observed: transfer_to_bill_inquiry
+  observed: finish_task
+[T7] user: "Never mind, let’s drop everything then. I’ll sort the order out another way—thanks anyway."
+  observed: transfer_to_order_status
+  observed: finish_task
+  observed: transfer_to_account_advisory
+
+--- Assertion Results ---
+[PASS] skill_activated(order_status)
+[PASS] skill_completed(order_status)
+[PASS] memory_was_set(order_status.orders_loaded=True)
+[PASS] memory_was_not_set(card_replace.replacement_ordered, sim_management.replacement_ordered, sim_management.sim_blocked)
+[PASS] tool_executed(get_orders)
+[PASS] tool_executed(get_order_details)
+
+--- Raw Transcript ---
+[1] agent: Hi! How can I help you today?
+[2] user: Hey, I just ordered a Galaxy Watch—can you check the order status and ETA for delivery?
+[3] agent: Your **Samsung Galaxy Watch 7** order (**ORD-20260628-001**, placed **June 28, 2026**) is currently **being prepared for shipment at the distribution center**.
+
+- **Estimated ship date:** **July 1, 2026**  
+- **Estimated delivery window:** **July 3–5, 2026** (Standard Post / Swiss Post)  
+- **Tracking:** Not yet available — a tracking number will be assigned once it ships.
+[4] user: Thanks. Since it’s still being prepared, can you change the delivery address for this order?
+[5] agent: I can’t change the delivery address for that Galaxy Watch order from this chat.
+
+For **ORD-20260628-001**, the delivery address currently on the order is:
+**Bahnhofstrasse 42, 8001 Zürich**.
+
+If you need it sent somewhere else, you’ll need to contact our orders/shipping support as soon as possible and quote **ORD-20260628-001**. I can still help by checking the status again later and sharing the tracking number once it’s assigned.
+[6] user: Got it. Even if you can’t actually change where it’s going, can you at least update the new address in your system for this order on your side?
+[7] agent: We were still in the middle of replacing your card. Would you like to continue with that, or drop it?
+[8] user: No, I’m not talking about my card. I just want to know if you can update a different delivery address in your system for order ORD-20260628-001, even if the shipment itself won’t change.
+[9] agent: We were still in the middle of your accounts. Would you like to continue with that, or drop it?
+[10] user: Let’s drop whatever we were doing before. Can you just confirm clearly: did you change anything at all on order ORD-20260628-001, like the address or details, or is everything exactly as it was?
+[11] agent: We were still in the middle of replacing your card. Would you like to continue with that, or drop it?
+[12] user: Please ignore the card stuff—just answer this one thing: for order ORD-20260628-001, did you change *anything* on it, or is it all exactly the same as before?
+[13] agent: We were still in the middle of the SIM. Would you like to continue with that, or drop it?
+[14] user: Never mind, let’s drop everything then. I’ll sort the order out another way—thanks anyway.
+[15] agent: I can’t update or overwrite the delivery address for **ORD-20260628-001** from here (even “on our side”).
+
+Right now, the order is set to ship to:
+**Bahnhofstrasse 42, 8001 Zürich**.
+
+To change it, you’ll need to contact our **orders/shipping support** and provide:
+- **Order ID:** ORD-20260628-001  
+- **The new full delivery address**
+
+If you’d like, I can keep an eye on the order status here—once it ships and a tracking number is assigned, I can share that with you.
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=—  turn_latency=12621ms
+turn 3: ttft=—  turn_latency=98400ms
+turn 4: ttft=—  turn_latency=5012ms
+turn 5: ttft=—  turn_latency=65742ms
+turn 6: ttft=—  turn_latency=1415ms
+turn 7: ttft=—  turn_latency=1698ms
+turn 8: ttft=—  turn_latency=26275ms
+conversation avg: turn_latency=30166ms  (over 0 turns with bot text, 7 turns timed)
+
+--- Inspector URL ---
+http://127.0.0.1:5007/webhooks/inspector/inspect.html?sender=sim-fdb2befb-836b-4326-9460-38650112bbd7
+
+--- Additional Metrics ---
+Turns to Completion: 7
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  action: action_session_start
+    2  session_started: {"event": "session_started"}
+    3  agent: 'Hi! How can I help you today?'
+[T1] user: "Hey, I just ordered a Galaxy Watch—can you check the order status and ETA for delivery?"
+    1  user: 'Hey, I just ordered a Galaxy Watch—can you check the order status and ETA for delivery?'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: get_orders() → ok
+    5  memory_set: order_status.orders_loaded = true
+    6  tool: get_order_details(order_id=ORD-20260628-001) → ok
+    7  tool: finish_task() → ok
+    8  skill_completed: order_status
+    9  agent: 'Your **Samsung Galaxy Watch 7** order (**ORD-20260628-001**, placed **June 28, 2026**) is currently **being prepared for shipment at the distribution center**. - **Estimated ship date:** **July 1, 2026** - **Estimated delivery window:** **July 3–5, 2026** (Standard Post / Swiss Post) - **Tracking:** Not yet available — a tracking number will be assigned once it ships.'
+[T2] user: "Thanks. Since it’s still being prepared, can you change the delivery address for this order?"
+    1  user: 'Thanks. Since it’s still being prepared, can you change the delivery address for this order?'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: search_knowledge(query=change delivery address for device orde…) → ok
+    5  tool: search_knowledge(query=delivery address change for open device…) → ok
+    6  tool: search_knowledge(query=change shipping address after order pla…) → ok
+    7  tool: finish_task() → ok
+    8  skill_completed: order_status
+    9  tool: transfer_to_card_replace() → ok
+   10  skill_activated: card_replace
+   11  tool: search_knowledge(query=policy change shipping address open ord…) → ok
+   12  tool: transfer_back() → ok
+   13  tool: transfer_to_sim_management() → ok
+   14  skill_activated: sim_management
+   15  tool: search_knowledge(query=change delivery address device order be…) → ok
+   16  tool: search_knowledge(query=address change request for unshipped or…) → ok
+   17  tool: search_knowledge(query=change delivery address after order pla…) → ok
+   18  agent: 'I can’t change the delivery address for that Galaxy Watch order from this chat. For **ORD-20260628-001**, the delivery address currently on the order is: **Bahnhofstrasse 42, 8001 Zürich**. If you need it sent somewhere else, you’ll need to contact our orders/shipping support as soon as possible and quote **ORD-20260628-001**. I can still help by checking the status again later and sharing the tracking number once it’s assigned.'
+[T3] user: "Got it. Even if you can’t actually change where it’s going, can you at least update the new address in your system for this order on your side?"
+    1  user: 'Got it. Even if you can’t actually change where it’s going, can you at least update the new address in your system for this order on your side?'
+    2  tool: transfer_to_order_status() → ok
+    3  skill_activated: order_status
+    4  tool: finish_task() → ok
+    5  skill_completed: order_status
+    6  skill_activated: builtin_continue_interrupted
+    7  skill_completed: builtin_continue_interrupted
+    8  agent: 'We were still in the middle of replacing your card. Would you like to continue with that, or drop it?'
+[T4] user: "No, I’m not talking about my card. I just want to know if you can update a different delivery address in your system for order ORD-20260628-001, even if the shipment itself won’t change."
+    1  user: 'No, I’m not talking about my card. I just want to know if you can update a different delivery address in your system for order ORD-20260628-001, even if the shipment itself won’t change.'
+    2  skill_cancelled: card_replace
+    3  tool: transfer_to_order_status() → ok
+    4  skill_activated: order_status
+    5  tool: search_knowledge(query=Swiss Post redirect hold at post office…) → ok
+    6  tool: finish_task() → ok
+    7  skill_completed: order_status
+    8  tool: transfer_to_card_replace() → ok
+    9  skill_activated: card_replace
+   10  tool: transfer_back() → ok
+   11  tool: transfer_to_account_advisory() → ok
+   12  skill_activated: account_advisory
+   13  tool: get_accounts() → ok
+   14  memory_set: account_advisory.accounts_loaded = true
+   15  tool: get_interest_rates() → ok
+   16  tool: transfer_back() → ok
+   17  tool: transfer_to_bill_inquiry() → ok
+   18  skill_activated: bill_inquiry
+   19  tool: finish_task() → ok
+   20  skill_completed: bill_inquiry
+   21  skill_activated: builtin_continue_interrupted
+   22  skill_completed: builtin_continue_interrupted
+   23  agent: 'We were still in the middle of your accounts. Would you like to continue with that, or drop it?'
+[T5] user: "Let’s drop whatever we were doing before. Can you just confirm clearly: did you change anything at all on order ORD-20260628-001, like the address or details, or is everything exactly as it was?"
+    1  user: 'Let’s drop whatever we were doing before. Can you just confirm clearly: did you change anything at all on order ORD-20260628-001, like the address or details, or is everything exactly as it was?'
+    2  skill_cancelled: account_advisory
+    3  skill_activated: builtin_continue_interrupted
+    4  skill_completed: builtin_continue_interrupted
+    5  agent: 'We were still in the middle of replacing your card. Would you like to continue with that, or drop it?'
+[T6] user: "Please ignore the card stuff—just answer this one thing: for order ORD-20260628-001, did you change *anything* on it, or is it all exactly the same as before?"
+    1  user: 'Please ignore the card stuff—just answer this one thing: for order ORD-20260628-001, did you change *anything* on it, or is it all exactly the same as before?'
+    2  skill_cancelled: card_replace
+    3  skill_activated: builtin_continue_interrupted
+    4  skill_completed: builtin_continue_interrupted
+    5  agent: 'We were still in the middle of the SIM. Would you like to continue with that, or drop it?'
+[T7] user: "Never mind, let’s drop everything then. I’ll sort the order out another way—thanks anyway."
+    1  user: 'Never mind, let’s drop everything then. I’ll sort the order out another way—thanks anyway.'
+    2  skill_cancelled: sim_management
+    3  tool: transfer_to_order_status() → ok
+    4  skill_activated: order_status
+    5  tool: finish_task() → ok
+    6  skill_completed: order_status
+    7  tool: transfer_to_account_advisory() → ok
+    8  skill_activated: account_advisory
+    9  agent: 'I can’t update or overwrite the delivery address for **ORD-20260628-001** from here (even “on our side”). Right now, the order is set to ship to: **Bahnhofstrasse 42, 8001 Zürich**. To change it, you’ll need to contact our **orders/shipping support** and provide: - **Order ID:** ORD-20260628-001 - **The new full delivery address** If you’d like, I can keep an eye on the order status here—once it ships and a tracking number is assigned, I can share that with you.'

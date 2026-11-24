@@ -1,0 +1,293 @@
+scenario: Customer goes back and forth between eSIM and physical SIM weighing tradeoffs
+run: 2
+timestamp: 2026-11-24T13:21:26Z
+conversation_id: sim-f616ff08-323a-4b90-a34b-a3cbd5b40ad3
+overall_result: PASS
+
+--- Conversation Repair ---
+observed: none
+
+--- Quality Criteria Results ---
+[PASS] The agent handles the repeated deliberation without getting confused or repeating the same full eSIM-versus-physical explanation each time
+  rationale: The agent explains the eSIM vs physical difference once in detail, and later references and builds on that information (e.g., focusing on timing and safety at later turns) without re-delivering the same full comparison or showing confusion about the options.
+
+[PASS] The agent addresses each specific concern the customer raises (speed, transferring to a new phone, ordering both) rather than just re-asking which one they want
+  rationale: The bot addresses speed while traveling (e.g., “To get you connected **right now**, an **eSIM** is the quickest option”), discusses transfer to a new phone and policy uncertainty, and explicitly confirms that an eSIM now plus a later physical SIM order is possible, instead of merely re-asking for a choice.
+
+[PASS] After ordering the eSIM, the agent confirms it and audibly shares its order ID or confirmation number. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the identifier is omitted, materially differs from the returned value, or is not spoken.
+  rationale: After `tool: order_replacement_sim() → ok`, the bot states “The order ID is ORD-20260702-005 and the confirmation number is SIM-RPL-2026-00201,” and repeats them in the following message, matching the ledger’s `sim_order_summary` content.
+
+[PASS] The confirmed replacement is an eSIM. The agent must not confirm a physical nano-SIM as the order they placed. Asking whether to go ahead after the customer says eSIM sounds good, then backing off when they say wait, is expected
+  rationale: The bot explicitly confirms ordering a “replacement eSIM (QR code)” and the ledger’s `sim_order_summary` shows “SIM type: eSIM,” with no confirmation of a physical nano-SIM being ordered.
+
+[PASS] The agent does not re-ask whether the phone was lost after the customer has already said it was lost. Asking the customer to confirm blocking the SIM is expected even after they already agreed to proceed — the block collect uses ask_before_filling and must confirm before filling. Confirming an already-chosen eSIM order is expected — the order tool requires confirmation before it runs.
+  rationale: Once the user says the phone is lost ("Yes, it’s definitely lost"), the assistant never re-asks if it was lost; subsequent confirmations are only about blocking the SIM and ordering the eSIM, which are allowed.
+
+--- Quality Metrics ---
+bot_quality: 5.0/5
+  helpfulness: 5/5 — It accurately explained eSIM vs physical SIM, clarified timing and transfer concerns, and executed the replacement order with concrete, actionable details.
+  repair_quality: 5/5 — When the user expressed uncertainty or changed their mind (e.g., reconsidering eSIM vs physical), the assistant adjusted smoothly and provided targeted clarification without confusion.
+  coherence: 5/5 — The assistant consistently tracked that the SIM was lost, that the user was travelling, preferred speed, and ultimately chose an eSIM now with the option of a physical SIM later, without contradictions or re-asking settled points.
+  tone: 5/5 — The tone is clear, polite, and concise, with natural phrasing and good structure that makes the steps and options easy to follow.
+  task_completion: PASS — The assistant successfully blocked the lost SIM and then completed an eSIM replacement order with clear confirmation details, matching the user’s goals.
+summary: The assistant handled the scenario end-to-end: it blocked the lost SIM, clearly explained eSIM vs physical SIM tradeoffs for a traveller, and then completed an eSIM order with confirmations. It adapted smoothly as the user reconsidered options and maintained a clear, friendly tone throughout with no noticeable coherence issues.
+
+--- Acknowledgements ---
+summary:
+  coverage: 0/8 tool turns (0%)
+  mean naturalness score: None
+  mean issue score: None
+  issues: none
+
+T1
+  turn:
+    tools:
+      - transfer_to_sim_management
+      - record_incident
+      - start_block_sim
+      - check_sim_status
+    no acknowledgement
+T2
+  turn:
+    tools:
+      - record_block_consent
+      - block_sim
+      - get_device_info
+    no acknowledgement
+T3
+  turn:
+    tools:
+      - transfer_to_sim_management
+    no acknowledgement
+T4
+  turn:
+    tools:
+      - transfer_to_sim_management
+      - record_sim_type
+    no acknowledgement
+T6
+  turn:
+    tools:
+      - transfer_to_sim_management
+    no acknowledgement
+T7
+  turn:
+    tools:
+      - transfer_to_sim_management
+    no acknowledgement
+T8
+  turn:
+    tools:
+      - transfer_to_sim_management
+    no acknowledgement
+T9
+  turn:
+    tools:
+      - order_replacement_sim
+      - finish_task
+    no acknowledgement
+
+--- Tool Call Metrics ---
+[T1] user: "Hi, I lost my phone while travelling abroad and I need help with my SIM."
+  observed: transfer_to_sim_management
+  observed: record_incident(reason='lost')
+  observed: start_block_sim
+  observed: check_sim_status
+[T2] user: "Yes, it’s definitely lost. Please block the SIM to be safe."
+  observed: record_block_consent(wants_to_block=true)
+  observed: block_sim
+  observed: get_device_info
+[T3] user: "I’m not sure. What’s the difference between eSIM and physical?"
+  observed: transfer_to_sim_management
+[T4] user: "I’m travelling right now so I need something fast. eSIM sounds good."
+  observed: transfer_to_sim_management
+  observed: search_knowledge(query='order replacement eSIM QR code email process when SIM blocked and phone lost')
+  observed: search_knowledge(query='how to order replacement eSIM (QR code by email) when abroad - self service or contact options')
+  observed: record_sim_type(sim_type='esim')
+[T5] user: "Wait, before you do, I’m switching phones when I get home next week. Will the eSIM transfer to the new phone?"
+  observed: search_knowledge(query='eSIM transfer to new phone replacement eSIM QR code move profile to new device')
+  observed: search_knowledge(query='transfer eSIM to a new phone keep same number Acme replacement eSIM move to new device')
+  observed: search_knowledge(query='eSIM transfer policy one device at a time new QR code reissue Acme')
+[T6] user: "Hmm, maybe physical is safer then. But I need something NOW for the rest of this trip."
+  observed: transfer_to_sim_management
+[T7] user: "If I take the eSIM for this trip, could I still get a physical SIM shipped to my home later? I don’t want to order the physical one yet, just want to know if that’s possible."
+  observed: transfer_to_sim_management
+  observed: search_knowledge(query='can customer order physical replacement SIM after eSIM replacement already issued later')
+[T8] user: "Yes, let’s do the eSIM now, and I’ll sort out a physical SIM later when I’m back home."
+  observed: transfer_to_sim_management
+[T9] user: "Yes please, go ahead and order the eSIM now."
+  observed: order_replacement_sim
+  observed: finish_task
+
+--- Assertion Results ---
+[PASS] skill_activated(sim_management)
+[PASS] skill_completed(sim_management)
+[PASS] sequencing
+[PASS] memory_was_set(sim_management.incident_reason='lost', sim_management.wants_to_block=True, sim_management.sim_blocked=True, sim_management.sim_type='esim', sim_management.replacement_ordered=True, sim_management.sim_order_summary)
+[PASS] memory_was_not_set(sim_management.replacement_complete)
+[PASS] tool_executed(check_sim_status)
+[PASS] tool_executed(block_sim)
+[PASS] tool_executed(order_replacement_sim)
+[PASS] tool_executed(get_device_info)
+
+--- Raw Transcript ---
+[1] agent: Hi! How can I help you today?
+[2] user: Hi, I lost my phone while travelling abroad and I need help with my SIM.
+[3] agent: Check your account for unauthorized charges. You may be able to locate the device using Find My iPhone or Google Find My Device.
+[4] agent: This SIM is active. Do you want me to block it now to prevent any unauthorized use?
+[5] user: Yes, it’s definitely lost. Please block the SIM to be safe.
+[6] agent: Your SIM is now blocked.
+[7] agent: Here are the device details on file for your line:
+Device: iPhone 15 Pro
+IMEI: 352345678901234
+Serial number: F2LZK1HQGRX
+[8] agent: I’m sorry you’re dealing with that while travelling. I’ve recorded this as **lost** and your **SIM is now blocked**, so it can’t be used to make calls, texts, or use mobile data.
+
+Would you like a replacement as:
+- **Physical nano‑SIM** (posted to you; activates when inserted), or
+- **eSIM** (QR code by email; you’ll need Wi‑Fi to install it)?
+[9] user: I’m not sure. What’s the difference between eSIM and physical?
+[10] agent: An **eSIM** is a digital SIM (no plastic card). A **physical SIM** (nano‑SIM) is the small plastic chip you insert into the phone.
+
+**eSIM (QR code by email)**
+- Fastest if you’re abroad: we email a QR code and you can activate it as soon as you have a phone and **Wi‑Fi**.
+- No waiting for post.
+- You need a phone that supports eSIM, and you need access to the device to scan/install it.
+
+**Physical nano‑SIM (posted)**
+- We post a replacement SIM to an address you choose; it activates when you insert it.
+- Good if you prefer a traditional SIM or don’t want to rely on QR/Wi‑Fi.
+- Slower if you’re travelling, because it depends on delivery.
+
+Since your phone is lost, a common approach is:
+- **eSIM** if you’ll be getting another phone soon and can get on Wi‑Fi, or
+- **physical SIM** if you have a reliable address to receive mail and want a plug‑in card.
+
+Which would you like—**eSIM** or **physical nano‑SIM**?
+[11] user: I’m travelling right now so I need something fast. eSIM sounds good.
+[12] agent: I'll order a eSIM (QR code) replacement for you. Shall I go ahead?
+[13] user: Wait, before you do, I’m switching phones when I get home next week. Will the eSIM transfer to the new phone?
+[14] agent: The replacement **eSIM** we issue is sent as a **QR code by email** and is meant to be installed on the phone you’ll be using.
+
+I don’t have a specific Acme policy note available here that confirms whether that same eSIM can be *transferred* from one phone to another later. If you install it now for your trip and then switch phones next week, we can still help you get service on the new phone if needed.
+
+Do you want me to **send the replacement eSIM now** (fastest for travelling), or **wait until you have the new phone** to install it?
+[15] user: Hmm, maybe physical is safer then. But I need something NOW for the rest of this trip.
+[16] agent: To get you connected **right now**, an **eSIM** is the quickest option (we email a QR code; you’ll need **Wi‑Fi** to install it). A **physical nano‑SIM** is “safer” in the sense it’s a card you can keep for your next phone, but it’s **posted**, so it won’t help immediately while you’re travelling.
+
+What would you like to do?
+
+1) **eSIM now** (fastest for the rest of your trip), or  
+2) **eSIM now + physical nano‑SIM posted** for when you’re home next week
+[17] user: If I take the eSIM for this trip, could I still get a physical SIM shipped to my home later? I don’t want to order the physical one yet, just want to know if that’s possible.
+[18] agent: Yes — you can use an **eSIM now** for the rest of your trip, and if you later decide you want a **physical nano‑SIM shipped to your home**, we can place a separate replacement order for that when you’re ready.
+
+Would you like me to place the **eSIM replacement** now (QR code by email)?
+[19] user: Yes, let’s do the eSIM now, and I’ll sort out a physical SIM later when I’m back home.
+[20] agent: I'll order a eSIM (QR code) replacement for you. Shall I go ahead?
+[21] user: Yes please, go ahead and order the eSIM now.
+[22] agent: Your replacement eSIM (QR code) is ordered. The order ID is ORD-20260702-005 and the confirmation number is SIM-RPL-2026-00201. Delivery: Instant (QR code via email). Check your email for the eSIM QR code and scan it with your device.
+[23] agent: Done — I’ve placed your **replacement eSIM (QR code)** order.
+
+- **Order ID:** ORD-20260702-005  
+- **Confirmation:** SIM-RPL-2026-00201  
+- **Cost:** Free (replacement)  
+- **Delivery:** Instant (QR code via email)
+
+**Next step:** Check your email for the QR code and scan it on your phone (you’ll need Wi‑Fi).
+[24] user: Got it, I see the email with the QR code. I don’t need anything else, thanks.
+[25] agent: You’re welcome — goodbye.
+
+--- Latency ---
+turn 1: ttft=—  turn_latency=—
+turn 2: ttft=—  turn_latency=5615ms
+turn 3: ttft=—  turn_latency=4885ms
+turn 4: ttft=—  turn_latency=12554ms
+turn 5: ttft=—  turn_latency=35000ms
+turn 6: ttft=—  turn_latency=39091ms
+turn 7: ttft=—  turn_latency=19767ms
+turn 8: ttft=—  turn_latency=16740ms
+turn 9: ttft=—  turn_latency=3043ms
+turn 10: ttft=—  turn_latency=3422ms
+turn 11: ttft=—  turn_latency=1497ms
+conversation avg: turn_latency=14161ms  (over 0 turns with bot text, 10 turns timed)
+
+--- Inspector URL ---
+http://127.0.0.1:5007/webhooks/inspector/inspect.html?sender=sim-f616ff08-323a-4b90-a34b-a3cbd5b40ad3
+
+--- Additional Metrics ---
+Turns to Completion: 10
+
+--- Tracker Events ---
+[pre-T1]  (events before first user turn)
+    1  action: action_session_start
+    2  session_started: {"event": "session_started"}
+    3  agent: 'Hi! How can I help you today?'
+[T1] user: "Hi, I lost my phone while travelling abroad and I need help with my SIM."
+    1  user: 'Hi, I lost my phone while travelling abroad and I need help with my SIM.'
+    2  tool: transfer_to_sim_management() → ok
+    3  skill_activated: sim_management
+    4  tool: record_incident(reason=lost) → ok
+    5  memory_set: sim_management.incident_reason = lost
+    6  agent: 'Check your account for unauthorized charges. You may be able to locate the device using Find My iPhone or Google Find My Device.'
+    7  tool: start_block_sim() → ok
+    8  tool: check_sim_status() → ok
+    9  memory_set: sim_management.sim_blocked = false
+   10  agent: 'This SIM is active. Do you want me to block it now to prevent any unauthorized use?'
+[T2] user: "Yes, it’s definitely lost. Please block the SIM to be safe."
+    1  user: 'Yes, it’s definitely lost. Please block the SIM to be safe.'
+    2  tool: record_block_consent(wants_to_block=true) → ok
+    3  memory_set: sim_management.wants_to_block = true
+    4  tool: block_sim() → ok
+    5  memory_set: sim_management.sim_blocked = true
+    6  agent: 'Your SIM is now blocked.'
+    7  tool: get_device_info() → ok
+    8  memory_set: sim_management.device_name = iPhone 15 Pro
+    9  memory_set: sim_management.device_imei = 352345678901234
+   10  memory_set: sim_management.device_serial = F2LZK1HQGRX
+   11  memory_set: sim_management.device_info_shared = true
+   12  agent: 'Here are the device details on file for your line: Device: iPhone 15 Pro IMEI: 352345678901234 Serial number: F2LZK1HQGRX'
+   13  agent: 'I’m sorry you’re dealing with that while travelling. I’ve recorded this as **lost** and your **SIM is now blocked**, so it can’t be used to make calls, texts, or use mobile data. Would you like a replacement as: - **Physical nano‑SIM** (posted to you; activates when inserted), or - **eSIM** (QR code by email; you’ll need Wi‑Fi to install it)?'
+[T3] user: "I’m not sure. What’s the difference between eSIM and physical?"
+    1  user: 'I’m not sure. What’s the difference between eSIM and physical?'
+    2  tool: transfer_to_sim_management() → ok
+    3  agent: 'An **eSIM** is a digital SIM (no plastic card). A **physical SIM** (nano‑SIM) is the small plastic chip you insert into the phone. **eSIM (QR code by email)** - Fastest if you’re abroad: we email a QR code and you can activate it as soon as you have a phone and **Wi‑Fi**. - No waiting for post. - You need a phone that supports eSIM, and you need access to the device to scan/install it. **Physical nano‑SIM (posted)** - We post a replacement SIM to an address you choose; it activates when you insert it. - Good if you prefer a traditional SIM or don’t want to rely on QR/Wi‑Fi. - Slower if you’re travelling, because it depends on delivery. Since your phone is lost, a common approach is: - **eSIM** if you’ll be getting another phone soon and can get on Wi‑Fi, or - **physical SIM** if you have a reliable address to receive mail and want a plug‑in card. Which would you like—**eSIM** or **physical nano‑SIM**?'
+[T4] user: "I’m travelling right now so I need something fast. eSIM sounds good."
+    1  user: 'I’m travelling right now so I need something fast. eSIM sounds good.'
+    2  tool: transfer_to_sim_management() → ok
+    3  tool: search_knowledge(query=order replacement eSIM QR code email pr…) → ok
+    4  tool: search_knowledge(query=how to order replacement eSIM (QR code …) → ok
+    5  tool: record_sim_type(sim_type=esim) → ok
+    6  memory_set: sim_management.sim_type = esim
+    7  agent: "I'll order a eSIM (QR code) replacement for you. Shall I go ahead?"
+[T5] user: "Wait, before you do, I’m switching phones when I get home next week. Will the eSIM transfer to the new phone?"
+    1  user: 'Wait, before you do, I’m switching phones when I get home next week. Will the eSIM transfer to the new phone?'
+    2  tool: search_knowledge(query=eSIM transfer to new phone replacement …) → ok
+    3  tool: search_knowledge(query=transfer eSIM to a new phone keep same …) → ok
+    4  tool: search_knowledge(query=eSIM transfer policy one device at a ti…) → ok
+    5  agent: 'The replacement **eSIM** we issue is sent as a **QR code by email** and is meant to be installed on the phone you’ll be using. I don’t have a specific Acme policy note available here that confirms whether that same eSIM can be *transferred* from one phone to another later. If you install it now for your trip and then switch phones next week, we can still help you get service on the new phone if needed. Do you want me to **send the replacement eSIM now** (fastest for travelling), or **wait until you have the new phone** to install it?'
+[T6] user: "Hmm, maybe physical is safer then. But I need something NOW for the rest of this trip."
+    1  user: 'Hmm, maybe physical is safer then. But I need something NOW for the rest of this trip.'
+    2  tool: transfer_to_sim_management() → ok
+    3  agent: 'To get you connected **right now**, an **eSIM** is the quickest option (we email a QR code; you’ll need **Wi‑Fi** to install it). A **physical nano‑SIM** is “safer” in the sense it’s a card you can keep for your next phone, but it’s **posted**, so it won’t help immediately while you’re travelling. What would you like to do? 1) **eSIM now** (fastest for the rest of your trip), or 2) **eSIM now + physical nano‑SIM posted** for when you’re home next week'
+[T7] user: "If I take the eSIM for this trip, could I still get a physical SIM shipped to my home later? I don’t want to order the physical one yet, just want to know if that’s possible."
+    1  user: 'If I take the eSIM for this trip, could I still get a physical SIM shipped to my home later? I don’t want to order the physical one yet, just want to know if that’s possible.'
+    2  tool: transfer_to_sim_management() → ok
+    3  tool: search_knowledge(query=can customer order physical replacement…) → ok
+    4  agent: 'Yes — you can use an **eSIM now** for the rest of your trip, and if you later decide you want a **physical nano‑SIM shipped to your home**, we can place a separate replacement order for that when you’re ready. Would you like me to place the **eSIM replacement** now (QR code by email)?'
+[T8] user: "Yes, let’s do the eSIM now, and I’ll sort out a physical SIM later when I’m back home."
+    1  user: 'Yes, let’s do the eSIM now, and I’ll sort out a physical SIM later when I’m back home.'
+    2  tool: transfer_to_sim_management() → ok
+    3  agent: "I'll order a eSIM (QR code) replacement for you. Shall I go ahead?"
+[T9] user: "Yes please, go ahead and order the eSIM now."
+    1  user: 'Yes please, go ahead and order the eSIM now.'
+    2  tool: order_replacement_sim() → ok
+    3  memory_set: sim_management.replacement_ordered = true
+    4  memory_set: sim_management.sim_order_summary = Order ID: ORD-20260702-005 Confirmation: SIM-RPL-2026-00201 SIM type: eSIM (QR code) Delivery: Instant (QR code via email) Next step: Check your email for the eSIM QR code and scan it with your device.
+    5  agent: 'Your replacement eSIM (QR code) is ordered. The order ID is ORD-20260702-005 and the confirmation number is SIM-RPL-2026-00201. Delivery: Instant (QR code via email). Check your email for the eSIM QR code and scan it with your device.'
+    6  tool: finish_task() → ok
+    7  skill_completed: sim_management
+    8  agent: 'Done — I’ve placed your **replacement eSIM (QR code)** order. - **Order ID:** ORD-20260702-005 - **Confirmation:** SIM-RPL-2026-00201 - **Cost:** Free (replacement) - **Delivery:** Instant (QR code via email) **Next step:** Check your email for the QR code and scan it on your phone (you’ll need Wi‑Fi).'
+[T10] user: "Got it, I see the email with the QR code. I don’t need anything else, thanks."
+    1  user: 'Got it, I see the email with the QR code. I don’t need anything else, thanks.'
+    2  agent: 'You’re welcome — goodbye.'

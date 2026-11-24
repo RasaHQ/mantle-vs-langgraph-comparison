@@ -57,6 +57,7 @@ class Conversation:
     cached_tokens: int
     harness_error: bool
     timed_out: bool
+    eval_cost: float = 0.0  # simulated customer + judge
 
 
 Run = dict[str, Conversation]  # scenario name -> its conversation in this run
@@ -79,6 +80,7 @@ def load_conversation(data: dict) -> Conversation:
         cached_tokens=int(tokens.get("cached") or 0),
         harness_error=bool(data.get("error_is_harness")),
         timed_out=bool(re.search(r"timeout|timed out", data.get("error") or "", re.IGNORECASE)),
+        eval_cost=float((data.get("evaluation_tokens") or {}).get("cost") or 0.0),
     )
 
 
@@ -207,6 +209,42 @@ def cost_table(loaded: dict[str, SetupResults], shared: list[str]) -> list[str]:
     return _table(loaded, rows)
 
 
+def _minutes(info: dict) -> Optional[float]:
+    from datetime import datetime
+
+    try:
+        start = datetime.fromisoformat(info["started"])
+        end = datetime.fromisoformat(info["finished"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    return (end - start).total_seconds() / 60
+
+
+def time_cost_table(loaded: dict[str, SetupResults], shared: list[str]) -> list[str]:
+    keys = list(loaded)
+    rows = []
+
+    def minutes(k: str) -> str:
+        values = [_minutes(i) for i in loaded[k].folder_info]
+        if not values or any(v is None for v in values):
+            return "—"
+        return f"{sum(values):.0f} min"
+
+    def costs(k: str) -> tuple[float, float]:
+        convs = [run[n] for run in loaded[k].runs for n in shared if n in run]
+        return sum(c.cost or 0.0 for c in convs), sum(c.eval_cost for c in convs)
+
+    rows.append(("Wall-clock time (start-up included)", [minutes(k) for k in keys]))
+    rows.append(("Agent cost", [money2(costs(k)[0]) for k in keys]))
+    rows.append(("Simulated customer and judge cost", [money2(costs(k)[1]) for k in keys]))
+    rows.append(("Total OpenAI cost", [f"**{money2(sum(costs(k)))}**" for k in keys]))
+    return _table(loaded, rows)
+
+
+def money2(v: float) -> str:
+    return f"${v:.2f}"
+
+
 def health_table(loaded: dict[str, SetupResults], shared: list[str]) -> list[str]:
     keys = list(loaded)
 
@@ -289,6 +327,12 @@ def main() -> None:
         "¹ OpenAI bills cached prompt tokens at a tenth of the input price. How much it caches "
         "depends on OpenAI's side and varies between runs, so it moves the cost even when the "
         "agent uses the same tokens.",
+    ]
+    out += ["", "## Time and total cost", ""] + time_cost_table(loaded, shared)
+    out += [
+        "",
+        "For all of a setup's runs together. Total OpenAI cost adds the simulated customer "
+        "and the judge to the agent's own cost.",
     ]
     out += ["", "## Run health", ""] + health_table(loaded, shared)
     out += ["", "## Per scenario", ""] + scenario_table(loaded, shared)
