@@ -1,0 +1,56 @@
+scenario:
+  name: Bill side question during SIM replacement, then the customer answers the paused SIM type question directly
+  simulation_context: |
+    1. You are a customer whose phone, an iPhone 15 Pro, was stolen from your car this morning.
+    2. Your first message states that your phone was stolen and you need help with your SIM.
+    3. When asked, confirm the reason is stolen. Never describe it as lost or misplaced.
+    4. Acknowledge the agent's advice about filing a police report.
+    5. Agree to block the SIM.
+    6. When the agent first asks whether you want a replacement SIM or which type you want (eSIM or physical), do not answer yet. Instead ask: "Actually, before that, how much is my current phone bill?"
+    7. If the agent's reply does not contain a concrete bill amount, say: "Wait, you didn't tell me the amount." and wait for it.
+    8. Once you have heard the amount, your very next message is exactly: "Okay. An eSIM please." Do not say "continue", "go back", or "let's get back to the SIM" at any point.
+    9. Agree to place the order when the agent asks.
+    10. When the agent shares device info (IMEI and serial number), acknowledge it.
+    11. Stay in the conversation until the agent has confirmed the replacement SIM order. Do not change your mind about anything.
+  goals:
+    criteria:
+    - "During the side question the agent reports that the current mobile bill is $142.50"
+    - "After the customer says they want an eSIM, the agent goes on with the SIM replacement for an eSIM and does not ask again which SIM type they want. Confirming the eSIM order before placing it is expected."
+    - "The agent does not treat the customer's eSIM answer as part of the bill discussion (for example by talking about bill charges instead of the SIM replacement)"
+    - "Before ordering the replacement SIM, the agent asks whether the customer wants to place the order and receives their agreement"
+    - "After ordering the replacement SIM, the agent confirms it and audibly shares its order ID or confirmation number. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the identifier is omitted, materially differs from the returned value, or is not spoken."
+    assertions:
+    - skill_activated:
+        skill_id: sim_management
+    - skill_activated:
+        skill_id: bill_inquiry
+    - skill_completed:
+        skill_id: sim_management
+    - sequencing:
+        - skill_activated:
+            skill_id: sim_management
+        - memory_was_set: sim_management.sim_blocked
+        - skill_activated:
+            skill_id: bill_inquiry
+        - memory_was_set: sim_management.sim_type
+        - memory_was_set: sim_management.replacement_ordered
+        - skill_completed:
+            skill_id: sim_management
+    - memory_was_set:
+        - name: sim_management.incident_reason
+          value: stolen
+        - name: sim_management.sim_blocked
+          value: true
+        - name: sim_management.sim_type
+          value: esim
+        - name: sim_management.replacement_ordered
+          value: true
+    - tool_executed:
+        tool_name: get_current_bill
+        is_error: false
+        source: mcp
+        mcp_server: mock_tools
+    - tool_executed:
+        tool_name: order_replacement_sim
+        is_error: false
+        source: local

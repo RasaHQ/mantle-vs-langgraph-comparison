@@ -1,0 +1,51 @@
+scenario:
+  name: Rewards side question during card replacement, then the customer answers the paused shipping question directly
+  simulation_context: |
+    1. You are a customer who lost their River Visa ending 4821. You also have a Summit Rewards card on file, which you do not want to touch.
+    2. Your first message states that you lost your River Visa ending 4821 and need a replacement.
+    3. When asked, confirm the reason is lost and that the River Visa is the card to replace.
+    4. When shown recent transactions for a fraud review, say they all look familiar.
+    5. Agree to lock the card.
+    6. When asked about adding the card to a digital wallet, decline.
+    7. When the agent asks which shipping speed you want, do not answer yet. Instead ask: "Before that, how much have I actually earned in rewards on my River card?"
+    8. If the agent's reply does not contain a concrete rewards dollar figure, say: "Wait, you didn't tell me the figure." and wait for it.
+    9. Once you have heard the figure, your very next message is exactly: "Okay. Standard shipping is fine." Do not say "continue", "go back", or "let's get back to the replacement" at any point.
+    10. Confirm the order when the agent asks.
+    11. Stay in the conversation until the agent has told you the replacement order was placed. Do not change your mind about anything.
+  goals:
+    criteria:
+    - "During the side question the agent shares a concrete rewards figure for the River card (the $180 earned over the last 12 months, or the $142.50 balance), not just an acknowledgment that it looked something up"
+    - "After the customer says standard shipping is fine, the agent goes on with the replacement using standard shipping and does not ask again which shipping speed they want"
+    - "The agent does not treat the customer's shipping answer as part of the rewards discussion (for example by talking about rewards or card offers instead of the replacement)"
+    - "Before placing the replacement order, the agent asks whether the customer wants to place the order and receives their agreement"
+    - "After placing the replacement order, the agent confirms it and audibly shares the order ID from the tool result. Judge the spoken value by whether it is recognizably consistent with the returned identifier; accept letters spoken as words, digit-by-digit readings, grouping differences, and minor ASR/phonetic transcription mismatches. Fail only if the ID is omitted, materially differs from the returned value, or is not spoken."
+    assertions:
+    - skill_activated:
+        skill_id: card_replace
+    - skill_activated:
+        skill_id: card_advisory
+    - skill_completed:
+        skill_id: card_replace
+    - sequencing:
+        - skill_activated:
+            skill_id: card_replace
+        - memory_was_set: card_replace.card_locked
+        - skill_activated:
+            skill_id: card_advisory
+        - memory_was_set: card_replace.shipping_type
+        - memory_was_set: card_replace.replacement_ordered
+        - skill_completed:
+            skill_id: card_replace
+    - memory_was_set:
+        - name: card_replace.replacement_reason
+          value: lost
+        - name: card_disambiguate.selected_card_id
+          value: VISA_001
+        - name: card_replace.shipping_type
+          value: standard
+        - name: card_replace.replacement_ordered
+          value: true
+    - tool_executed:
+        tool_name: process_card_replacement
+        is_error: false
+        source: local
